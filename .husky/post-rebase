@@ -1,0 +1,1 @@
+pnpm package-changed run "pnpm install"
