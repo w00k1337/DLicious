@@ -1,0 +1,38 @@
+name: Dependabot Auto-Merge
+
+# This workflow automatically merges Dependabot pull requests for minor and patch updates
+# It helps maintain up-to-date dependencies without manual intervention
+# Only safe updates (minor and patch versions) are auto-merged to reduce risk
+# Major version updates still require manual review and approval
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto_merge_dependabot:
+    name: Auto Merge Dependabot PRs
+    runs-on: ubuntu-latest
+    # Only run this workflow for Dependabot PRs
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Fetch Dependabot Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable Auto-Merge for Dependabot PRs
+        # Only auto-merge patch and minor updates to reduce risk
+        # Major updates require manual review as they may contain breaking changes
+        if: |
+          startsWith(steps.metadata.outputs.update-type, 'version-update:semver-patch') ||
+          startsWith(steps.metadata.outputs.update-type, 'version-update:semver-minor')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

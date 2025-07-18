@@ -1,0 +1,120 @@
+name: Code Quality Assurance
+
+# This workflow runs code quality checks on pull requests and can be manually triggered
+# It performs:
+# - Change detection to optimize which checks to run
+# - Code formatting verification with Prettier
+# - Linting for TypeScript, JavaScript, and CSS files
+# - Project build verification
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  # Add actions permission for caching
+  actions: write
+
+jobs:
+  detect_changes:
+    name: Detect Changes in Source Files
+    runs-on: ubuntu-latest
+
+    # Outputs from this job are used to determine which checks to run
+    outputs:
+      js: ${{ steps.filter.outputs.js }}
+      ts: ${{ steps.filter.outputs.ts }}
+      css: ${{ steps.filter.outputs.css }}
+      dependencies: ${{ steps.filter.outputs.dependencies }}
+      changed: ${{ steps.filter.outputs.changed }}
+
+      js_files: ${{ steps.filter.outputs.js_files }}
+      ts_files: ${{ steps.filter.outputs.ts_files }}
+      css_files: ${{ steps.filter.outputs.css_files }}
+      changed_files: ${{ steps.filter.outputs.changed_files }}
+
+    steps:
+      - name: Identify Changed Files
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ts:
+              - added|modified: '**/*.ts'
+              - added|modified: '**/*.tsx'
+            js:
+              - added|modified: '**/*.js'
+              - added|modified: '**/*.jsx'
+              - added|modified: '**/*.cjs'
+              - added|modified: '**/*.mjs'
+            css:
+              - added|modified: '**/*.css'
+            dependencies:
+              - added|modified: 'package.json'
+              - added|modified: 'package-lock.json'
+              - added|modified: 'pnpm-lock.yaml'
+            changed:
+              - added|modified: '**/*'
+          list-files: shell
+
+  lint_code:
+    name: Perform Code Linting
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.12.1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
+
+      - name: Install Node.js Dependencies
+        run: pnpm install
+
+      - name: Restore Next.js Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm
+            ${{ github.workspace }}/.next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+
+      - name: Check Code Formatting with Prettier
+        run: pnpm run prettier:check ${{ needs.detect_changes.outputs.changed_files }}
+
+      # Enable ESLint caching via command line flags
+      - name: Lint TypeScript Files
+        if: ${{ needs.detect_changes.outputs.ts == 'true' || needs.detect_changes.outputs.dependencies == 'true' }}
+        run: pnpm run lint:js ${{ needs.detect_changes.outputs.ts_files || '**/*.ts' }}
+
+      - name: Lint JavaScript Files
+        if: ${{ needs.detect_changes.outputs.js == 'true' || needs.detect_changes.outputs.dependencies == 'true' }}
+        run: pnpm run lint:js ${{ needs.detect_changes.outputs.js_files || '*.js' }}
+
+      - name: Type check
+        run: pnpm tsc --noEmit
+
+      - name: Build Project
+        run: pnpm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+          STASH_BASE_URL: https://localhost

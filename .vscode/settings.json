@@ -1,0 +1,28 @@
+{
+  "css.validate": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "editor.tabSize": 2,
+
+  "files.exclude": {
+    ".next": true
+  },
+
+  "tailwindCSS.experimental.configFile": "./src/app/globals.css",
+
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#ef1648",
+    "titleBar.inactiveBackground": "#ef1649d0",
+    "titleBar.activeForeground": "#ffffff",
+    "titleBar.inactiveForeground": "#dddddd"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

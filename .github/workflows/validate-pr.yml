@@ -1,0 +1,35 @@
+name: Validate Pull Request
+
+# This workflow ensures that pull request titles follow the Conventional Commits specification
+# It runs on PR creation, edits, synchronization, and reopening
+# Enforcing conventional commit format in PR titles helps maintain a clean and descriptive commit history
+# when using the "Squash and merge" strategy, as GitHub uses the PR title as the commit message
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate_pr_title:
+    name: Validate Pull Request Title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate PR Title with Conventional Commit
+        uses: CondeNast/conventional-pull-request-action@v0.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Only validate the PR title, not the commit messages
+          commitTitleMatch: 'false'
