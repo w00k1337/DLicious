@@ -11,7 +11,9 @@ FROM base AS builder
 
 WORKDIR /app
 
-COPY .npmrc package.json pnpm-lock.yaml next.config.ts postcss.config.js tsconfig.json ./
+ENV HUSKY=0
+
+COPY .npmrc package.json pnpm-lock.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
