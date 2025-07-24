@@ -18,6 +18,8 @@ RUN corepack enable pnpm && pnpm install --frozen-lockfile
 COPY prisma/ ./prisma
 COPY src/ ./src
 COPY next.config.ts ./
+COPY postcss.config.js ./
+
 RUN NEXT_TELEMETRY_DISABLED=1 pnpm build
 
 # =========================================
