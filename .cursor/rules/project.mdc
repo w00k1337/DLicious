@@ -1,0 +1,149 @@
+---
+description: Overview of the DLicious project, outlining its purpose, core features, integrations, and architectural context for agents working with the codebase.
+---
+
+# DLicious Project Overview
+
+## What is DLicious?
+
+DLicious is a modern web application that automates the discovery and downloading of adult content scenes for specific performers. It bridges the gap between content management systems and download automation tools by focusing on performer-centric workflows rather than site-centric approaches.
+
+## Core Problem & Solution
+
+### The Problem
+
+Users want to automatically download new scenes from their favorite performers, but existing tools have limitations:
+
+- **Stash**: Excellent for content management but lacks download automation
+- **Whisparr**: Great for site-based downloads but doesn't focus on individual performers
+- **Manual Process**: Time-consuming and error-prone
+
+### The Solution
+
+DLicious provides a performer-centric automation platform that:
+
+- Monitors new scenes for specific performers
+- Searches Usenet for available content
+- Automatically downloads and tracks acquisitions
+- Integrates with existing content management workflows
+
+## Key Integrations & Data Sources
+
+### Content Management
+
+- **Stash**: Primary data source for performers and downloaded scenes
+- **Local Collection**: Tracks what's already downloaded to avoid duplicates
+
+### Scene Discovery
+
+- **ThePornDB**: Metadata, performer and scene information
+- **StashDB**: Additional scene metadata and information
+
+### Download Infrastructure
+
+- **Sabnzbd**: Usenet download client for NZB files
+- **Usenet**: Primary content source
+
+## Architecture Overview
+
+### Tech Stack
+
+See @./tech-stack.mdc
+
+### Data Flow
+
+1. **Performer Management**: Users add performers to their watchlist
+2. **Scene Monitoring**: System periodically checks for new scenes
+3. **Content Discovery**: Searches Usenet for available downloads
+4. **Download Automation**: Queues downloads via Sabnzbd
+5. **Collection Tracking**: Updates local database with acquired content
+
+## Key Features & Functionality
+
+### Performer Management
+
+- Add/remove performers from watchlist
+- Track performer preferences and settings
+- View performer statistics and download history
+
+### Scene Monitoring
+
+- Automatic detection of new scenes
+- Filtering by performer, studio, or other criteria
+- Notification system for new content
+
+### Download Automation
+
+- Automatic NZB file generation and submission
+- Integration with Sabnzbd for actual downloads
+- Download status tracking and error handling
+
+### Collection Management
+
+- Track downloaded vs. available content
+- Integration with Stash for metadata
+- Duplicate detection and prevention
+
+## Development Guidelines
+
+### Code Organization
+
+- **`src/app/`**: Next.js App Router pages and API routes
+- **`src/components/`**: Reusable React components
+- **`src/lib/`**: Utility functions and shared logic
+- **`src/types/`**: TypeScript type definitions
+- **`src/generated/`**: Auto-generated code (Prisma client)
+
+### Data Models
+
+- **Performers**: Core entities users want to track
+- **Scenes**: Available content for performers
+- **Downloads**: Tracked download attempts and results
+- **Settings**: User preferences and configuration
+
+### API Design
+
+- RESTful API routes in `src/app/api/`
+- Consistent error handling and response formats
+- Proper validation using Zod schemas
+- Type-safe API responses
+
+## Primary User Story
+
+> _"I want to download new scenes of my favourite performers automatically from Usenet and keep track of which scenes I've already downloaded. I use Stash to manage my whole collection, but Stash is not built to download scenes. I use Whisparr to download scenes, but Whisparr focuses on sites rather than performers."_
+
+## Technical Considerations
+
+### Privacy & Security
+
+- Handle sensitive content metadata appropriately
+- Secure API endpoints and data access
+- Proper environment variable management
+
+### Performance
+
+- Efficient database queries for large collections
+- Caching strategies for external API calls
+- Background job processing for monitoring tasks
+
+### Scalability
+
+- Modular architecture for easy feature additions
+- Database design that supports growth
+
+## Integration Points
+
+### External APIs
+
+- Stash API for performer and scene data
+- ThePornDB API for scene metadata
+- StashDB API for additional metadata
+- Sabnzbd API for download management
+
+### Data Synchronization
+
+- Regular sync with Stash for collection and performer updates
+- Periodic checks for new scenes
+- Download status synchronization
+
+This project aims to create a seamless, performer-focused automation experience that complements existing content management workflows while providing the download automation capabilities users need.

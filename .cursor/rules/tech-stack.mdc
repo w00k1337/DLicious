@@ -1,0 +1,48 @@
+---
+description: Tech stack for DLicious - a modern web application
+---
+
+# Tech Stack
+
+## Core Technologies
+
+### Web Framework
+
+- **Next.js** - React framework with App Router (v15+)
+- **TypeScript** - Type-safe JavaScript
+
+### Database
+
+- **PostgreSQL** - Primary database
+
+### ORM & Data
+
+- **Prisma** - Database toolkit and ORM
+- **Zod** - Validation and type safety
+
+## Frontend
+
+- **React 19** - UI library (latest)
+- **TailwindCSS 4** - Utility-first CSS framework
+
+## Development Tools
+
+- **pnpm** - Package manager
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **lint-staged** - Pre-commit hooks
+
+## Testing
+
+- **Vitest** - Unit testing framework
+- **Testing Library** - Component testing utilities
+
+## Deployment & CI/CD
+
+- **Docker** - Containerization
+- **GitHub Actions** - CI/CD pipeline
+
+## Environment
+
+- **Environment Variables** - .env files for configuration
+- **Node.js** - Runtime environment (v20+)
