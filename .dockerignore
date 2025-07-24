@@ -1,0 +1,19 @@
+Dockerfile
+.dockerignore
+helm
+node_modules
+
+# Log files
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+README.md
+.env
+.vscode
+.github
+.next
+.git

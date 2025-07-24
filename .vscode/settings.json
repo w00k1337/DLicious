@@ -10,19 +10,16 @@
     "strings": true
   },
   "editor.tabSize": 2,
-
   "files.exclude": {
     ".next": true
   },
-
   "tailwindCSS.experimental.configFile": "./src/app/globals.css",
-
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
   "workbench.colorCustomizations": {
     "titleBar.activeBackground": "#ef1648",
-    "titleBar.inactiveBackground": "#ef1649d0",
     "titleBar.activeForeground": "#ffffff",
+    "titleBar.inactiveBackground": "#ef1649d0",
     "titleBar.inactiveForeground": "#dddddd"
-  },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  }
 }
