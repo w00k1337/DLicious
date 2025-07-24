@@ -49,6 +49,10 @@ jobs:
     needs: detect_changes
     # Only run if relevant files have changed or it's a tag push
     if: ${{ needs.detect_changes.outputs.should_deploy == 'true' || startsWith(github.ref, 'refs/tags/v') }}
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
