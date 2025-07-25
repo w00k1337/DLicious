@@ -3,6 +3,30 @@ import '@testing-library/jest-dom'
 import React from 'react'
 import { vi } from 'vitest'
 
+// Mock server-only package to allow testing
+vi.mock('server-only', () => ({}))
+
+// Mock environment configuration
+vi.mock('@/env/server', () => ({
+  env: {
+    LOG_LEVEL: 'silent',
+    STASH_BASE_URL: 'https://test-stash.example.com',
+    STASH_API_KEY: 'test-api-key'
+  }
+}))
+
+// Mock logger to avoid server-only issues
+vi.mock('@/lib/logger', () => ({
+  default: {
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn()
+  }
+}))
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: (): {

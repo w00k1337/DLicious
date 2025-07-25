@@ -4,60 +4,59 @@ description: Guidelines for writing clean, maintainable, and human-readable code
 
 # Clean Code Guidelines
 
-## Constants Over Magic Numbers
+## Naming & Clarity
 
+- Use meaningful names that reveal purpose and usage
 - Replace hard-coded values with named constants
-- Use descriptive constant names that explain the value's purpose
-- Keep constants at the top of the file or in a dedicated constants file
+- Avoid abbreviations unless universally understood
+- Make code self-documenting rather than relying on comments
 
-## Meaningful Names
+## Function Design
 
-- Variables, functions, and classes should reveal their purpose
-- Names should explain why something exists and how it's used
-- Avoid abbreviations unless they're universally understood
+- Each function should do exactly one thing (Single Responsibility)
+- Keep functions small and focused
+- Use descriptive function names that explain the action
+- If a function needs a comment to explain what it does, consider splitting it
 
-## Smart Comments
+## Code Organization
 
-- Don't comment on what the code does - make the code self-documenting
-- Use comments to explain why something is done a certain way
-- Document APIs, complex algorithms, and non-obvious side effects
-
-## Single Responsibility
-
-- Each function should do exactly one thing
-- Functions should be small and focused
-- If a function needs a comment to explain what it does, it should be split
-
-## DRY (Don't Repeat Yourself)
-
-- Extract repeated code into reusable functions
-- Share common logic through proper abstraction
-- Maintain single sources of truth
-
-## Clean Structure
-
-- Keep related code together
+- Keep related code together in logical groups
 - Organize code in a logical hierarchy
 - Use consistent file and folder naming conventions
+- Extract repeated code into reusable functions (DRY principle)
+- Maintain single sources of truth
 
-## Encapsulation
+## Comments & Documentation
 
-- Hide implementation details
-- Expose clear interfaces
+- Don't comment on what the code does - make the code clear
+- Use comments to explain why something is done a certain way
+- Document APIs, complex algorithms, and non-obvious side effects
+- Keep comments up-to-date with code changes
+
+## Error Handling
+
+- Handle errors explicitly and appropriately
+- Use meaningful error messages
+- Implement proper validation and boundary checking
+- Fail fast when encountering invalid states
+
+## Code Structure
+
+- Hide implementation details through proper encapsulation
+- Expose clear, simple interfaces
 - Move nested conditionals into well-named functions
+- Use consistent indentation and formatting
 
-## Code Quality Maintenance
+## Quality Maintenance
 
-- Refactor continuously
-- Fix technical debt early
+- Refactor continuously to improve code quality
+- Fix technical debt early before it compounds
 - Leave code cleaner than you found it
+- Write tests before fixing bugs to prevent regressions
 
-## Testing
+## File Organization
 
-- Write tests before fixing bugs
-- Keep tests readable and maintainable
-- Test edge cases and error conditions
-
-## Lines of Code
-
-- Avoid having files over 200–300 lines of code. Refactor at that point.
+- Keep files under 200-300 lines of code
+- Refactor large files into smaller, focused modules
+- Group related functionality together
+- Use proper import/export organization

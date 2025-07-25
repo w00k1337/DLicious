@@ -1,0 +1,50 @@
+---
+description: Guidelines for robust, consistent, and user-friendly error handling across TypeScript, React, and API layers.
+---
+
+# Error Handling Guidelines
+
+## Error Strategy
+
+- Fail fast when encountering invalid states
+- Handle errors explicitly rather than silently ignoring them
+- Use meaningful error messages that help users understand the issue
+- Implement proper error boundaries for React applications
+
+## TypeScript Error Patterns
+
+- Create custom error types for domain-specific errors
+- Use Result types or discriminated unions for operations that can fail
+- Implement proper null checking and optional chaining
+- Use try-catch blocks with typed catch clauses where appropriate
+
+## React Error Handling
+
+- Implement Error Boundaries for component tree protection
+- Handle async errors in useEffect with proper cleanup
+- Show user-friendly error messages instead of technical details
+- Implement proper fallback UI for error states
+- Log errors appropriately for debugging
+
+## API Error Handling
+
+- Validate input data before processing
+- Return consistent error response formats
+- Handle different types of errors (validation, authorization, server)
+- Implement proper HTTP status codes
+- Provide actionable error messages for API consumers
+
+## Async Error Handling
+
+- Use try-catch with async/await for readable error handling
+- Handle Promise rejections explicitly
+- Implement timeout handling for long-running operations
+- Chain error handling through Promise catch methods when appropriate
+
+## Error Recovery
+
+- Implement retry mechanisms for transient failures
+- Provide clear recovery actions for users
+- Log errors with sufficient context for debugging
+- Gracefully degrade functionality when possible
+- Monitor and alert on error patterns in production

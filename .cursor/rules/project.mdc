@@ -91,6 +91,7 @@ See @./tech-stack.mdc
 - **`src/app/`**: Next.js App Router pages and API routes
 - **`src/components/`**: Reusable React components
 - **`src/lib/`**: Utility functions and shared logic
+- **`src/lib/api/`**: Different external APIs
 - **`src/types/`**: TypeScript type definitions
 - **`src/generated/`**: Auto-generated code (Prisma client)
 
