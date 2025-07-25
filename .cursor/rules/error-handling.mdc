@@ -1,5 +1,6 @@
 ---
 description: Guidelines for robust, consistent, and user-friendly error handling across TypeScript, React, and API layers.
+globs: **/*.tsx, **/*.ts
 ---
 
 # Error Handling Guidelines

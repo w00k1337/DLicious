@@ -1,6 +1,6 @@
 ---
 description: Next.js with TypeScript and Tailwind UI best practices
-globs: **/*.tsx, **/*.ts, src/**/*.ts, src/**/*.tsx
+globs: **/*.tsx, **/*.ts
 ---
 
 # Next.js Best Practices
@@ -42,12 +42,12 @@ globs: **/*.tsx, **/*.ts, src/**/*.ts, src/**/*.tsx
 - Use `next/image` component for automatic optimization
 - Implement proper `alt` attributes and sizing
 - Use WebP format with fallbacks
-- Configure image domains in `next.config.js`
+- Configure image domains in `next.config.ts`
 - Implement proper lazy loading strategies
 
 ## Deployment & Configuration
 
-- Configure `next.config.js` for production optimizations
+- Configure `next.config.ts` for production optimizations
 - Use environment variables properly
 - Implement proper build caching strategies
 - Configure middleware for edge runtime when appropriate

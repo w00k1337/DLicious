@@ -1,5 +1,6 @@
 ---
 description: Guidelines for writing effective, maintainable, and behavior-focused tests for React, API, and business logic in modern web applications.
+globs: **/*.tsx, **/*.ts
 ---
 
 # Testing Guidelines
