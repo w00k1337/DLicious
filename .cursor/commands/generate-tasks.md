@@ -38,7 +38,7 @@ The generated task list _must_ follow this structure:
 
 ### Notes
 
-- Unit tests should typically be placed alongside the code files they are testing (e.g., `MyComponent.tsx` and `MyComponent.test.tsx` in the same directory).
+- Unit tests should be placed in a `__tests__` subfolder within the same directory as the code files they are testing (e.g., `MyComponent.tsx` and `__tests__/MyComponent.test.tsx`).
 - Use `pnpm vitest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Vitest configuration.
 
 ## Tasks
