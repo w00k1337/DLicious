@@ -100,6 +100,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+
       - name: Check Code Formatting with Prettier
         run: pnpm run prettier:check ${{ needs.detect_changes.outputs.changed_files }}
 
