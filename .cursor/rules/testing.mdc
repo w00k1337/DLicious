@@ -1,0 +1,52 @@
+---
+description: Guidelines for writing effective, maintainable, and behavior-focused tests for React, API, and business logic in modern web applications.
+globs: **/*.tsx, **/*.ts
+---
+
+# Testing Guidelines
+
+## Testing Strategy
+
+- Write tests before fixing bugs to prevent regressions
+- Test user interactions and business logic, not implementation details
+- Focus on behavior over internal state
+- Implement tests at appropriate levels (unit, integration, e2e)
+
+## Test Organization
+
+- Keep tests close to the code they test
+- Use descriptive test names that explain the scenario
+- Group related tests using describe blocks
+- Follow the AAA pattern: Arrange, Act, Assert
+
+## React Component Testing
+
+- Use React Testing Library for component tests
+- Test component behavior from user perspective
+- Mock external dependencies appropriately
+- Test error boundaries and edge cases
+- Avoid testing internal component state directly
+
+## API and Business Logic Testing
+
+- Test pure functions with comprehensive input/output scenarios
+- Mock external API calls and services
+- Test error handling and edge cases
+- Validate data transformations and calculations
+- Test async operations with proper awaiting
+
+## Test Quality
+
+- Keep tests simple, readable, and maintainable
+- Use proper setup and teardown for test isolation
+- Implement meaningful assertions with clear error messages
+- Avoid flaky tests with proper synchronization
+- Maintain test coverage for critical code paths
+
+## Mocking Strategy
+
+- Mock at the boundary of your system (APIs, databases)
+- Use realistic test data that matches production scenarios
+- Avoid over-mocking internal functions
+- Mock time-dependent functionality for deterministic tests
+- Reset mocks between test runs

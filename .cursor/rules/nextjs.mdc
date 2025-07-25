@@ -1,59 +1,58 @@
 ---
 description: Next.js with TypeScript and Tailwind UI best practices
-globs: **/*.tsx, **/*.ts, src/**/*.ts, src/**/*.tsx
+globs: **/*.tsx, **/*.ts
 ---
 
 # Next.js Best Practices
 
-## Project Structure
+## App Router Architecture
 
-- Use the App Router directory structure
-- Place components in `app` directory for route-specific components
-- Place shared components in `components` directory
-- Place utilities and helpers in `lib` directory
-- Use lowercase with dashes for directories (e.g., `components/auth-wizard`)
+- Use App Router directory structure (`app/` directory)
+- Place route-specific components within route directories
+- Use `loading.tsx`, `error.tsx`, and `not-found.tsx` appropriately
+- Implement proper nested layouts and templates
+- Use route groups for organization without affecting URLs
 
-## Components
+## Server vs Client Components
 
-- Use Server Components by default
-- Mark client components explicitly with 'use client'
-- Wrap client components in Suspense with fallback
-- Use dynamic loading for non-critical components
-- Implement proper error boundaries
-- Place static content and interfaces at file end
+- Use Server Components by default for better performance
+- Mark Client Components explicitly with 'use client'
+- Minimize Client Component boundary surface area
+- Pass serializable props between Server and Client Components
+- Use Server Actions for form submissions and mutations
 
-## Performance
+## Data Fetching Patterns
 
-- Optimize images: Use WebP format, size data, lazy loading
-- Minimize use of 'useEffect' and 'setState'
-- Favor Server Components (RSC) where possible
-- Use dynamic loading for non-critical components
-- Implement proper caching strategies
+- Fetch data in Server Components when possible
+- Use proper cache strategies (`force-cache`, `no-store`)
+- Implement streaming with Suspense boundaries
+- Use parallel data fetching patterns
+- Handle loading and error states at appropriate levels
 
-## Data Fetching
+## Routing & Navigation
 
-- Use Server Components for data fetching when possible
-- Implement proper error handling for data fetching
-- Use appropriate caching strategies
-- Handle loading and error states appropriately
+- Use `Link` component for client-side navigation
+- Implement proper dynamic routes with `[slug]` syntax
+- Use route handlers (`route.ts`) for API endpoints
+- Implement proper middleware for authentication/redirects
+- Handle route parameters and search params correctly
 
-## Routing
+## Image & Asset Optimization
 
-- Use the App Router conventions
-- Implement proper loading and error states for routes
-- Use dynamic routes appropriately
-- Handle parallel routes when needed
+- Use `next/image` component for automatic optimization
+- Implement proper `alt` attributes and sizing
+- Use WebP format with fallbacks
+- Configure image domains in `next.config.ts`
+- Implement proper lazy loading strategies
 
-## Forms and Validation
+## Deployment & Configuration
 
-- Use Zod for form validation
-- Implement proper server-side validation
-- Handle form errors appropriately
-- Show loading states during form submission
+- Configure `next.config.ts` for production optimizations
+- Use environment variables properly
+- Implement proper build caching strategies
+- Configure middleware for edge runtime when appropriate
+- Set up proper monitoring and error tracking
 
-## State Management
-
-- Minimize client-side state
 - Use React Context sparingly
 - Prefer server state when possible
 - Implement proper loading states
