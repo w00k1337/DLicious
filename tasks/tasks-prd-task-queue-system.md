@@ -13,15 +13,15 @@
 
 ### T2: Core Queue Infrastructure
 
-- [ ] T2.1: Create Redis connection singleton
-- [ ] T2.2: Implement BullMQ queue factory with configuration
-- [ ] T2.3: Create base job interface and type definitions
-- [ ] T2.4: Implement queue manager class for multiple queue types
-- [ ] T2.5: Add graceful shutdown handling for queues
+- [x] T2.1: Create Redis connection singleton
+- [x] T2.2: Implement BullMQ queue factory with configuration
+- [x] T2.3: Create base job interface and type definitions
+- [x] T2.4: Implement queue manager class for multiple queue types
+- [x] T2.5: Add graceful shutdown handling for queues
 
 ### T3: Task Registration System
 
-- [ ] T3.1: Create job registration interface with TypeScript type safety
+- [x] T3.1: Create job registration interface with TypeScript type safety
 - [ ] T3.2: Implement job handler registry
 - [ ] T3.3: Create decorators/utilities for easy job definition
 - [ ] T3.4: Add job deduplication mechanism
@@ -67,6 +67,12 @@
 - `src/lib/queue/jobs/index.ts` - Job implementations export file (to be populated in T5)
 - `src/lib/queue/__tests__/` - Directory for queue system tests
 - `src/lib/queue/utils/` - Directory for queue utilities
+- `src/lib/queue/redis.ts` - Redis connection singleton with proper lifecycle management, error handling, and logging integration
+- `src/lib/queue/factory.ts` - BullMQ queue factory with type-safe queue creation, configuration management, event handling, and status monitoring
+- `src/lib/queue/types/lifecycle.ts` - Comprehensive job lifecycle management types including state transitions, scheduling, performance tracking, and batch processing
+- `src/lib/queue/manager.ts` - Unified queue manager orchestrating multiple queue types with worker management, health monitoring, batch processing, and graceful shutdown
+- **Graceful shutdown** - Comprehensive shutdown handling implemented in queue manager with worker closure, queue cleanup, and Redis disconnection
+- `src/lib/queue/registry.ts` - Type-safe job registration system with validation, rate limiting, execution tracking, and comprehensive error handling
 
 ## Notes
 

@@ -1,6 +1,8 @@
 import type { Job, JobsOptions, Queue, Worker } from 'bullmq'
 
 import type { BaseJobData, JobRegistration, QueueStatus, QueueType } from './base'
+// Commented out unused imports for now
+// import type { JobTypeRegistry, TypedJobCreation } from './jobs'
 
 /**
  * Queue manager interface with improved type safety

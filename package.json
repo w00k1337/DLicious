@@ -7,7 +7,7 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --experimental-https | pino-pretty",
-    "prebuild": "prisma generate",
+    "prebuild": "prisma generate --no-hints",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

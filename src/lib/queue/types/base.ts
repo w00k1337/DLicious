@@ -21,12 +21,12 @@ export type JobStatus = 'waiting' | 'active' | 'completed' | 'failed' | 'delayed
 export type QueueType = 'stash-sync' | 'metadata-sync' | 'download-monitor' | 'scheduled-tasks'
 
 /**
- * Job handler function type
+ * Job handler function type for base jobs
  */
 export type JobHandler<T extends BaseJobData = BaseJobData> = (job: Job<T>) => Promise<unknown>
 
 /**
- * Job registration interface
+ * Basic job registration interface (for untyped jobs)
  */
 export interface JobRegistration<T extends BaseJobData = BaseJobData> {
   readonly type: string

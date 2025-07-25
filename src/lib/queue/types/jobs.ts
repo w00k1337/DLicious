@@ -1,6 +1,7 @@
+import type { JobsOptions } from 'bullmq'
 import { z } from 'zod'
 
-import type { BaseJobData, JobHandler } from './base'
+import type { BaseJobData } from './base'
 import { BaseJobDataSchema } from './base'
 
 /**
@@ -67,9 +68,40 @@ export type JobData =
 export type JobDataForType<T extends keyof JobTypeRegistry> = JobTypeRegistry[T]
 
 /**
- * Utility type for strongly typed job handler
+ * Strongly typed job handler using job type registry
  */
-export type TypedJobHandler<T extends keyof JobTypeRegistry> = JobHandler<JobDataForType<T>>
+export type TypedJobHandler<T extends keyof JobTypeRegistry> = (
+  context: import('../registry').TypedJobExecutionContext<T>
+) => Promise<import('../registry').JobHandlerResult>
+
+/**
+ * Strongly typed job registration using job type registry
+ */
+export interface TypedJobRegistration<T extends keyof JobTypeRegistry> {
+  readonly type: T
+  readonly description: string
+  readonly queueType: 'stash-sync' | 'metadata-sync' | 'download-monitor' | 'scheduled-tasks'
+  readonly handler: TypedJobHandler<T>
+  readonly schema?: z.ZodType<JobTypeRegistry[T]>
+  readonly timeout?: number
+  readonly retries?: number
+  readonly backoff?: {
+    readonly type: 'exponential' | 'fixed'
+    readonly delay: number
+    readonly maxDelay?: number
+  }
+  readonly rateLimit?: {
+    readonly maxConcurrent: number
+    readonly perSecond?: number
+  }
+  readonly tags?: readonly string[]
+  readonly metadata?: Record<string, unknown>
+}
+
+/**
+ * Helper type to get job data type from job type string
+ */
+export type GetJobData<T> = T extends keyof JobTypeRegistry ? JobTypeRegistry[T] : BaseJobData
 
 /**
  * Zod schema for stash performer sync data validation
@@ -170,3 +202,17 @@ export const JOB_TYPES = {
 } as const
 
 export type JobType = (typeof JOB_TYPES)[keyof typeof JOB_TYPES]
+
+/**
+ * Union of all known job types for type checking
+ */
+export type KnownJobType = keyof JobTypeRegistry
+
+/**
+ * Type-safe job creation helper
+ */
+export interface TypedJobCreation<T extends keyof JobTypeRegistry> {
+  readonly type: T
+  readonly data: JobTypeRegistry[T]
+  readonly options?: Partial<JobsOptions>
+}
