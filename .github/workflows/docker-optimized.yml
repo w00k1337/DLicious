@@ -1,0 +1,247 @@
+name: Optimized Docker Build & Deploy
+
+# Optimized Docker workflow with:
+# - Smart change detection to avoid unnecessary builds
+# - Multi-stage caching for faster builds
+# - Parallel build and security scanning
+# - Conditional deployment based on branch/tag
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Detect if Docker build is needed
+  detect-changes:
+    name: 🔍 Detect Build Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.changes.outputs.build-files == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+      dockerfile-changed: ${{ steps.changes.outputs.dockerfile }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+
+      - name: Check for relevant changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            build-files:
+              - 'src/**'
+              - 'prisma/**'
+              - 'public/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'next.config.ts'
+              - 'tsconfig.json'
+              - 'tailwind.config.ts'
+              - 'postcss.config.js'
+            dockerfile:
+              - 'Dockerfile'
+              - '.dockerignore'
+
+  # Build and push Docker image with optimal caching
+  build:
+    name: 🐳 Build & Push Image
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build == 'true'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    concurrency:
+      group: docker-build-${{ github.ref }}
+      cancel-in-progress: false # Don't cancel builds, they're expensive
+    timeout-minutes: 30
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-metadata: ${{ steps.meta.outputs.json }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          # Use buildkit with inline cache for better performance
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Branch-based tags
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Semantic version tags for releases
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Short SHA for unique identification
+            type=sha,prefix={{branch}}-
+          labels: |
+            org.opencontainers.image.title=DLicious
+            org.opencontainers.image.description=Adult content automation platform
+            org.opencontainers.image.vendor=DLicious
+
+      # Build with comprehensive caching strategy
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          # Multi-layer caching for optimal build speed
+          cache-from: |
+            type=gha,scope=buildkit-state
+            type=gha,scope=buildkit-cache
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: |
+            type=gha,scope=buildkit-state,mode=max
+            type=gha,scope=buildkit-cache,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          # Build arguments for optimization
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            NODE_ENV=production
+          # Enable build-time secrets if needed
+          secrets: |
+            "github_token=${{ secrets.GITHUB_TOKEN }}"
+
+  # Security scanning in parallel with build
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.should-build == 'true'
+    permissions:
+      security-events: write
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build.outputs.image-digest }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          # Fail on high/critical vulnerabilities
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Image size optimization check
+  size-check:
+    name: 📏 Image Size Check
+    runs-on: ubuntu-latest
+    needs: build
+    if: always() && needs.build.result == 'success'
+    steps:
+      - name: Check image size
+        run: |
+          # Get image size information
+          IMAGE_SIZE=$(docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build.outputs.image-digest }} --format='{{.Size}}')
+          SIZE_MB=$((IMAGE_SIZE / 1024 / 1024))
+
+          echo "🐳 Image size: ${SIZE_MB} MB"
+
+          # Warn if image is getting large (>500MB)
+          if [ $SIZE_MB -gt 500 ]; then
+            echo "⚠️ Warning: Image size is quite large (${SIZE_MB} MB). Consider optimizing."
+          fi
+
+          # Create size report
+          cat > image-size-report.txt << EOF
+          Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          Digest: ${{ needs.build.outputs.image-digest }}
+          Size: ${SIZE_MB} MB
+          Build Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EOF
+
+      - name: Upload size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-size-report
+          path: image-size-report.txt
+          retention-days: 30
+
+  # Deployment status check
+  deploy-status:
+    name: 🚀 Deployment Status
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build, security-scan]
+    if: always()
+    steps:
+      - name: Check deployment readiness
+        run: |
+          if [[ "${{ needs.build.result }}" == "success" && "${{ needs.security-scan.result }}" == "success" ]]; then
+            echo "✅ Image built and scanned successfully"
+            echo "🚀 Ready for deployment"
+            echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build.outputs.image-digest }}"
+          elif [[ "${{ needs.detect-changes.outputs.should-build }}" == "false" ]]; then
+            echo "⏭️ No changes detected, skipping build"
+          elif [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "❌ Build failed"
+            exit 1
+          elif [[ "${{ needs.security-scan.result }}" == "failure" ]]; then
+            echo "🔒 Security scan failed - image has critical vulnerabilities"
+            exit 1
+          else
+            echo "⚠️ Unexpected state in deployment pipeline"
+            exit 1
+          fi
+
+      # Create deployment artifact with image details
+      - name: Create deployment manifest
+        if: needs.build.result == 'success'
+        run: |
+          cat > deployment-manifest.json << EOF
+          {
+            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}",
+            "digest": "${{ needs.build.outputs.image-digest }}",
+            "metadata": ${{ needs.build.outputs.image-metadata }},
+            "build_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "git_sha": "${{ github.sha }}",
+            "git_ref": "${{ github.ref }}",
+            "security_scan_passed": "${{ needs.security-scan.result == 'success' }}"
+          }
+          EOF
+
+      - name: Upload deployment manifest
+        if: needs.build.result == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-manifest
+          path: deployment-manifest.json
+          retention-days: 90

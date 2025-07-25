@@ -1,0 +1,311 @@
+name: Optimized PR Validation
+
+# Lightning-fast PR validation workflow
+# - Instant title validation (no setup required)
+# - Smart change detection to run only necessary checks
+# - Parallel execution for maximum speed
+# - Early termination on critical failures
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # Instant PR title validation (no dependencies, runs immediately)
+  validate-title:
+    name: 📝 Validate PR Title
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate conventional commit format
+        uses: CondeNast/conventional-pull-request-action@v0.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commitTitleMatch: 'false'
+
+  # Quick change detection for optimization
+  detect-changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      # Change categories
+      code: ${{ steps.changes.outputs.code }}
+      tests: ${{ steps.changes.outputs.tests }}
+      docs: ${{ steps.changes.outputs.docs }}
+      config: ${{ steps.changes.outputs.config }}
+      dependencies: ${{ steps.changes.outputs.dependencies }}
+
+      # Computed flags
+      needs-ci: ${{ steps.changes.outputs.code == 'true' || steps.changes.outputs.tests == 'true' || steps.changes.outputs.config == 'true' || steps.changes.outputs.dependencies == 'true' }}
+      docs-only: ${{ steps.changes.outputs.docs == 'true' && steps.changes.outputs.code == 'false' && steps.changes.outputs.tests == 'false' && steps.changes.outputs.config == 'false' && steps.changes.outputs.dependencies == 'false' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            code:
+              - 'src/**/*.ts'
+              - 'src/**/*.tsx'
+              - 'src/**/*.js'
+              - 'src/**/*.jsx'
+              - 'src/**/*.css'
+            tests:
+              - 'src/**/*.test.*'
+              - 'src/**/*.spec.*'
+              - 'src/test/**/*'
+              - 'vitest.config.ts'
+            docs:
+              - '**/*.md'
+              - 'docs/**/*'
+            config:
+              - '*.config.*'
+              - 'tsconfig.json'
+              - '.env*'
+              - '.eslintrc*'
+              - '.prettierrc*'
+            dependencies:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+
+  # Fast linting for immediate feedback
+  quick-lint:
+    name: ⚡ Quick Lint
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.needs-ci == 'true'
+    timeout-minutes: 5
+    strategy:
+      fail-fast: true # Fail fast to save CI time
+      matrix:
+        check:
+          - name: 'Formatting'
+            command: 'prettier:check'
+          - name: 'Linting'
+            command: 'lint:js --max-warnings 0'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.13.1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
+
+      # Use npm ci equivalent for speed
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+
+      # Generate only what's needed for linting
+      - name: Generate Prisma client
+        if: needs.detect-changes.outputs.dependencies == 'true'
+        run: pnpm prisma generate --no-hints
+
+      - name: Run ${{ matrix.check.name }}
+        run: pnpm run ${{ matrix.check.command }}
+
+  # TypeScript check (can run in parallel with linting)
+  type-check:
+    name: 🔍 Type Check
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.config == 'true' || needs.detect-changes.outputs.dependencies == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.13.1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate --no-hints
+
+      - name: TypeScript check
+        run: pnpm tsc --noEmit
+
+  # Build verification (only if code/config changed)
+  build-check:
+    name: 🏗️ Build Check
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.needs-ci == 'true'
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.13.1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+
+      # Cache Next.js build for faster subsequent builds
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-pr-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('src/**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-pr-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-pr-
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate --no-hints
+
+      - name: Build application
+        run: pnpm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+  # Quick test run (only if tests or related code changed)
+  quick-test:
+    name: 🧪 Quick Test
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.tests == 'true' || needs.detect-changes.outputs.code == 'true'
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.13.1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate --no-hints
+
+      # Run tests without coverage for speed in PR validation
+      - name: Run tests
+        run: pnpm run test:run
+        env:
+          CI: true
+          NODE_ENV: test
+
+  # Docs-only PR skip notification
+  docs-only-pr:
+    name: 📚 Docs-Only PR
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs-only == 'true'
+    timeout-minutes: 1
+    steps:
+      - name: Docs-only PR detected
+        run: |
+          echo "📚 This PR only contains documentation changes."
+          echo "✅ Skipping code quality checks."
+          echo "🚀 Ready to merge after review!"
+
+  # Overall PR status check
+  pr-status:
+    name: 📋 PR Status
+    runs-on: ubuntu-latest
+    needs: [validate-title, detect-changes, quick-lint, type-check, build-check, quick-test, docs-only-pr]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Check PR status
+        run: |
+          # Check title validation
+          if [[ "${{ needs.validate-title.result }}" == "failure" ]]; then
+            echo "❌ PR title validation failed"
+            echo "Please ensure your PR title follows conventional commit format:"
+            echo "Examples: feat: add user authentication, fix: resolve login issue"
+            exit 1
+          fi
+
+          # Check if this is a docs-only PR
+          if [[ "${{ needs.detect-changes.outputs.docs-only }}" == "true" ]]; then
+            echo "📚 Documentation-only changes detected"
+            echo "✅ PR validation completed successfully"
+            exit 0
+          fi
+
+          # Check code validation results
+          failed_jobs=()
+
+          if [[ "${{ needs.quick-lint.result }}" == "failure" ]]; then
+            failed_jobs+=("linting")
+          fi
+
+          if [[ "${{ needs.type-check.result }}" == "failure" ]]; then
+            failed_jobs+=("type-checking")
+          fi
+
+          if [[ "${{ needs.build-check.result }}" == "failure" ]]; then
+            failed_jobs+=("build")
+          fi
+
+          if [[ "${{ needs.quick-test.result }}" == "failure" ]]; then
+            failed_jobs+=("tests")
+          fi
+
+          # Report results
+          if [ ${#failed_jobs[@]} -eq 0 ]; then
+            echo "✅ All PR validation checks passed!"
+            echo "🚀 Ready for review and merge"
+          else
+            echo "❌ The following checks failed:"
+            printf '   - %s\n' "${failed_jobs[@]}"
+            echo ""
+            echo "Please fix the issues and push your changes."
+            exit 1
+          fi
