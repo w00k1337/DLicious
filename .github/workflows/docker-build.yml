@@ -106,9 +106,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # Enhanced caching strategy for better cost efficiency
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ steps.repo.outputs.name }}:buildcache,mode=max
