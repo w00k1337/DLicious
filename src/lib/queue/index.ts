@@ -2,7 +2,7 @@
 export type * from './types'
 
 // Configuration
-export { defaultJobOptions, redisConnection } from './config'
+export { defaultJobOptions, defaultWorkerOptions, redisConnection } from './config'
 
 // Queue instances and management
-export { getQueue, performerImportQueue, queues } from './queues'
+export { getPerformerImportQueue, getQueue, getSchedulerQueue, queues, setupImportPerformersJob } from './queues'

@@ -5,7 +5,8 @@ import pino from 'pino'
 import { env } from '@/env/server'
 
 export default pino({
-  level: env.LOG_LEVEL,
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  level: env.LOG_LEVEL ?? 'info',
   transport: {
     targets: [
       {
@@ -13,15 +14,15 @@ export default pino({
         options: {
           destination: 1
         }
-      },
-      {
-        target: 'pino/file',
-        options: {
-          destination: `${process.cwd()}/logs/app.log`,
-          mkdir: true,
-          append: false
-        }
       }
+      // {
+      //   target: 'pino/file',
+      //   options: {
+      //     destination: `${process.cwd()}/logs/app.log`,
+      //     mkdir: true,
+      //     append: false
+      //   }
+      // }
     ]
   }
 })

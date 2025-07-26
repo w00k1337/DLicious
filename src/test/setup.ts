@@ -10,6 +10,10 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/env/server', () => ({
   env: {
     LOG_LEVEL: 'silent',
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+    REDIS_USERNAME: 'default',
+    REDIS_PASSWORD: undefined,
     STASH_BASE_URL: 'https://test-stash.example.com',
     STASH_API_KEY: 'test-api-key'
   }
