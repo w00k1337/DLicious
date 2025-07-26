@@ -38,7 +38,11 @@ export const POST = async (request: NextRequest): Promise<NextResponse<ImportRes
 
     logger.info({ stashId }, 'Single performer import requested')
 
-    const job = await performerImportQueue.add('import-performer', { stashId }, { jobId: String(stashId) })
+    const job = await performerImportQueue.add(
+      'import-performer',
+      { stashId },
+      { jobId: `stash-performer-${String(stashId)}` }
+    )
 
     logger.info(
       {

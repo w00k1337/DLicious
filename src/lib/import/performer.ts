@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { Country, CupSize, Performer } from '@/generated/prisma'
+import { CupSize, Performer } from '@/generated/prisma'
 import { getPerformer as getStashPerformer } from '@/lib/api/stash'
 import type { Performer as StashPerformer } from '@/lib/api/stash/types'
 import logger from '@/lib/logger'
@@ -18,15 +18,6 @@ export const convertStashPerformerToPrismaPerformer = (
 ): Omit<Performer, 'id' | 'syncedAt' | 'isMonitored' | 'createdAt' | 'updatedAt'> => {
   const { id, name, aliases, imageUrl, country, birthdate, measurements, breastType, isFavorite } = stashPerformer
 
-  const getCountry = (country: string | undefined): Country | null => {
-    if (!country) return null
-    const countryCode = country.trim().toUpperCase() as Country
-    if (!Object.values(Country).includes(countryCode)) {
-      throw new Error(`Invalid country code: ${countryCode}`)
-    }
-    return countryCode
-  }
-
   const getCupSize = (cup: string | undefined): CupSize | null => {
     if (!cup) return null
     const convertedCupSize = convertCupSizeToEuropean(cup)
@@ -43,14 +34,21 @@ export const convertStashPerformerToPrismaPerformer = (
     return false // Default to false for unknown types
   }
 
+  const normalizeCountry = (country: string | undefined | null): string | null => {
+    if (!country || typeof country !== 'string') return null
+    const trimmed = country.trim()
+    if (trimmed === '') return null
+    return trimmed.toUpperCase()
+  }
+
   return {
     name,
     aliases,
-    imageUrl: imageUrl ?? '',
+    imageUrl: imageUrl ?? '', // TODO: Add default image url
     bandSize: measurements?.bust ? convertBandSizeToEuropean(measurements.bust) : null,
     cupSize: getCupSize(measurements?.cup),
     hasNaturalBreasts: getHasNaturalBreasts(breastType),
-    country: getCountry(country),
+    country: normalizeCountry(country),
     birthdate: birthdate ?? null,
     isFavorite,
     stashId: id

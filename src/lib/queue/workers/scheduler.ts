@@ -134,7 +134,7 @@ class SchedulerWorker {
       const jobs = await performerImportQueue.addBulk(
         performers.map(({ id }) => ({
           name: 'import-performer',
-          opts: { jobId: String(id) },
+          opts: { jobId: `stash-performer-${String(id)}` },
           data: { stashId: id }
         }))
       )

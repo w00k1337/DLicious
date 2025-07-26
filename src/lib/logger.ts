@@ -13,15 +13,15 @@ export default pino({
         options: {
           destination: 1
         }
-      },
-      {
-        target: 'pino/file',
-        options: {
-          destination: `${process.cwd()}/logs/app.log`,
-          mkdir: true,
-          append: false
-        }
       }
+      // {
+      //   target: 'pino/file',
+      //   options: {
+      //     destination: `${process.cwd()}/logs/app.log`,
+      //     mkdir: true,
+      //     append: false
+      //   }
+      // }
     ]
   }
 })

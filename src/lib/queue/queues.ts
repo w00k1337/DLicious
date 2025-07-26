@@ -1,6 +1,8 @@
 import { Queue } from 'bullmq'
 import ms from 'ms'
 
+import logger from '@/lib/logger'
+
 import { defaultJobOptions, redisConnection } from './config'
 import {
   type ImportStashPerformerJobData,
@@ -50,10 +52,16 @@ export const getQueue = (name: QueueName): (typeof queues)[keyof typeof queues] 
  * We should find a better way to do this.
  */
 export const setupImportPerformersJob = async (): Promise<void> => {
+  logger.info('Setting up import performers job scheduler')
+
   const jobSchedulers = await schedulerQueue.getJobSchedulers()
   const existingJob = jobSchedulers.find(job => job.name === 'import-performers')
 
-  if (existingJob) return
+  if (existingJob) {
+    logger.info('Import performers job scheduler already exists, skipping setup')
+    return
+  }
 
-  await schedulerQueue.add('import-performers', { type: 'import-performers' }, { repeat: { every: ms('30m') } })
+  await schedulerQueue.add('import-performers', { type: 'import-performers' }, { repeat: { every: ms('1d') } })
+  logger.info('Import performers job scheduler created successfully', { interval: '1d' })
 }

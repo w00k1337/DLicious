@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Country, CupSize } from '@/generated/prisma'
+import { CupSize } from '@/generated/prisma'
 import type { Performer as StashPerformer } from '@/lib/api/stash/types'
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
@@ -115,7 +115,7 @@ describe('Performer Import', () => {
         bandSize: 75, // 34 US converts to 75 EU
         cupSize: CupSize.E, // DD converts to E
         hasNaturalBreasts: true,
-        country: Country.US,
+        country: 'US',
         birthdate: new Date('1990-01-01'),
         isFavorite: true,
         stashId: 123
@@ -224,11 +224,11 @@ describe('Performer Import', () => {
 
     it('should convert country correctly', () => {
       const testCases = [
-        { country: 'US', expected: Country.US },
-        { country: 'DE', expected: Country.DE },
-        { country: 'FR', expected: Country.FR },
-        { country: 'CA', expected: Country.CA },
-        { country: 'GB', expected: Country.GB }
+        { country: 'US', expected: 'US' },
+        { country: 'DE', expected: 'DE' },
+        { country: 'FR', expected: 'FR' },
+        { country: 'CA', expected: 'CA' },
+        { country: 'GB', expected: 'GB' }
       ]
 
       testCases.forEach(({ country, expected }) => {
@@ -240,7 +240,8 @@ describe('Performer Import', () => {
 
     it('should handle invalid country', () => {
       const performer = createMockPerformer({ country: 'INVALID' })
-      expect(() => convertStashPerformerToPrismaPerformer(performer)).toThrow('Invalid country code: INVALID')
+      const result = convertStashPerformerToPrismaPerformer(performer)
+      expect(result.country).toBe('INVALID')
     })
 
     it('should handle missing country', () => {
@@ -332,7 +333,7 @@ describe('Performer Import', () => {
       const performer = createMockPerformer({ country: ' us ' })
       const result = convertStashPerformerToPrismaPerformer(performer)
 
-      expect(result.country).toBe(Country.US)
+      expect(result.country).toBe('US')
     })
 
     it('should handle lowercase country codes', () => {
@@ -341,7 +342,7 @@ describe('Performer Import', () => {
       testCases.forEach(country => {
         const performer = createMockPerformer({ country })
         const result = convertStashPerformerToPrismaPerformer(performer)
-        expect(result.country).toBe(country.toUpperCase() as Country)
+        expect(result.country).toBe(country.toUpperCase())
       })
     })
 
@@ -416,7 +417,7 @@ describe('Performer Import', () => {
       bandSize: 75,
       cupSize: CupSize.D,
       hasNaturalBreasts: true,
-      country: Country.US,
+      country: 'US',
       birthdate: new Date('1990-01-01'),
       isFavorite: true,
       isMonitored: false,
@@ -552,7 +553,7 @@ describe('Performer Import', () => {
       const updatedPerformer = {
         ...mockPerformer,
         name: 'Jane Doe Updated',
-        country: Country.CA,
+        country: 'CA',
         isFavorite: false
       }
 
@@ -565,12 +566,12 @@ describe('Performer Import', () => {
         where: { stashId: 123 },
         create: expect.objectContaining({
           name: 'Jane Doe Updated',
-          country: Country.CA,
+          country: 'CA',
           isFavorite: false
         }),
         update: expect.objectContaining({
           name: 'Jane Doe Updated',
-          country: Country.CA,
+          country: 'CA',
           isFavorite: false
         })
       })
@@ -582,19 +583,16 @@ describe('Performer Import', () => {
         country: 'INVALID_COUNTRY'
       })
 
+      const expectedPerformer = {
+        ...mockPerformer,
+        country: 'INVALID_COUNTRY'
+      }
+
       vi.mocked(getPerformer).mockResolvedValue(stashPerformer)
+      vi.mocked(prisma.performer.upsert).mockResolvedValue(expectedPerformer)
 
-      await expect(importStashPerformer(123)).rejects.toThrow(
-        'Failed to import performer 123: Invalid country code: INVALID_COUNTRY'
-      )
-
-      expect(logger.error).toHaveBeenCalledWith(
-        {
-          stashId: 123,
-          error: 'Invalid country code: INVALID_COUNTRY'
-        },
-        'Failed to process performer import'
-      )
+      const result = await importStashPerformer(123)
+      expect(result.country).toBe('INVALID_COUNTRY')
     })
 
     it('should handle null performer response from Stash', async () => {
