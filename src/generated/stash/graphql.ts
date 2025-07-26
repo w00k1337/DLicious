@@ -4984,7 +4984,7 @@ export type PerformerFieldsFragment = {
   imageUrl?: string | null
   breastType?: string | null
   isFavorite: boolean
-  stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
+  stashes: Array<{ __typename?: 'StashID' } & { ' $fragmentRefs'?: { StashFieldsFragment: StashFieldsFragment } }>
 } & { ' $fragmentName'?: 'PerformerFieldsFragment' }
 
 export type StashFieldsFragment = { __typename?: 'StashID'; endpoint: string; id: string } & {
@@ -5059,6 +5059,15 @@ export class TypedDocumentString<TResult, TVariables>
     return this.value
   }
 }
+export const StashFieldsFragmentDoc = new TypedDocumentString(
+  `
+    fragment StashFields on StashID {
+  id: stash_id
+  endpoint
+}
+    `,
+  { fragmentName: 'StashFields' }
+) as unknown as TypedDocumentString<StashFieldsFragment, unknown>
 export const PerformerFieldsFragmentDoc = new TypedDocumentString(
   `
     fragment PerformerFields on Performer {
@@ -5072,22 +5081,15 @@ export const PerformerFieldsFragmentDoc = new TypedDocumentString(
   breastType: fake_tits
   isFavorite: favorite
   stashes: stash_ids {
-    id: stash_id
-    endpoint
+    ...StashFields
   }
 }
-    `,
-  { fragmentName: 'PerformerFields' }
-) as unknown as TypedDocumentString<PerformerFieldsFragment, unknown>
-export const StashFieldsFragmentDoc = new TypedDocumentString(
-  `
     fragment StashFields on StashID {
   id: stash_id
   endpoint
-}
-    `,
-  { fragmentName: 'StashFields' }
-) as unknown as TypedDocumentString<StashFieldsFragment, unknown>
+}`,
+  { fragmentName: 'PerformerFields' }
+) as unknown as TypedDocumentString<PerformerFieldsFragment, unknown>
 export const AllPerformersDocument = new TypedDocumentString(`
     query AllPerformers {
   allPerformers {
@@ -5105,9 +5107,12 @@ export const AllPerformersDocument = new TypedDocumentString(`
   breastType: fake_tits
   isFavorite: favorite
   stashes: stash_ids {
-    id: stash_id
-    endpoint
+    ...StashFields
   }
+}
+fragment StashFields on StashID {
+  id: stash_id
+  endpoint
 }`) as unknown as TypedDocumentString<AllPerformersQuery, AllPerformersQueryVariables>
 export const FindPerformerDocument = new TypedDocumentString(`
     query FindPerformer($id: ID!) {
@@ -5126,9 +5131,12 @@ export const FindPerformerDocument = new TypedDocumentString(`
   breastType: fake_tits
   isFavorite: favorite
   stashes: stash_ids {
-    id: stash_id
-    endpoint
+    ...StashFields
   }
+}
+fragment StashFields on StashID {
+  id: stash_id
+  endpoint
 }`) as unknown as TypedDocumentString<FindPerformerQuery, FindPerformerQueryVariables>
 export const FindScenesDocument = new TypedDocumentString(`
     query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {
@@ -5172,8 +5180,7 @@ export const FindScenesDocument = new TypedDocumentString(`
   breastType: fake_tits
   isFavorite: favorite
   stashes: stash_ids {
-    id: stash_id
-    endpoint
+    ...StashFields
   }
 }
 fragment StashFields on StashID {

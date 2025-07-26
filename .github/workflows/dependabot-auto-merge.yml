@@ -16,9 +16,13 @@ permissions:
 jobs:
   auto_merge_dependabot:
     name: Auto Merge Dependabot PRs
-    runs-on: ubuntu-latest
     # Only run this workflow for Dependabot PRs
     if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     steps:
       - name: Fetch Dependabot Metadata
         id: metadata

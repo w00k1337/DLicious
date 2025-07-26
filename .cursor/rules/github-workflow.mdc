@@ -1,0 +1,205 @@
+---
+description:
+globs: .github/workflows/*.yml
+---
+
+# GitHub Actions Workflow Guidelines
+
+## Security Best Practices
+
+### Secrets and Environment Variables
+
+- **NEVER** hardcode secrets, tokens, or sensitive data in workflow files
+- Use GitHub Secrets for all sensitive information (API keys, passwords, tokens)
+- Reference secrets using `${{ secrets.SECRET_NAME }}` syntax
+- Use environment-specific secrets when possible (e.g., `secrets.PROD_API_KEY`)
+
+### Permissions and Security
+
+- Always explicitly set `permissions` to follow the principle of least privilege
+- Use `permissions: write-all` sparingly and only when necessary
+- Prefer specific permissions over broad ones:
+  ```yaml
+  permissions:
+    contents: read
+    issues: write
+    pull-requests: write
+  ```
+- Use `GITHUB_TOKEN` with minimal required permissions
+- Consider using OIDC tokens for cloud provider authentication
+
+### Dependency Security
+
+- Avoid using `@main` or `@master` tags for actions
+- Regularly update action versions and audit for vulnerabilities
+- Use `actions/dependency-review-action` to scan for vulnerabilities
+
+## Performance and Efficiency
+
+### Caching Strategy
+
+- Implement caching for dependencies, build artifacts, and tools
+- Use `actions/cache` with appropriate keys and restore-keys
+- Cache Node.js dependencies, Docker layers, and build outputs
+- Set reasonable cache expiration times
+
+### Job Optimization
+
+- Use `runs-on` with appropriate runner types (ubuntu-latest, windows-latest, macos-latest)
+- Implement job dependencies with `needs` to parallelize when possible
+- Use `if` conditions to skip unnecessary jobs
+- Consider using `concurrency` groups to prevent conflicting runs
+
+### Matrix Strategies
+
+- Use matrix builds for testing multiple configurations
+- Include/exclude specific matrix combinations when needed
+- Use `fail-fast: false` for independent matrix jobs
+- Optimize matrix size to balance coverage and execution time
+
+## Workflow Structure and Organization
+
+### Naming Conventions
+
+- Use descriptive workflow names that indicate purpose
+- Follow consistent naming: `{action}-{target}.yml` (e.g., `test-nodejs.yml`, `deploy-production.yml`)
+- Use kebab-case for file names and workflow names
+
+### Trigger Configuration
+
+- Be specific with `on` triggers to avoid unnecessary runs
+- Use `paths` and `paths-ignore` to limit when workflows run
+- Implement `workflow_dispatch` for manual triggers when appropriate
+- Use `schedule` for periodic tasks (security scans, dependency updates)
+
+### Job Organization
+
+- Separate concerns into distinct jobs (test, build, deploy)
+- Use descriptive job names and step names
+- Implement proper job dependencies with `needs`
+- Use `continue-on-error` sparingly and only for non-critical steps
+
+## Error Handling and Reliability
+
+### Failure Handling
+
+- Implement proper error handling and notifications
+- Use `continue-on-error` only when appropriate
+- Set up failure notifications (Slack, email, etc.)
+- Implement retry logic for flaky operations
+
+### Timeout Configuration
+
+- Set reasonable timeouts for jobs and steps
+- Use `timeout-minutes` to prevent hanging jobs
+- Monitor and adjust timeouts based on actual execution times
+
+### Conditional Execution
+
+- Use `if` conditions to skip steps when appropriate
+- Implement proper branch protection and required checks
+- Use `environment` protection rules for production deployments
+
+## Code Quality and Maintainability
+
+### YAML Best Practices
+
+- Use consistent indentation (2 spaces)
+- Quote string values when they contain special characters
+- Use YAML anchors and aliases for repeated configurations
+- Keep workflows focused and single-purpose
+
+### Documentation
+
+- Add comments explaining complex logic or business rules
+- Document environment variables and secrets requirements
+- Include setup instructions in workflow comments
+- Document any external dependencies or requirements
+
+### Reusability
+
+- Create reusable workflows using `workflow_call`
+- Extract common steps into composite actions
+- Use organization-level reusable workflows when appropriate
+- Share common configurations across workflows
+
+## Testing and Validation
+
+### Workflow Testing
+
+- Test workflows on feature branches before merging
+- Use `pull_request` triggers for testing changes
+- Implement workflow validation tools (actionlint, super-linter)
+- Test with different event types and conditions
+
+### Validation Tools
+
+- Use `actionlint` for YAML validation
+- Implement `super-linter` for code quality checks
+- Use `github/super-linter` for consistent linting across languages
+- Validate workflow syntax before committing
+
+## Monitoring and Observability
+
+### Logging and Output
+
+- Use meaningful step names and job names
+- Implement proper logging and debugging information
+- Use `echo` commands for important status updates
+- Set up workflow run notifications
+
+### Metrics and Analytics
+
+- Monitor workflow execution times and success rates
+- Track resource usage and costs
+- Implement workflow analytics and reporting
+- Use GitHub's built-in workflow insights
+
+## Repository Rulesets and Required Workflows
+
+### Required Workflows Configuration
+
+- Configure required workflows through GitHub repository rulesets
+- Set up branch protection rules that require specific workflows to pass
+- Use repository rulesets to enforce workflow requirements across all branches
+- Configure rulesets at the organization level for consistent enforcement
+
+### Ruleset Configuration
+
+- Define required status checks in branch protection rules
+- Ensure workflows are marked as "Required" in repository settings
+- Use rulesets to enforce workflow requirements for:
+  - Pull request merges
+  - Direct pushes to protected branches
+  - Code review requirements
+  - Status check requirements
+
+### Workflow Integration with Rulesets
+
+- Ensure workflow names match exactly with ruleset requirements
+- Use consistent workflow naming across all branches
+- Configure workflows to report status back to GitHub
+- Set up proper status check contexts for ruleset validation
+
+### Best Practices for Rulesets
+
+- Keep required workflows minimal and focused
+- Use rulesets to enforce security and quality gates
+- Configure rulesets to apply to appropriate branch patterns
+- Regularly review and update ruleset requirements
+- Document ruleset requirements in repository documentation
+
+## Common Anti-patterns to Avoid
+
+- ❌ Hardcoding secrets in workflow files
+- ❌ Using `@main` or `@master` for action versions
+- ❌ Running workflows on every push without path filtering
+- ❌ Using broad permissions instead of specific ones
+- ❌ Not implementing proper error handling
+- ❌ Missing timeout configurations
+- ❌ Not caching dependencies and build artifacts
+- ❌ Using deprecated actions or syntax
+- ❌ Not validating workflow syntax before committing
+- ❌ Running unnecessary jobs or steps
+- ❌ Not configuring required workflows in repository rulesets
+- ❌ Missing branch protection rules for workflow enforcement

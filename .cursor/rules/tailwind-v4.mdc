@@ -1,6 +1,6 @@
 ---
 description: Guide for using Tailwind CSS v4 instead of v3.x
-globs: **/*.{js,ts,jsx,tsx,mdx,css}
+globs: **/*.js, **/*.ts, **/*.jsx, **/*.tsx, **/*.mdx, **/*.css
 ---
 
 # Tailwind CSS v4

@@ -14,6 +14,35 @@ globs: **/*.ts, **/*.tsx, **/*.d.ts
 - Leverage TypeScript's built-in utility types
 - Use generics for reusable type patterns
 
+## Enums vs String Literals
+
+- **Avoid enums**, prefer string literal unions instead
+- String literals are more type-safe and don't create runtime objects
+- Use `const` assertions for readonly string literal unions
+- Enums have unpredictable runtime behavior and reverse mapping issues
+- String literals work better with modern TypeScript features and bundlers
+
+```typescript
+// ❌ Avoid enums
+enum Status {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  FAILED = 'failed'
+}
+
+// ✅ Prefer string literal unions
+type Status = 'pending' | 'completed' | 'failed'
+
+// ✅ Or use const assertions for objects
+const STATUS = {
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+} as const
+
+type Status = (typeof STATUS)[keyof typeof STATUS]
+```
+
 ## Naming Conventions
 
 - Use PascalCase for type names and interfaces
@@ -45,6 +74,8 @@ globs: **/*.ts, **/*.tsx, **/*.d.ts
 - Use type guards for runtime type checking
 - Implement proper null checking
 - Avoid type assertions unless necessary
+- Avoid type castings (`as` keyword) - prefer type guards and proper typing
+- Leverage the type system with generics for reusable and type-safe code
 
 ## Error Handling
 

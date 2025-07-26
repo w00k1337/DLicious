@@ -1,5 +1,5 @@
 // Import fragments to ensure they're included in the bundle
-import './fragments'
+import './utils/fragments'
 
 import { env } from '@/env/server'
 import { graphql } from '@/generated/stash'
@@ -13,10 +13,11 @@ import {
   FindScenesQueryVariables
 } from '@/generated/stash/graphql'
 
-import { fetchGraphQL, ValidationError } from '../common/utils'
-import { Performer, performerSchema, Scene, sceneSchema } from './schema'
+import { fetchGraphQL, ValidationError } from '../utils'
+import { performerSchema, sceneSchema } from './schema'
+import type { Performer, Scene } from './types'
 
-export { GraphQLApiError, NetworkError, ValidationError } from '../common/utils'
+export { GraphQLApiError, NetworkError, ValidationError } from '../utils'
 export * from './schema'
 
 /**
@@ -69,7 +70,6 @@ export const getPerformers = async (): Promise<Performer[]> => {
   `)
 
   const { allPerformers } = await callStashAPI<AllPerformersQuery, AllPerformersQueryVariables>(query)
-  // console.log(allPerformers.slice(390, 400))
   return allPerformers.map(performer => performerSchema.parse(performer))
 }
 
