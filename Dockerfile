@@ -20,7 +20,7 @@ RUN corepack enable pnpm && pnpm install --frozen-lockfile
 COPY prisma/ ./prisma
 COPY src/ ./src
 
-RUN NEXT_TELEMETRY_DISABLED=1 pnpm build
+RUN NEXT_TELEMETRY_DISABLED=1 SKIP_ENV_VALIDATION=true pnpm build
 
 # =========================================
 # Production image, copy all the files and run next
