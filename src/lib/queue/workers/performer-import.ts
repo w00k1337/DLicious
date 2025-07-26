@@ -1,12 +1,12 @@
 import 'server-only'
 
 import { type Job, Worker } from 'bullmq'
-import ms from 'ms'
 
+import { createJobError, logJobError, logWorkerError, logWorkerJobError } from '@/lib/error-handling'
 import { importStashPerformer } from '@/lib/import/performer'
 import logger from '@/lib/logger'
-import { redisConnection } from '@/lib/queue/config'
-import type { ImportStashPerformerJobData, ImportStashPerformerJobResult } from '@/lib/queue/types'
+import { defaultWorkerOptions, redisConnection } from '@/lib/queue/config'
+import { type ImportStashPerformerJobData, type ImportStashPerformerJobResult, queueNames } from '@/lib/queue/types'
 
 /**
  * BullMQ worker for processing performer import jobs from Stash
@@ -29,13 +29,12 @@ class PerformerImportWorker {
     }
 
     this.worker = new Worker<ImportStashPerformerJobData, ImportStashPerformerJobResult>(
-      'performer-import',
+      queueNames.performerImport,
       this.processJob.bind(this),
       {
         connection: redisConnection,
         concurrency: 1,
-        removeOnComplete: { count: 0 },
-        removeOnFail: { age: ms('7d') }
+        ...defaultWorkerOptions
       }
     )
 
@@ -52,27 +51,16 @@ class PerformerImportWorker {
     })
 
     this.worker.on('failed', (job, err) => {
-      logger.error(
-        {
-          jobId: job?.id,
-          stashId: job?.data.stashId,
-          error: err.message,
-          stack: err.stack,
-          attemptsMade: job?.attemptsMade,
-          maxAttempts: job?.opts.attempts
-        },
-        'Performer import job failed'
-      )
+      logWorkerJobError(err, {
+        jobId: job?.id,
+        stashId: job?.data.stashId,
+        attemptsMade: job?.attemptsMade,
+        maxAttempts: job?.opts.attempts
+      })
     })
 
     this.worker.on('error', err => {
-      logger.error(
-        {
-          error: err.message,
-          stack: err.stack
-        },
-        'Performer import worker error'
-      )
+      logWorkerError(err, 'error')
     })
 
     logger.info('Performer import worker started')
@@ -92,13 +80,7 @@ class PerformerImportWorker {
       this.worker = null
       logger.info('Performer import worker stopped gracefully')
     } catch (error) {
-      logger.error(
-        {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        },
-        'Error stopping performer import worker'
-      )
+      logWorkerError(error, 'stop')
       throw error
     }
   }
@@ -110,10 +92,6 @@ class PerformerImportWorker {
 
   /**
    * Process individual performer import job
-   *
-   * This is a placeholder for the core processing logic that will be implemented
-   * in the next sub-tasks. For now, it fetches all performers to validate the
-   * Stash API connection and logs the job data.
    */
   private processJob = async (job: Job<ImportStashPerformerJobData>): Promise<ImportStashPerformerJobResult> => {
     const { stashId } = job.data
@@ -143,22 +121,18 @@ class PerformerImportWorker {
         stashId
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      const errorStack = error instanceof Error ? error.stack : undefined
-
-      logger.error(
+      logJobError(
+        error,
         {
           jobId: job.id,
           stashId,
-          error: errorMessage,
-          stack: errorStack,
           attemptsMade: job.attemptsMade
         },
         'Failed to process performer import job'
       )
 
       // Re-throw the error to trigger BullMQ's retry mechanism
-      throw new Error(`Failed to import performer ${String(stashId)}: ${errorMessage}`)
+      throw createJobError(error, stashId)
     }
   }
 }

@@ -26,3 +26,11 @@ export const defaultJobOptions = {
   removeOnComplete: 0,
   removeOnFail: 50
 } as const
+
+/**
+ * Default worker options that reuse job option values but in worker-compatible format
+ */
+export const defaultWorkerOptions = {
+  removeOnComplete: { count: defaultJobOptions.removeOnComplete },
+  removeOnFail: { count: defaultJobOptions.removeOnFail }
+} as const

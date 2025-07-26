@@ -15,10 +15,16 @@ import logger from '@/lib/logger'
 export const register = async (): Promise<void> => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { performerImportWorker } = await import('@/lib/queue/workers/performer-import')
+    const { schedulerWorker } = await import('@/lib/queue/workers/scheduler')
+    const { setupImportPerformersJob } = await import('@/lib/queue/queues')
 
-    // Run Stash performer import worker
+    // Start workers
     performerImportWorker.start()
+    schedulerWorker.start()
 
-    logger.info('Registered workers')
+    // Set up recurring bulk import job
+    await setupImportPerformersJob()
+
+    logger.info('Registered workers and scheduled jobs')
   }
 }

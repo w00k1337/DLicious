@@ -1,61 +1,44 @@
-import ms from 'ms'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { createImportErrorResponse } from '@/lib/error-handling'
 import logger from '@/lib/logger'
 import { performerImportQueue } from '@/lib/queue'
 
 /**
- * Schema for individual performer import request
+ * Schema for single performer import request
  */
 const importPerformerSchema = z.object({
   stashId: z.number().int().positive()
 })
 
 /**
- * Response schema for import job creation
+ * Response schema for single import job creation
  */
-interface ImportJobResponse {
+interface ImportResponse {
   success: boolean
-  jobId?: string
   message: string
+  jobId?: string
   stashId?: number
 }
 
 /**
  * POST /api/import/performers
  *
- * Handles manual performer import requests:
- * { "stashId": 123 }
- *
- * Queues jobs using the existing performer import queue and returns job status.
+ * Handles single performer import requests.
+ * Expected body: { "stashId": 123 }
  *
  * @param request - Next.js request object containing the import parameters
  * @returns Promise resolving to JSON response with job information
  */
-export const POST = async (request: NextRequest): Promise<NextResponse<ImportJobResponse>> => {
+export const POST = async (request: NextRequest): Promise<NextResponse<ImportResponse>> => {
   try {
-    // Parse and validate request body
     const body = (await request.json()) as unknown
-    const validatedData = importPerformerSchema.parse(body)
+    const { stashId } = importPerformerSchema.parse(body)
 
-    // Individual performer import
-    const { stashId } = validatedData
+    logger.info({ stashId }, 'Single performer import requested')
 
-    logger.info({ stashId }, 'Manual performer import requested')
-
-    // Queue the performer import job
-    const job = await performerImportQueue.add(
-      'import-performer',
-      { stashId },
-      {
-        attempts: 5,
-        backoff: {
-          type: 'exponential',
-          delay: ms('2s')
-        }
-      }
-    )
+    const job = await performerImportQueue.add('import-performer', { stashId }, { jobId: String(stashId) })
 
     logger.info(
       {
@@ -75,60 +58,6 @@ export const POST = async (request: NextRequest): Promise<NextResponse<ImportJob
       { status: 202 }
     )
   } catch (error) {
-    // Handle validation errors
-    if (error instanceof z.ZodError) {
-      logger.warn(
-        {
-          error: error.message,
-          path: request.url
-        },
-        'Invalid request data for performer import'
-      )
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid request data'
-        },
-        { status: 400 }
-      )
-    }
-
-    // Handle JSON parsing errors
-    if (error instanceof SyntaxError) {
-      logger.warn(
-        {
-          error: error.message,
-          path: request.url
-        },
-        'Invalid JSON in performer import request'
-      )
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid JSON format'
-        },
-        { status: 400 }
-      )
-    }
-
-    // Handle queue errors
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    logger.error(
-      {
-        error: errorMessage,
-        path: request.url
-      },
-      'Failed to queue performer import job'
-    )
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to queue import job'
-      },
-      { status: 500 }
-    )
+    return createImportErrorResponse(error, request.url)
   }
 }

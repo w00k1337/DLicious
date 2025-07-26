@@ -8,7 +8,7 @@ import { Performer } from '@/generated/prisma'
 import { importStashPerformer } from '@/lib/import/performer'
 import logger from '@/lib/logger'
 
-import type { ImportStashPerformerJobData, ImportStashPerformerJobResult } from '../../types'
+import { type ImportStashPerformerJobData, type ImportStashPerformerJobResult, queueNames } from '../../types'
 import { performerImportWorker } from '../performer-import'
 
 // Mock dependencies
@@ -31,10 +31,14 @@ vi.mock('@/lib/queue/config', () => ({
   redisConnection: {
     host: 'localhost',
     port: 6379
+  },
+  defaultWorkerOptions: {
+    removeOnComplete: { count: 0 },
+    removeOnFail: { count: 50 }
   }
 }))
 
-// Mock BullMQ Worker
+// Mock BullMQ Worker and Queue
 const mockWorker = {
   on: vi.fn(),
   close: vi.fn(),
@@ -42,7 +46,14 @@ const mockWorker = {
 }
 
 vi.mock('bullmq', () => ({
-  Worker: vi.fn().mockImplementation(() => mockWorker)
+  Worker: vi.fn().mockImplementation(() => mockWorker),
+  Queue: vi.fn()
+}))
+
+vi.mock('@/lib/queue/queues', () => ({
+  performerImportQueue: {
+    addBulk: vi.fn()
+  }
 }))
 
 describe('PerformerImportWorker', () => {
@@ -62,13 +73,13 @@ describe('PerformerImportWorker', () => {
       performerImportWorker.start()
 
       expect(Worker).toHaveBeenCalledWith(
-        'performer-import',
+        queueNames.performerImport,
         expect.any(Function),
         expect.objectContaining({
           connection: expect.any(Object),
           concurrency: 1,
           removeOnComplete: { count: 0 },
-          removeOnFail: expect.objectContaining({ age: expect.any(Number) })
+          removeOnFail: { count: 50 }
         })
       )
 
@@ -220,7 +231,7 @@ describe('PerformerImportWorker', () => {
           error: 'Failed to stop worker',
           stack: expect.any(String)
         }),
-        'Error stopping performer import worker'
+        'Performer import worker stop'
       )
     })
   })
@@ -344,15 +355,13 @@ describe('PerformerImportWorker', () => {
 
       vi.mocked(importStashPerformer).mockRejectedValueOnce('Unknown error')
 
-      await expect(processJobFunction(mockJob)).rejects.toThrow(
-        'Failed to import performer 789: Unknown error occurred'
-      )
+      await expect(processJobFunction(mockJob)).rejects.toThrow('Failed to import performer 789: Unknown error')
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({
           jobId: 'test-job-unknown',
           stashId: 789,
-          error: 'Unknown error occurred',
+          error: 'Unknown error',
           stack: undefined,
           attemptsMade: 1
         }),
@@ -399,7 +408,7 @@ describe('PerformerImportWorker', () => {
       performerImportWorker.start()
 
       expect(Worker).toHaveBeenCalledWith(
-        'performer-import',
+        queueNames.performerImport,
         expect.any(Function),
         expect.objectContaining({
           connection: expect.objectContaining({
@@ -408,9 +417,7 @@ describe('PerformerImportWorker', () => {
           }),
           concurrency: 1,
           removeOnComplete: { count: 0 },
-          removeOnFail: expect.objectContaining({
-            age: expect.any(Number)
-          })
+          removeOnFail: { count: 50 }
         })
       )
     })
@@ -420,7 +427,7 @@ describe('PerformerImportWorker', () => {
 
       const workerCalls = vi.mocked(Worker).mock.calls
       const workerCall = workerCalls[0]
-      expect(workerCall[0]).toBe('performer-import')
+      expect(workerCall[0]).toBe(queueNames.performerImport)
     })
 
     it('should set concurrency to 1 for sequential processing', () => {
