@@ -59,5 +59,11 @@ export default tseslint.config(
     rules: {
       'prefer-arrow-functions/prefer-arrow-functions': 'error'
     }
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off'
+    }
   }
 )
