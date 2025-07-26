@@ -5,4 +5,4 @@ export type * from './types'
 export { defaultJobOptions, defaultWorkerOptions, redisConnection } from './config'
 
 // Queue instances and management
-export { getQueue, performerImportQueue, queues, schedulerQueue, setupImportPerformersJob } from './queues'
+export { getPerformerImportQueue, getQueue, getSchedulerQueue, queues, setupImportPerformersJob } from './queues'

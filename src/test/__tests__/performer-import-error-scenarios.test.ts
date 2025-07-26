@@ -62,10 +62,20 @@ vi.mock('@/lib/prisma', () => ({
   }
 }))
 
+// Mock the queue functions
+const mockQueueAdd = vi.fn().mockResolvedValue({ id: 'test-job-123' })
+const mockSchedulerQueueAdd = vi.fn().mockResolvedValue({ id: 'test-job-456' })
+
 vi.mock('@/lib/queue', () => ({
-  performerImportQueue: {
-    add: vi.fn().mockResolvedValue({ id: 'test-job-123' })
-  }
+  getPerformerImportQueue: (): { add: typeof mockQueueAdd } => ({
+    add: mockQueueAdd
+  })
+}))
+
+vi.mock('@/lib/queue/queues', () => ({
+  getSchedulerQueue: (): { add: typeof mockSchedulerQueueAdd } => ({
+    add: mockSchedulerQueueAdd
+  })
 }))
 
 // Type definitions for API responses
@@ -451,9 +461,7 @@ describe('Performer Import Error Scenarios', () => {
     it('should handle Redis connection failures', async () => {
       // Arrange
       const redisError = new Error('Redis connection failed')
-      const { performerImportQueue } = await import('@/lib/queue')
-      const mockedQueue = vi.mocked(performerImportQueue)
-      mockedQueue.add.mockRejectedValue(redisError)
+      mockQueueAdd.mockRejectedValueOnce(redisError)
 
       const mockRequest = {
         json: vi.fn().mockResolvedValue({ stashId: 123 }),
@@ -477,9 +485,7 @@ describe('Performer Import Error Scenarios', () => {
     it('should handle job payload too large errors', async () => {
       // Arrange
       const payloadError = new Error('Job payload exceeds maximum size limit')
-      const { performerImportQueue } = await import('@/lib/queue')
-      const mockedQueue = vi.mocked(performerImportQueue)
-      mockedQueue.add.mockRejectedValue(payloadError)
+      mockQueueAdd.mockRejectedValueOnce(payloadError)
 
       const mockRequest = {
         json: vi.fn().mockResolvedValue({ stashId: 123 }),
@@ -502,10 +508,8 @@ describe('Performer Import Error Scenarios', () => {
 
     it('should handle queue full/overwhelmed scenarios', async () => {
       // Arrange
-      const queueError = new Error('Queue is at maximum capacity')
-      const { performerImportQueue } = await import('@/lib/queue')
-      const mockedQueue = vi.mocked(performerImportQueue)
-      mockedQueue.add.mockRejectedValue(queueError)
+      const queueError = new Error('Queue is overwhelmed and cannot accept new jobs')
+      mockQueueAdd.mockRejectedValueOnce(queueError)
 
       const mockRequest = {
         json: vi.fn().mockResolvedValue({ stashId: 123 }),
@@ -521,6 +525,9 @@ describe('Performer Import Error Scenarios', () => {
       // Assert
       expect(response.status).toBe(500)
       expect(data.success).toBe(false)
+      if (!data.success) {
+        expect(data.message).toBe('Failed to queue import job')
+      }
     })
   })
 

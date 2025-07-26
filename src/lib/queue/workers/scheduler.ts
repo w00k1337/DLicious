@@ -6,7 +6,7 @@ import { getPerformers } from '@/lib/api/stash'
 import { logJobError, logWorkerError } from '@/lib/error-handling'
 import logger from '@/lib/logger'
 import { defaultWorkerOptions, redisConnection } from '@/lib/queue/config'
-import { performerImportQueue } from '@/lib/queue/queues'
+import { getPerformerImportQueue } from '@/lib/queue/queues'
 import { queueNames, type ScheduledJobData, type ScheduledJobResult } from '@/lib/queue/types'
 
 /**
@@ -131,7 +131,7 @@ class SchedulerWorker {
       }
 
       // Create individual import jobs for each performer
-      const jobs = await performerImportQueue.addBulk(
+      const jobs = await getPerformerImportQueue().addBulk(
         performers.map(({ id }) => ({
           name: 'import-performer',
           opts: { jobId: `stash-performer-${String(id)}` },

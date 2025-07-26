@@ -13,37 +13,48 @@ import {
   type ScheduledJobResult
 } from './types'
 
-/**
- * Type-safe queue instance for Stash performer import jobs
- */
-export const performerImportQueue = new Queue<ImportStashPerformerJobData, ImportStashPerformerJobResult>(
-  queueNames.performerImport,
-  {
-    connection: redisConnection,
-    defaultJobOptions
-  }
-)
+// Lazy-initialized queue instances to avoid Redis connection during build
+let performerImportQueue: Queue<ImportStashPerformerJobData, ImportStashPerformerJobResult> | null = null
+let schedulerQueue: Queue<ScheduledJobData, ScheduledJobResult> | null = null
 
 /**
- * Type-safe queue instance for scheduled jobs
+ * Gets the type-safe queue instance for Stash performer import jobs
  */
-export const schedulerQueue = new Queue<ScheduledJobData, ScheduledJobResult>(queueNames.scheduler, {
-  connection: redisConnection,
-  defaultJobOptions
-})
+export const getPerformerImportQueue = (): Queue<ImportStashPerformerJobData, ImportStashPerformerJobResult> => {
+  performerImportQueue ??= new Queue<ImportStashPerformerJobData, ImportStashPerformerJobResult>(
+    queueNames.performerImport,
+    {
+      connection: redisConnection,
+      defaultJobOptions
+    }
+  )
+  return performerImportQueue
+}
+
+/**
+ * Gets the type-safe queue instance for scheduled jobs
+ */
+export const getSchedulerQueue = (): Queue<ScheduledJobData, ScheduledJobResult> => {
+  schedulerQueue ??= new Queue<ScheduledJobData, ScheduledJobResult>(queueNames.scheduler, {
+    connection: redisConnection,
+    defaultJobOptions
+  })
+  return schedulerQueue
+}
 
 /**
  * Registry of all available queues for centralized management
  */
 export const queues = {
-  [queueNames.performerImport]: performerImportQueue,
-  [queueNames.scheduler]: schedulerQueue
+  [queueNames.performerImport]: getPerformerImportQueue,
+  [queueNames.scheduler]: getSchedulerQueue
 } as const
 
 /**
  * Helper function to get a queue by name with type safety
  */
-export const getQueue = (name: QueueName): (typeof queues)[keyof typeof queues] => queues[name as keyof typeof queues]
+export const getQueue = (name: QueueName): ReturnType<(typeof queues)[keyof typeof queues]> =>
+  queues[name as keyof typeof queues]()
 
 /**
  * Sets up a daily recurring bulk import job
@@ -54,7 +65,8 @@ export const getQueue = (name: QueueName): (typeof queues)[keyof typeof queues] 
 export const setupImportPerformersJob = async (): Promise<void> => {
   logger.info('Setting up import performers job scheduler')
 
-  const jobSchedulers = await schedulerQueue.getJobSchedulers()
+  const queue = getSchedulerQueue()
+  const jobSchedulers = await queue.getJobSchedulers()
   const existingJob = jobSchedulers.find(job => job.name === 'import-performers')
 
   if (existingJob) {
@@ -62,6 +74,6 @@ export const setupImportPerformersJob = async (): Promise<void> => {
     return
   }
 
-  await schedulerQueue.add('import-performers', { type: 'import-performers' }, { repeat: { every: ms('1d') } })
+  await queue.add('import-performers', { type: 'import-performers' }, { repeat: { every: ms('1d') } })
   logger.info('Import performers job scheduler created successfully', { interval: '1d' })
 }

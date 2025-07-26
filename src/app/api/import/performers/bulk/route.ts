@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { createBulkImportErrorResponse } from '@/lib/error-handling'
 import logger from '@/lib/logger'
-import { schedulerQueue } from '@/lib/queue/queues'
+import { getSchedulerQueue } from '@/lib/queue/queues'
 
 /**
  * Response schema for bulk import job creation
@@ -28,7 +28,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse<BulkImpor
     logger.info('Bulk performer import requested')
 
     // Queue a bulk import job that will handle fetching and queuing
-    const job = await schedulerQueue.add('import-performers', { type: 'import-performers' })
+    const job = await getSchedulerQueue().add('import-performers', { type: 'import-performers' })
 
     logger.info({ jobId: job.id }, 'Bulk import job queued successfully')
 

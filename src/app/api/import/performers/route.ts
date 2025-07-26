@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { createImportErrorResponse } from '@/lib/error-handling'
 import logger from '@/lib/logger'
-import { performerImportQueue } from '@/lib/queue'
+import { getPerformerImportQueue } from '@/lib/queue'
 
 /**
  * Schema for single performer import request
@@ -38,7 +38,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse<ImportRes
 
     logger.info({ stashId }, 'Single performer import requested')
 
-    const job = await performerImportQueue.add(
+    const job = await getPerformerImportQueue().add(
       'import-performer',
       { stashId },
       { jobId: `stash-performer-${String(stashId)}` }

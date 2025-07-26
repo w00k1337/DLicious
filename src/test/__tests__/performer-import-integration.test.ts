@@ -37,10 +37,20 @@ vi.mock('@/lib/logger', () => ({
   }
 }))
 
+// Mock the queue functions
+const mockQueueAdd = vi.fn().mockResolvedValue({ id: 'test-job-123' })
+const mockSchedulerQueueAdd = vi.fn().mockResolvedValue({ id: 'test-job-456' })
+
 vi.mock('@/lib/queue', () => ({
-  performerImportQueue: {
-    add: vi.fn().mockResolvedValue({ id: 'test-job-123' })
-  }
+  getPerformerImportQueue: (): { add: typeof mockQueueAdd } => ({
+    add: mockQueueAdd
+  })
+}))
+
+vi.mock('@/lib/queue/queues', () => ({
+  getSchedulerQueue: (): { add: typeof mockSchedulerQueueAdd } => ({
+    add: mockSchedulerQueueAdd
+  })
 }))
 
 // Type definitions for API responses
@@ -240,9 +250,7 @@ describe('Performer Import Integration Tests', () => {
     it('should handle API queue failures', async () => {
       // Arrange
       const queueError = new Error('Redis connection failed')
-      const { performerImportQueue } = await import('@/lib/queue')
-      const mockedQueue = vi.mocked(performerImportQueue)
-      mockedQueue.add.mockRejectedValue(queueError)
+      mockQueueAdd.mockRejectedValueOnce(queueError)
 
       const mockRequest = {
         json: vi.fn().mockResolvedValue({ stashId: 123 }),
@@ -265,10 +273,8 @@ describe('Performer Import Integration Tests', () => {
 
     it('should handle concurrent import requests', async () => {
       // Reset the mock to ensure clean state
-      const { performerImportQueue } = await import('@/lib/queue')
-      const mockedQueue = vi.mocked(performerImportQueue)
-      const mockJob = { id: 'test-job-concurrent' } as Awaited<ReturnType<typeof performerImportQueue.add>>
-      mockedQueue.add.mockResolvedValue(mockJob)
+      const mockJob = { id: 'test-job-concurrent' }
+      mockQueueAdd.mockResolvedValue(mockJob)
 
       // Arrange
       const requests = Array.from(
@@ -290,7 +296,7 @@ describe('Performer Import Integration Tests', () => {
         expect(response.status).toBe(202)
       })
 
-      expect(mockedQueue.add).toHaveBeenCalledTimes(3)
+      expect(mockQueueAdd).toHaveBeenCalledTimes(3)
     })
   })
 
