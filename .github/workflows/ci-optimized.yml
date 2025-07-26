@@ -81,13 +81,11 @@ jobs:
               - 'tsconfig.json'
               - 'vitest.config.ts'
               - 'eslint.config.js'
-              - '.env*'
             tests:
               - 'src/**/*.test.ts'
               - 'src/**/*.test.tsx'
               - 'src/**/*.spec.ts'
               - 'src/**/*.spec.tsx'
-              - 'src/test/**/*'
             src:
               - 'src/**/*.ts'
               - 'src/**/*.tsx'
@@ -220,7 +218,7 @@ jobs:
 
       - name: Run ${{ matrix.check.name }}
         if: ${{ matrix.check.condition }}
-        run: pnpm run ${{ matrix.check.command }}
+        run: pnpm ${{ matrix.check.command }}
 
   # Tests with optimal caching
   test:
@@ -274,7 +272,7 @@ jobs:
             ${{ runner.os }}-vitest-
 
       - name: Run tests
-        run: pnpm run test:run
+        run: pnpm test:run
         env:
           NODE_ENV: test
 
