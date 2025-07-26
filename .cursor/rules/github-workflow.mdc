@@ -30,7 +30,6 @@ globs: .github/workflows/*.yml
 
 ### Dependency Security
 
-- Pin actions to specific commit SHAs for security and reproducibility
 - Avoid using `@main` or `@master` tags for actions
 - Regularly update action versions and audit for vulnerabilities
 - Use `actions/dependency-review-action` to scan for vulnerabilities

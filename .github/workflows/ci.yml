@@ -1,0 +1,71 @@
+name: Continous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: '22.14.0'
+  PNPM_VERSION: '10.13.1'
+  HUSKY: 0
+  CI: true
+
+jobs:
+  # Single job for small projects - much more cost effective
+  ci:
+    name: 🚀 CI Pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      # Simple dependency caching - node's built-in cache is sufficient
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Run all checks sequentially - faster for small projects
+      - name: Generate Prisma client
+        run: pnpm prisma generate --no-hints
+
+      - name: Type check
+        run: pnpm tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint:js
+
+      - name: Format check
+        run: pnpm prettier:check
+
+      - name: Test
+        run: pnpm test:run
+
+      - name: Build
+        run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 3 # Reduced from 7 days
