@@ -74,6 +74,8 @@ type Status = (typeof STATUS)[keyof typeof STATUS]
 - Use type guards for runtime type checking
 - Implement proper null checking
 - Avoid type assertions unless necessary
+- Avoid type castings (`as` keyword) - prefer type guards and proper typing
+- Leverage the type system with generics for reusable and type-safe code
 
 ## Error Handling
 

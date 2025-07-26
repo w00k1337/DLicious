@@ -16,8 +16,7 @@ export const PerformerFieldsFragment = graphql(`
     breastType: fake_tits
     isFavorite: favorite
     stashes: stash_ids {
-      id: stash_id
-      endpoint
+      ...StashFields
     }
   }
 `)

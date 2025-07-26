@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { GraphQLApiError, ValidationError } from '../../common/utils'
+import { GraphQLApiError, ValidationError } from '../../utils'
 import { getPerformer, getPerformers, getPerformerScenes } from '../index'
 
 // Mock the GraphQL utility
-vi.mock('../../common/utils', async () => {
-  const actual = await vi.importActual('../../common/utils')
+vi.mock('../../utils', async () => {
+  const actual = await vi.importActual('../../utils')
   return {
     ...actual,
     fetchGraphQL: vi.fn()
   }
 })
 
-const { fetchGraphQL } = await import('../../common/utils')
+const { fetchGraphQL } = await import('../../utils')
 const mockedFetchGraphQL = vi.mocked(fetchGraphQL)
 
 describe('Error Handling', () => {

@@ -1,11 +1,8 @@
-/**
- * Queue System - Main exports and initialization
- *
- * This module provides the main interface for the BullMQ-based task queue system.
- * It handles Redis connection, queue management, and job processing.
- */
+// Type definitions
+export type * from './types'
 
-export * from './config'
-export * from './jobs'
-export * from './registry'
-export * from './types/'
+// Configuration
+export { defaultJobOptions, redisConnection } from './config'
+
+// Queue instances and management
+export { getQueue, performerImportQueue, queues } from './queues'

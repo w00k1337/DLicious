@@ -1,6 +1,6 @@
 ---
 description: Tech stack for DLicious - a modern web application
-globs: **/*.css, **/*.tsx, **/*.jsx, **/*.js, **/*.ts
+globs: **/*.tsx, **/*.jsx, **/*.js, **/*.ts
 ---
 
 # Tech Stack

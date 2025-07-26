@@ -283,7 +283,7 @@ enum CupSize {
 
 model Performer {
   id                String    @id @default(cuid())
-  stashId           Int       @unique // The ID from the Stash system
+  stashId           Int       @unique
   name              String
   aliases           String[]  @default([])
   imageUrl          String
@@ -293,13 +293,8 @@ model Performer {
   bandSize          Int?
   hasNaturalBreasts Boolean?
   isFavorite        Boolean   @default(false)
-  
-  // Sync-related fields
+  isMonitored       Boolean   @default(false)
   syncedAt          DateTime?
-  isActive          Boolean   @default(true)   // Whether this performer is active or got deleted from Stash
-  isMonitored       Boolean   @default(false)  // Whether user wants to monitor this performer
-  
-  // Standard timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

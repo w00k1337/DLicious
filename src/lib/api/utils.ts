@@ -1,3 +1,5 @@
+import ms from 'ms'
+
 import logger from '@/lib/logger'
 
 /**
@@ -100,7 +102,7 @@ export const fetchGraphQL = async <TResult, TVariables>({
   apiKey,
   query,
   variables,
-  timeout = 30000, // 30 second default timeout
+  timeout = ms('30s'),
   maxRetries = 3
 }: FetchGraphQLOptions<TVariables>): Promise<TResult> => {
   const queryString = String(query)
@@ -169,7 +171,7 @@ export const fetchGraphQL = async <TResult, TVariables>({
         if (attempt === maxRetries) throw error
 
         // Exponential backoff for server errors
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000)
+        const delay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
         logger.warn({ attempt, delay, maxRetries }, 'Retrying GraphQL request after server error')
         await sleep(delay)
         continue
@@ -224,7 +226,7 @@ export const fetchGraphQL = async <TResult, TVariables>({
 
       // Log retry attempt
       if (attempt < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000)
+        const delay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
         logger.warn(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
