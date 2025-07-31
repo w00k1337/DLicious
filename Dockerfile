@@ -34,12 +34,15 @@ WORKDIR /app
 COPY --from=builder --chown=node /app/.next/standalone ./
 COPY --from=builder --chown=node /app/.next/static ./.next/static
 COPY --from=builder --chown=node /app/prisma ./prisma
-COPY --from=builder --chown=node /app/node_modules/@prisma/client/package.json ./node_modules/@prisma/client/package.json
+#COPY --from=builder --chown=node /app/node_modules/@prisma/client/package.json ./node_modules/@prisma/client/package.json
 
+#RUN npm install --global --save-exact "prisma@$(node --print 'require("./node_modules/@prisma/client/package.json").version')"
 RUN npm install --global --save-exact "prisma@$(node --print 'require("./node_modules/@prisma/client/package.json").version')"
 
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV CHECKPOINT_DISABLE=1
+ENV DISABLE_PRISMA_TELEMETRY=true
 ENV NODE_ENV=production
 ENV PORT=3000
 
