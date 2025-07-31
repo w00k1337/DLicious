@@ -14,8 +14,7 @@
     "prettier:check": "prettier --check --ignore-unknown",
     "prettier:fix": "prettier --write --ignore-unknown",
     "test": "vitest",
-    "prepare": "husky",
-    "postinstall": "prisma generate --no-hints"
+    "prepare": "husky"
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "3.2.0",
