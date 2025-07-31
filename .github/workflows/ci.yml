@@ -63,7 +63,7 @@ jobs:
         run: pnpm lint:js
 
       - name: Format check
-        run: pnpm prettier:check
+        run: pnpm prettier:check .
 
       - name: Test
         run: pnpm test

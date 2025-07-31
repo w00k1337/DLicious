@@ -1,5 +1,12 @@
 # syntax=docker.io/docker/dockerfile:1
 
+# This Dockerfile was heavily influenced by the blog post:
+# https://blog.jonrshar.pe/2024/Dec/24/nextjs-prisma-docker.html
+# by Jonathan Sharpe
+
+# =========================================
+# Base image
+# =========================================
 ARG NODE_VERSION=24
 
 FROM node:${NODE_VERSION}-alpine AS base

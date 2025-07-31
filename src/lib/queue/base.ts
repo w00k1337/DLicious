@@ -19,6 +19,25 @@ export abstract class BaseWorker<TJobData, TJobResult> {
     logger.info({ queueName: this.getQueueName() }, 'Starting worker')
   }
 
+  protected setupWorkerEventHandlers(): void {
+    if (!this.worker) return
+
+    this.worker.on('error', error => {
+      logger.error({ queueName: this.getQueueName(), error: error.message }, 'Worker error')
+    })
+
+    this.worker.on('failed', (job, error) => {
+      logger.error(
+        {
+          jobId: job?.id,
+          queueName: this.getQueueName(),
+          error: error.message
+        },
+        'Job failed'
+      )
+    })
+  }
+
   async stop(): Promise<void> {
     if (!this.isRunning) {
       logger.warn({ queueName: this.getQueueName() }, 'Worker is not running')
