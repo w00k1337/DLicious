@@ -1,5 +1,0 @@
----
-description: Use context7 MCP to fetch up-to-date framework, library, or API docs.
----
-
-If a task involves a specific framework, library, or API — either explicitly or implicitly — use the context7 MCP tool to fetch the latest documentation instead of relying on training data.
