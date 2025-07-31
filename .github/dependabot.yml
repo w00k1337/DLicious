@@ -10,6 +10,15 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+      react-packages:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+        update-types:
+          - 'minor'
+          - 'patch'
     open-pull-requests-limit: 5
 
   - package-ecosystem: 'github-actions'
