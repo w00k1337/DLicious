@@ -7,7 +7,6 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --experimental-https | pino-pretty",
-    "prebuild": "prisma generate --no-hints",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,10 +14,8 @@
     "prettier:check": "prettier --check --ignore-unknown",
     "prettier:fix": "prettier --write --ignore-unknown",
     "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "prisma generate --no-hints"
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "3.2.0",
@@ -48,6 +45,7 @@
     "@eslint/js": "9.31.0",
     "@graphql-codegen/cli": "5.0.7",
     "@next/eslint-plugin-next": "15.4.3",
+    "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
@@ -71,6 +69,7 @@
     "prisma": "6.12.0",
     "typescript": "5.8.3",
     "typescript-eslint": "8.38.0",
+    "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.4"
   }
 }

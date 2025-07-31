@@ -1,9 +1,5 @@
 name: Validate PR Title
 
-# This workflow validates that pull request titles follow the Conventional Commits specification
-# It runs on PR creation, edits, and reopening to ensure consistent commit history
-# when using "Squash and merge" strategy, as GitHub uses the PR title as the commit message
-
 on:
   pull_request:
     types:

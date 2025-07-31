@@ -1,22 +1,10 @@
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tsconfigPaths(), react()],
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    globals: true,
-    css: true,
-    coverage: {
-      reporter: ['text', 'json-summary', 'json'],
-      reportOnFailure: true
-    }
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src')
-    }
+    environment: 'jsdom'
   }
 })
