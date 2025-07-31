@@ -14,10 +14,10 @@ WORKDIR /app
 ENV HUSKY=0
 
 COPY .npmrc package.json pnpm-lock.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
+COPY prisma/ ./prisma
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-COPY prisma/ ./prisma
 COPY src/ ./src
 
 RUN NEXT_TELEMETRY_DISABLED=1 SKIP_ENV_VALIDATION=true pnpm build
