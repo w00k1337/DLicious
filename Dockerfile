@@ -13,7 +13,7 @@ WORKDIR /app
 
 ENV HUSKY=0
 
-COPY .npmrc package.json pnpm-lock.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
+COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
 COPY prisma/ ./prisma
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
