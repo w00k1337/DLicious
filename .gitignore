@@ -50,3 +50,6 @@ certificates/
 
 # prisma
 /src/generated/prisma
+
+# Claude
+.claude
