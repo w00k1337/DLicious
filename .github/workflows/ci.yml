@@ -7,6 +7,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -18,9 +22,8 @@ env:
   CI: true
 
 jobs:
-  # Single job for small projects - much more cost effective
   ci:
-    name: 🚀 CI Pipeline
+    name: CI Pipeline
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,17 +47,11 @@ jobs:
             ~/.pnpm-store
             ${{ github.workspace }}/.next/cache
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
-      # Simple dependency caching - node's built-in cache is sufficient
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      # Run all checks sequentially - faster for small projects
-      - name: Generate Prisma client
-        run: pnpm prisma generate --no-hints
 
       - name: Type check
         run: pnpm tsc --noEmit
@@ -66,13 +63,9 @@ jobs:
         run: pnpm prettier:check
 
       - name: Test
-        run: pnpm test:coverage
+        run: pnpm test
 
       - name: Build
         run: pnpm build
         env:
           SKIP_ENV_VALIDATION: true
-
-      - name: 'Report Coverage'
-        if: always()
-        uses: davelosert/vitest-coverage-report-action@v2

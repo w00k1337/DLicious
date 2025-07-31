@@ -13,11 +13,11 @@ WORKDIR /app
 
 ENV HUSKY=0
 
-COPY .npmrc package.json pnpm-lock.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
+COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
+COPY prisma/ ./prisma
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-COPY prisma/ ./prisma
 COPY src/ ./src
 
 RUN NEXT_TELEMETRY_DISABLED=1 SKIP_ENV_VALIDATION=true pnpm build
@@ -40,6 +40,8 @@ RUN npm install --global --save-exact "prisma@$(node --print 'require("./node_mo
 
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV CHECKPOINT_DISABLE=1
+ENV DISABLE_PRISMA_TELEMETRY=true
 ENV NODE_ENV=production
 ENV PORT=3000
 
@@ -48,7 +50,7 @@ EXPOSE 3000
 USER node
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
+  CMD curl -f http://127.0.0.1:3000 || exit 1
 
 ENTRYPOINT ["tini", "--"]
 

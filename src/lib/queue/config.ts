@@ -1,12 +1,8 @@
-import { ConnectionOptions } from 'bullmq'
+import { ConnectionOptions, JobsOptions, QueueOptions, WorkerOptions } from 'bullmq'
 import ms from 'ms'
 
 import { env } from '@/env/server'
 
-/**
- * Redis connection configuration for BullMQ
- * Uses environment variables from @/env/server for type-safe configuration
- */
 export const redisConnection: ConnectionOptions = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
@@ -14,23 +10,29 @@ export const redisConnection: ConnectionOptions = {
   password: env.REDIS_PASSWORD
 }
 
-/**
- * Default job options for all queues
- */
-export const defaultJobOptions = {
+export const defaultJobOptions: JobsOptions = {
   attempts: 5,
   backoff: {
-    type: 'exponential' as const,
+    type: 'exponential',
     delay: ms('1s')
   },
-  removeOnComplete: 0,
+  removeOnComplete: 5,
   removeOnFail: 50
-} as const
+}
 
-/**
- * Default worker options that reuse job option values but in worker-compatible format
- */
-export const defaultWorkerOptions = {
-  removeOnComplete: { count: defaultJobOptions.removeOnComplete },
-  removeOnFail: { count: defaultJobOptions.removeOnFail }
-} as const
+export const defaultQueueOptions: QueueOptions = {
+  connection: {
+    ...redisConnection,
+    // @see https://docs.bullmq.io/guide/going-to-production#enableofflinequeue
+    enableOfflineQueue: false
+  },
+  defaultJobOptions
+}
+
+export const defaultWorkerOptions: WorkerOptions = {
+  connection: {
+    ...redisConnection,
+    // @see https://docs.bullmq.io/guide/going-to-production#maxretriesperrequest
+    maxRetriesPerRequest: null
+  }
+}
