@@ -48,9 +48,22 @@ export abstract class BaseWorker<TJobData, TJobResult> {
       return
     }
 
+    logger.info({ queueName: this.getQueueName() }, 'Stopping worker...')
+
     if (this.worker) {
-      await this.worker.close()
-      this.worker = null
+      try {
+        await this.worker.close()
+        this.worker = null
+      } catch (error) {
+        logger.error(
+          {
+            queueName: this.getQueueName(),
+            error: error instanceof Error ? error.message : 'Unknown error'
+          },
+          'Error closing worker'
+        )
+        throw error
+      }
     }
 
     this.isRunning = false
