@@ -34,6 +34,34 @@ const closeFlowProducer = async (): Promise<void> => {
   }
 }
 
+export const triggerBulkImport = async (): Promise<void> => {
+  logger.info('Triggering bulk import of all performers')
+
+  const stashPerformers = await getPerformers()
+
+  if (stashPerformers.length === 0) {
+    logger.info('No performers found, skipping bulk import')
+    return
+  }
+
+  await getFlowProducer().add({
+    name: 'bulk-import-stash-performers',
+    queueName: getStashPerformerBulkImportQueue().name,
+    children: stashPerformers.map(performer => ({
+      name: 'import-stash-performer',
+      queueName: STASH_PERFORMER_IMPORT_QUEUE_NAME,
+      data: { stashId: performer.id },
+      // We explicitly set the jobId and removeOnComplete to true to avoid importing the same performer multiple times
+      opts: {
+        jobId: `import-stash-performer-${String(performer.id)}`,
+        removeOnComplete: true
+      }
+    }))
+  })
+
+  logger.info({ performerCount: stashPerformers.length }, 'Bulk import triggered successfully')
+}
+
 export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<void, void> {
   getQueueName(): string {
     return STASH_PERFORMER_BULK_IMPORT_SCHEDULER_QUEUE_NAME
@@ -60,32 +88,8 @@ export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<void, vo
     await super.stop()
   }
 
-  /**
-   * AIDEV-QUESTION: Maybe we need to refactor this so manual bulk imports are possible?
-   */
   async process(job: Job): Promise<void> {
     logger.debug({ jobId: job.id, jobName: job.name }, 'Processing scheduled bulk import')
-
-    const stashPerformers = await getPerformers()
-
-    if (stashPerformers.length === 0) {
-      logger.info('No performers found, skipping bulk import')
-      return
-    }
-
-    await getFlowProducer().add({
-      name: 'bulk-import-stash-performers',
-      queueName: getStashPerformerBulkImportQueue().name,
-      children: stashPerformers.map(performer => ({
-        name: 'import-stash-performer',
-        queueName: STASH_PERFORMER_IMPORT_QUEUE_NAME,
-        data: { stashId: performer.id },
-        // We explicitly set the jobId and removeOnComplete to true to avoid importing the same performer multiple times
-        opts: {
-          jobId: `import-stash-performer-${String(performer.id)}`,
-          removeOnComplete: true
-        }
-      }))
-    })
+    await triggerBulkImport()
   }
 }
