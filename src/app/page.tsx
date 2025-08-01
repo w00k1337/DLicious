@@ -6,6 +6,9 @@ import { env } from '@/env/server'
 import prisma from '@/lib/prisma'
 import { appendApiKeyToUrl } from '@/lib/utils'
 
+// Force dynamic rendering to avoid build-time database access
+export const dynamic = 'force-dynamic'
+
 const Dashboard = async (): Promise<ReactElement> => {
   const performers = await prisma.performer.findMany({
     orderBy: [{ isMonitored: 'desc' }, { isFavorite: 'desc' }, { name: 'asc' }]
