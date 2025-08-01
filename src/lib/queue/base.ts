@@ -22,6 +22,10 @@ export abstract class BaseWorker<TJobData, TJobResult> {
   protected setupWorkerEventHandlers(): void {
     if (!this.worker) return
 
+    this.worker.on('completed', (job, result) => {
+      logger.info({ queueName: this.getQueueName(), jobId: job.id, result }, 'Job completed')
+    })
+
     this.worker.on('error', error => {
       logger.error({ queueName: this.getQueueName(), error: error.message }, 'Worker error')
     })
@@ -55,28 +59,5 @@ export abstract class BaseWorker<TJobData, TJobResult> {
 
   isActive(): boolean {
     return this.isRunning
-  }
-
-  protected handleJobError(job: Job<TJobData, TJobResult>, error: Error): never {
-    logger.error(
-      {
-        jobId: job.id,
-        queueName: this.getQueueName(),
-        error: error.message,
-        stack: error.stack
-      },
-      'Job processing failed'
-    )
-    throw error
-  }
-
-  protected handleJobSuccess(job: Job<TJobData, TJobResult>): void {
-    logger.info(
-      {
-        jobId: job.id,
-        queueName: this.getQueueName()
-      },
-      'Job completed successfully'
-    )
   }
 }
