@@ -1,25 +1,13 @@
+import Link from 'next/link'
 import { ReactElement } from 'react'
 
 import { BulkImportButton } from '@/components/bulk-import-button'
-import { PerformerGrid } from '@/components/performer-grid'
-import { env } from '@/env/server'
 import prisma from '@/lib/prisma'
-import { appendApiKeyToUrl } from '@/lib/utils'
 
 // Force dynamic rendering to avoid build-time database access
 export const dynamic = 'force-dynamic'
 
 const Dashboard = async (): Promise<ReactElement> => {
-  const performers = await prisma.performer.findMany({
-    orderBy: [{ isMonitored: 'desc' }, { isFavorite: 'desc' }, { name: 'asc' }]
-  })
-
-  // Append API key to imageUrl for authentication
-  const performersWithAuthImages = performers.map(performer => ({
-    ...performer,
-    imageUrl: appendApiKeyToUrl(performer.imageUrl, env.STASH_API_KEY)
-  }))
-
   const totalCount = await prisma.performer.count()
   const monitoredCount = await prisma.performer.count({ where: { isMonitored: true } })
   const favoriteCount = await prisma.performer.count({ where: { isFavorite: true } })
@@ -47,9 +35,16 @@ const Dashboard = async (): Promise<ReactElement> => {
             <BulkImportButton />
           </div>
         </div>
-      </div>
 
-      <PerformerGrid performers={performersWithAuthImages} />
+        <div className="flex justify-center">
+          <Link
+            href="/performers"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            View All Performers
+          </Link>
+        </div>
+      </div>
     </main>
   )
 }
