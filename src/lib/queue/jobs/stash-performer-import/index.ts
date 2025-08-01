@@ -67,7 +67,14 @@ export class StashPerformerImportWorker extends BaseWorker<StashPerformerImportJ
   ): Promise<StashPerformerImportJobResult> {
     const { stashId } = job.data
 
-    logger.debug({ jobId: job.id, stashId }, 'Processing stash performer import')
+    logger.debug(
+      {
+        jobId: job.id,
+        stashId,
+        isChildJob: !!job.parent
+      },
+      'Processing stash performer import'
+    )
 
     const stashPerformer = await getPerformer(stashId)
     if (!stashPerformer) throw new Error(`Performer with stashId ${String(stashId)} not found`)
