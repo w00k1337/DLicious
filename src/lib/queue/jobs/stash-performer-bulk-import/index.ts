@@ -55,43 +55,21 @@ export class StashPerformerBulkImportWorker extends BaseWorker<void, StashPerfor
   }
 
   async process(job: Job<void, StashPerformerBulkImportJobResult>): Promise<StashPerformerBulkImportJobResult> {
-    try {
-      logger.info({ jobId: job.id }, 'Starting stash performer bulk import - fetching all performers from Stash')
+    logger.debug({ jobId: job.id }, 'Starting stash performer bulk import - fetching all performers from Stash')
 
-      const performers = await getPerformers()
+    const stashPerformers = await getPerformers()
 
-      logger.info({ jobId: job.id, performerCount: performers.length }, 'Fetched performers from Stash API')
+    logger.debug({ jobId: job.id, performerCount: stashPerformers.length }, 'Fetched performers from Stash API')
 
-      const importQueue = getStashPerformerImportQueue()
+    await getStashPerformerImportQueue().addBulk(
+      stashPerformers.map(performer => ({
+        data: { stashId: performer.id },
+        name: `import-stash-performer-${String(performer.id)}`,
+        opts: { jobId: `import-stash-performer-${String(performer.id)}` }
+      }))
+    )
 
-      await importQueue.addBulk(
-        performers.map(performer => ({
-          data: { stashId: performer.id },
-          name: `import-stash-performer-${String(performer.id)}`,
-          opts: { jobId: `import-stash-performer-${String(performer.id)}` }
-        }))
-      )
-
-      logger.info(
-        {
-          jobId: job.id,
-          performersQueued: performers.length
-        },
-        'Successfully queued all performer import jobs'
-      )
-
-      this.handleJobSuccess(job)
-      return { performersQueued: performers.length }
-    } catch (error) {
-      logger.error(
-        {
-          jobId: job.id,
-          error: error instanceof Error ? error.message : String(error)
-        },
-        'Stash performer bulk import failed'
-      )
-      this.handleJobError(job, error instanceof Error ? error : new Error(String(error)))
-    }
+    return { performersQueued: stashPerformers.length }
   }
 }
 

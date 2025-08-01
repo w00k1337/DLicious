@@ -67,50 +67,25 @@ export class StashPerformerImportWorker extends BaseWorker<StashPerformerImportJ
   ): Promise<StashPerformerImportJobResult> {
     const { stashId } = job.data
 
-    try {
-      logger.info({ jobId: job.id, stashId }, 'Processing stash performer import')
+    logger.debug({ jobId: job.id, stashId }, 'Processing stash performer import')
 
-      const performer = await getPerformer(stashId)
-      if (!performer) {
-        throw new Error(`Performer with stashId ${String(stashId)} not found`)
-      }
+    const stashPerformer = await getPerformer(stashId)
+    if (!stashPerformer) throw new Error(`Performer with stashId ${String(stashId)} not found`)
 
-      logger.info({ jobId: job.id, stashId, performerName: performer.name }, 'Fetched performer from Stash API')
+    logger.debug({ jobId: job.id, stashId, performerName: stashPerformer.name }, 'Fetched performer from Stash API')
 
-      const performerData = mapPerformerToPrisma(performer)
+    const performerData = mapPerformerToPrisma(stashPerformer)
 
-      const savedPerformer = await prisma.performer.upsert({
-        where: { stashId },
-        update: performerData,
-        create: performerData
-      })
+    const performer = await prisma.performer.upsert({
+      where: { stashId },
+      update: performerData,
+      create: performerData
+    })
 
-      logger.info(
-        {
-          jobId: job.id,
-          stashId,
-          performerId: savedPerformer.id,
-          performerName: savedPerformer.name
-        },
-        'Successfully imported performer'
-      )
-
-      this.handleJobSuccess(job)
-      return {
-        stashId,
-        performerId: savedPerformer.id,
-        name: savedPerformer.name
-      }
-    } catch (error) {
-      logger.error(
-        {
-          jobId: job.id,
-          stashId,
-          error: error instanceof Error ? error.message : String(error)
-        },
-        'Failed to import performer'
-      )
-      this.handleJobError(job, error as Error)
+    return {
+      stashId,
+      performerId: performer.id,
+      name: performer.name
     }
   }
 }
