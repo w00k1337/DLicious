@@ -1,6 +1,6 @@
 # AGENTS.md. DLicious
 
-_Last updated 2025-07-31_
+_Last updated 2025-08-01_
 
 > **purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT, etc.) and every human who edits this repository.  
 > It encodes our coding standards, guard-rails, and workflow tricks so the _human 30 %_ (architecture, tests, domain judgment) stays in human hands.[^1]
@@ -18,7 +18,8 @@ Key components:
 - **src/env/server.ts**: Typed environment variables with Zod validation
 - **src/lib/api**: External API integrations (Stash, StashDB, ThePornDB, SABnzbd)
 - **src/lib/queue**: Background job processing with BullMQ and Redis
-- **prisma/prisma.schema**: Prisma database schema
+- **src/lib/prisma.ts**: Prisma client instance
+- **prisma/schema.prisma**: Prisma database schema
 
 **Golden rule**: When unsure about implementation details or requirements, ALWAYS consult the developer rather than making assumptions.
 
@@ -76,6 +77,20 @@ For simple, quick TypeScript script tests: `pnpm exec tsx src/test-file.ts` (ens
 - **Error Handling**: Typed exceptions; proper error boundaries for React components.
 - **Documentation**: JSDoc comments for public functions/classes.
 - **Testing**: Vitest for unit and integration tests.
+- **UI Components**: Use shadcn/ui components wherever possible for consistent design and functionality.
+- **Date/Time Handling**: Always use date-fns for date and time operations, formatting, and calculations.
+- **Millisecond Handling**: Use the "ms" library for parsing and formatting millisecond durations.
+
+**Date/Time patterns**:
+
+- **date-fns**: Use date-fns for all date/time operations, formatting, and calculations
+- **Import specific functions**: Import only the functions you need (e.g., `import { format, formatDistanceToNow } from 'date-fns'`)
+- **Consistent formatting**: Use date-fns formatting functions for user-facing date displays
+- **Timezone handling**: Use date-fns timezone functions when timezone conversion is needed
+- **Date calculations**: Use date-fns for date arithmetic, comparisons, and relative time calculations
+- **Avoid native Date methods**: Prefer date-fns functions over native JavaScript Date methods for consistency and reliability
+- **Millisecond parsing**: Use the "ms" library for parsing human-readable time strings to milliseconds
+- **Millisecond formatting**: Use the "ms" library for converting milliseconds to human-readable time strings
 
 **Function patterns**:
 
@@ -93,10 +108,23 @@ For simple, quick TypeScript script tests: `pnpm exec tsx src/test-file.ts` (ens
 - **Async safety**: Use try-catch with async/await, handle Promise rejections explicitly
 - **Recovery**: Implement retry mechanisms for transient failures, graceful degradation
 
+**UI component patterns**:
+
+- **shadcn/ui**: Use shadcn/ui components as the primary UI library for all new components
+- **Component composition**: Prefer composition over inheritance, use compound components where appropriate
+- **Accessibility**: All components must be accessible (ARIA labels, keyboard navigation, screen reader support)
+- **Responsive design**: Components should work across all screen sizes
+- **Dark mode**: Support both light and dark themes using CSS variables
+- **Consistent styling**: Use Tailwind CSS classes and shadcn/ui design tokens
+- **Loading states**: Implement proper loading states for async operations
+- **Error states**: Show meaningful error messages with recovery options
+
 Example:
 
 ```typescript
 import { ValidationError } from '@/lib/errors'
+import { format, formatDistanceToNow, isAfter, addDays } from 'date-fns'
+import ms from 'ms'
 
 const processData = async (data: Record<string, any>): Promise<Result> => {
   try {
@@ -109,26 +137,54 @@ const processData = async (data: Record<string, any>): Promise<Result> => {
     throw error
   }
 }
+
+// Date/Time example
+const formatLastSync = (date: Date): string => {
+  const now = new Date()
+  if (isAfter(date, addDays(now, -1))) {
+    return `Last synced ${formatDistanceToNow(date)} ago`
+  }
+  return `Last synced on ${format(date, 'PPP')}`
+}
+
+// Millisecond handling example
+const parseTimeout = (timeout: string): number => {
+  return ms(timeout) // Converts "5m", "2h", "1d" to milliseconds
+}
+
+const formatDuration = (milliseconds: number): string => {
+  return ms(milliseconds, { long: true }) // Converts milliseconds to "5 minutes", "2 hours", etc.
+}
 ```
 
 ---
 
 ## 4. Project layout & Core Components
 
-| Directory         | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `src/app/`        | Next.js App Router pages and API routes          |
-| `src/components/` | Reusable React components                        |
-| `src/env/`        | Typed environment variables with Zod validation  |
-| `src/lib/api/`    | External API integrations (Stash, StashDB, etc.) |
-| `src/lib/queue/`  | Background job processing with BullMQ and Redis  |
-| `src/generated/`  | Auto-generated code (Prisma, GraphQL)            |
-| `prisma/`         | Database schema and migrations                   |
+| Directory            | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| `src/app/`           | Next.js App Router pages and API routes          |
+| `src/components/`    | Reusable React components (shadcn/ui components) |
+| `src/components/ui/` | shadcn/ui component library                      |
+| `src/env/`           | Typed environment variables with Zod validation  |
+| `src/lib/api/`       | External API integrations (Stash, StashDB, etc.) |
+| `src/lib/queue/`     | Background job processing with BullMQ and Redis  |
+| `src/generated/`     | Auto-generated code (Prisma, GraphQL)            |
+| `prisma/`            | Database schema and migrations                   |
 
 **Key domain models**:
 
 - **Performer**: Individual performers tracked for content discovery
 - **Scene**: Individual content pieces with metadata
+
+**shadcn/ui Setup**:
+
+- **Installation**: shadcn/ui is configured with Tailwind CSS and Radix UI primitives
+- **Component location**: All shadcn/ui components are in `src/components/ui/`
+- **Adding components**: Use `npx shadcn@latest add [component-name]` to add new components
+- **Customization**: Modify `src/components/ui/` components directly for project-specific styling
+- **Theming**: Use CSS variables for consistent theming across light and dark modes
+- **Icons**: Use Lucide React icons (included with shadcn/ui) for consistent iconography
 
 ---
 
@@ -257,6 +313,8 @@ export const createPerformer = async (data: CreatePerformerInput): Promise<Perfo
 - Large AI refactors in a single commit (makes `git bisect` difficult).
 - Delegating test/spec writing entirely to AI (can lead to false confidence).
 - **Note about generated code**: Always regenerate after schema changes, never edit generated files directly.
+- Using native JavaScript Date methods instead of date-fns functions for date/time operations.
+- Manually parsing time strings or calculating millisecond durations instead of using the "ms" library.
 
 ---
 
@@ -280,6 +338,7 @@ This section provides pointers to important files and common patterns within the
 - **React Components**:
   - Location: `src/components/` and `src/app/`
   - Pattern: Functional components with TypeScript, proper error boundaries.
+  - **UI Components**: Use shadcn/ui components from `src/components/ui/` for consistent design
 - **Database Models**:
   - Location: `prisma/schema.prisma`
   - Pattern: Prisma schema with custom enums and relationships.
@@ -302,6 +361,9 @@ This section provides pointers to important files and common patterns within the
 - **Sabnzbd**: Download client for NZB files
 - **ThePornDB/StashDB**: External APIs for scene metadata and availability
 - **AIDEV-NOTE/TODO/QUESTION**: Specially formatted comments to provide inline context or tasks for AI assistants and developers
+- **shadcn/ui**: Component library built on Radix UI primitives and Tailwind CSS for consistent, accessible UI components
+- **date-fns**: Date utility library for consistent date/time operations, formatting, and calculations throughout the application
+- **ms**: Millisecond utility library for parsing and formatting human-readable time durations
 
 ---
 
