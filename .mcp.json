@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "redis": {
+      "command": "docker",
+      "args": ["run", "--rm", "--name", "redis-mcp-server", "-i", "--env-file", ".env", "mcp/redis"]
+    },
+    "prisma": {
+      "command": "npx",
+      "args": ["-y", "prisma", "mcp"]
+    }
+  }
+}
