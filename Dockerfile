@@ -20,6 +20,8 @@ WORKDIR /app
 
 ENV HUSKY=0
 
+RUN apk add openssl3
+
 COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
 COPY prisma/ ./prisma
 
