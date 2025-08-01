@@ -14,8 +14,9 @@ export const register = async (): Promise<void> => {
     await getStashPerformerBulkImportSchedulerQueue().add(
       'daily-stash-performer-bulk-import',
       {},
-      { repeat: { every: ms('2m') } }
+      { repeat: { every: ms('1d') } }
     )
+
     stashPerformerImportWorker.start()
     stashPerformerBulkImportWorker.start()
     stashPerformerBulkImportSchedulerWorker.start()

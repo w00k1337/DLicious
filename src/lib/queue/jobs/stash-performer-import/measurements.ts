@@ -113,7 +113,7 @@ const isValidEuBandSize = (band: number): boolean => {
  * - "32DDD-26-34" -> { cupSize: 'F', bandSize: 70 }
  */
 export const measurementsSchema = z.string().transform((measurements, ctx) => {
-  const match = /^(\d+)([A-Z]+)-/.exec(measurements)
+  const match = /^(\d+)([A-Z]+)(?:-|$)/.exec(measurements)
 
   if (!match) {
     return { cupSize: null, bandSize: null }

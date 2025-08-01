@@ -4991,6 +4991,13 @@ export type StashFieldsFragment = { __typename?: 'StashID'; endpoint: string; id
   ' $fragmentName'?: 'StashFieldsFragment'
 }
 
+export type AllPerformerIdsQueryVariables = Exact<{ [key: string]: never }>
+
+export type AllPerformerIdsQuery = {
+  __typename?: 'Query'
+  allPerformers: Array<{ __typename?: 'Performer'; id: string }>
+}
+
 export type AllPerformersQueryVariables = Exact<{ [key: string]: never }>
 
 export type AllPerformersQuery = {
@@ -5090,6 +5097,13 @@ export const PerformerFieldsFragmentDoc = new TypedDocumentString(
 }`,
   { fragmentName: 'PerformerFields' }
 ) as unknown as TypedDocumentString<PerformerFieldsFragment, unknown>
+export const AllPerformerIdsDocument = new TypedDocumentString(`
+    query AllPerformerIds {
+  allPerformers {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AllPerformerIdsQuery, AllPerformerIdsQueryVariables>
 export const AllPerformersDocument = new TypedDocumentString(`
     query AllPerformers {
   allPerformers {

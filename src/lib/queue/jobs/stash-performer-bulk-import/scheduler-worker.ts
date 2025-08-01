@@ -2,7 +2,7 @@ import 'server-only'
 
 import { FlowProducer, type Job, Worker } from 'bullmq'
 
-import { getPerformers } from '@/lib/api/stash'
+import { getPerformerIds } from '@/lib/api/stash'
 import logger from '@/lib/logger'
 
 import { BaseWorker } from '../../base'
@@ -37,9 +37,9 @@ const closeFlowProducer = async (): Promise<void> => {
 export const triggerBulkImport = async (): Promise<void> => {
   logger.info('Triggering bulk import of all performers')
 
-  const stashPerformers = await getPerformers()
+  const stashPerformerIds = await getPerformerIds()
 
-  if (stashPerformers.length === 0) {
+  if (stashPerformerIds.length === 0) {
     logger.info('No performers found, skipping bulk import')
     return
   }
@@ -47,19 +47,19 @@ export const triggerBulkImport = async (): Promise<void> => {
   await getFlowProducer().add({
     name: 'bulk-import-stash-performers',
     queueName: getStashPerformerBulkImportQueue().name,
-    children: stashPerformers.map(performer => ({
+    children: stashPerformerIds.map(stashId => ({
       name: 'import-stash-performer',
       queueName: STASH_PERFORMER_IMPORT_QUEUE_NAME,
-      data: { stashId: performer.id },
+      data: { stashId },
       // We explicitly set the jobId and removeOnComplete to true to avoid importing the same performer multiple times
       opts: {
-        jobId: `import-stash-performer-${String(performer.id)}`,
+        jobId: `import-stash-performer-${String(stashId)}`,
         removeOnComplete: true
       }
     }))
   })
 
-  logger.info({ performerCount: stashPerformers.length }, 'Bulk import triggered successfully')
+  logger.info({ performerCount: stashPerformerIds.length }, 'Bulk import triggered successfully')
 }
 
 export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<void, void> {

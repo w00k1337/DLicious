@@ -4,6 +4,8 @@ import './fragments'
 import { env } from '@/env/server'
 import { graphql } from '@/generated/stash'
 import {
+  type AllPerformerIdsQuery,
+  type AllPerformerIdsQueryVariables,
   type AllPerformersQuery,
   type AllPerformersQueryVariables,
   CriterionModifier,
@@ -31,6 +33,19 @@ const callStashAPI = async <TQuery, TVariables = Record<string, never>>(
     query: query as Parameters<typeof fetchGraphQL<TQuery, TVariables>>[0]['query'],
     ...(variables && { variables })
   })
+}
+
+export const getPerformerIds = async (): Promise<number[]> => {
+  const query = graphql(`
+    query AllPerformerIds {
+      allPerformers {
+        id
+      }
+    }
+  `)
+
+  const { allPerformers } = await callStashAPI<AllPerformerIdsQuery, AllPerformerIdsQueryVariables>(query)
+  return allPerformers.map(performer => performerIdSchema.parse(performer.id))
 }
 
 export const getPerformers = async (): Promise<Performer[]> => {
