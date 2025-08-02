@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users } from 'lucide-react'
+import { LayoutDashboard, Settings, Users } from 'lucide-react'
 import type { Route } from 'next'
 import Link from 'next/link'
 import { ReactElement } from 'react'
@@ -35,7 +35,13 @@ const mainMenuItems: MenuItem[] = [
   }
 ]
 
-const adminMenuItems: MenuItem[] = []
+const adminMenuItems: MenuItem[] = [
+  {
+    title: 'Settings',
+    url: '/admin',
+    icon: Settings
+  }
+]
 
 export const AppSidebar = (): ReactElement => (
   <Sidebar>
