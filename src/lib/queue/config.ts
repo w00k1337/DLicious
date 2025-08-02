@@ -3,6 +3,9 @@ import ms from 'ms'
 
 import { env } from '@/env/server'
 
+const defaultRemoveOnCompleteCount = 5
+const defaultRemoveOnFailCount = 20
+
 export const redisConnection: ConnectionOptions = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
@@ -15,9 +18,7 @@ export const defaultJobOptions: JobsOptions = {
   backoff: {
     type: 'exponential',
     delay: ms('1s')
-  },
-  removeOnComplete: 5,
-  removeOnFail: 50
+  }
 }
 
 export const defaultQueueOptions: QueueOptions = {
@@ -34,5 +35,7 @@ export const defaultWorkerOptions: WorkerOptions = {
     ...redisConnection,
     // @see https://docs.bullmq.io/guide/going-to-production#maxretriesperrequest
     maxRetriesPerRequest: null
-  }
+  },
+  removeOnComplete: { count: defaultRemoveOnCompleteCount },
+  removeOnFail: { count: defaultRemoveOnFailCount }
 }

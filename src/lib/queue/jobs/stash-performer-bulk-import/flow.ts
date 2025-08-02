@@ -7,7 +7,7 @@ import { defaultQueueOptions } from '../../config'
 import { getStashPerformerImportQueue } from '../stash-performer-import'
 import { getStashPerformerBulkImportQueue } from './queues'
 
-// Lazy-initialized instances because we don't want to connect to Redis during build
+// AIDEV-NOTE: Lazy-initialized instances because we don't want to connect to Redis during build
 let flowProducer: FlowProducer | null = null
 let isClosing = false
 
@@ -48,7 +48,7 @@ export const triggerBulkImport = async (): Promise<void> => {
       name: 'import-stash-performer',
       queueName: getStashPerformerImportQueue().name,
       data: { stashId },
-      // We explicitly set the jobId and removeOnComplete to true to avoid importing the same performer multiple times
+      // AIDEV-NOTE: We explicitly set the jobId and removeOnComplete to true to avoid importing the same performer multiple times
       opts: {
         jobId: `import-stash-performer-${String(stashId)}`,
         removeOnComplete: true
