@@ -3,6 +3,10 @@ import { ReactElement } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import prisma from '@/lib/prisma'
 
+// AIDEV-NOTE: Because we use prisma in this page, we need to force dynamic rendering so the build doesn't fail.
+export const dynamic = 'force-dynamic'
+
+// AIDEV-NOTE: This page will be refactored soon. The table will be replaced with a more user-friendly interface.
 const PerformersPage = async (): Promise<ReactElement> => {
   const performers = await prisma.performer.findMany({
     select: {

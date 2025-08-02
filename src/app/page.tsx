@@ -3,9 +3,9 @@ import { ReactElement } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import prisma from '@/lib/prisma'
 
-/**
- * AIDEV-NOTE: Server component querying total performers metrics for the dashboard.
- */
+// AIDEV-NOTE: Because we use prisma in this page, we need to force dynamic rendering so the build doesn't fail.
+export const dynamic = 'force-dynamic'
+
 const Dashboard = async (): Promise<ReactElement> => {
   const totalPerformers = await prisma.performer.count()
   const totalMonitored = await prisma.performer.count({ where: { isMonitored: true } })
