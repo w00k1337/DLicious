@@ -37,8 +37,12 @@ export class StashPerformerBulkImportWorker extends BaseWorker<void, StashPerfor
 
     const childrenValues = await job.getChildrenValues<StashPerformerImportJobResult>()
 
-    const stashIds = Object.values(childrenValues).map(result => result.stashId)
+    const totalProcessed = Object.values(childrenValues).length
+    const totalCreated = Object.values(childrenValues).filter(result => result.action === 'created').length
+    const totalUpdated = Object.values(childrenValues).filter(result => result.action === 'updated').length
 
-    return { stashIds }
+    return { totalProcessed, totalCreated, totalUpdated }
   }
 }
+
+export const stashPerformerBulkImportWorker = new StashPerformerBulkImportWorker()

@@ -1,31 +1,46 @@
 import { ReactElement } from 'react'
 
-import { PerformerGrid } from '@/components/performer-grid'
-import { env } from '@/env/server'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import prisma from '@/lib/prisma'
-import { appendApiKeyToUrl } from '@/lib/utils'
-
-export const dynamic = 'force-dynamic'
 
 const PerformersPage = async (): Promise<ReactElement> => {
   const performers = await prisma.performer.findMany({
-    orderBy: [{ isMonitored: 'desc' }, { isFavorite: 'desc' }, { name: 'asc' }]
+    select: {
+      id: true,
+      name: true,
+      hasNaturalBreasts: true,
+      bandSize: true,
+      cupSize: true,
+      isFavorite: true,
+      isMonitored: true
+    }
   })
 
-  const performersWithAuthImages = performers.map(performer => ({
-    ...performer,
-    imageUrl: appendApiKeyToUrl(performer.imageUrl, env.STASH_API_KEY)
-  }))
-
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold tracking-tight">Performers</h1>
-        <p className="text-muted-foreground">Manage and monitor your favorite performers</p>
-      </div>
-
-      <PerformerGrid performers={performersWithAuthImages} />
-    </main>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Breast Type</TableHead>
+          <TableHead>Band Size</TableHead>
+          <TableHead>Cup Size</TableHead>
+          <TableHead>Favorite</TableHead>
+          <TableHead>Monitored</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {performers.map(p => (
+          <TableRow key={p.id}>
+            <TableCell>{p.name}</TableCell>
+            <TableCell>{p.hasNaturalBreasts == null ? '-' : p.hasNaturalBreasts ? 'Natural' : 'Fake'}</TableCell>
+            <TableCell>{p.bandSize ?? '-'}</TableCell>
+            <TableCell>{p.cupSize ?? '-'}</TableCell>
+            <TableCell>{p.isFavorite ? 'Yes' : 'No'}</TableCell>
+            <TableCell>{p.isMonitored ? 'Yes' : 'No'}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }
 
