@@ -18,6 +18,7 @@ export interface StashPerformerImportJobResult {
   stashId: number
   performerId: string
   name: string
+  action: 'created' | 'updated'
 }
 
 // Lazy-initialized instances because we don't want to connect to Redis during build
@@ -83,6 +84,8 @@ export class StashPerformerImportWorker extends BaseWorker<StashPerformerImportJ
 
     const performerData = mapPerformerToPrisma(stashPerformer)
 
+    const existingPerformer = await prisma.performer.findUnique({ where: { stashId } })
+
     const performer = await prisma.performer.upsert({
       where: { stashId },
       update: performerData,
@@ -92,7 +95,8 @@ export class StashPerformerImportWorker extends BaseWorker<StashPerformerImportJ
     return {
       stashId,
       performerId: performer.id,
-      name: performer.name
+      name: performer.name,
+      action: existingPerformer ? 'updated' : 'created'
     }
   }
 }

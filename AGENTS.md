@@ -78,17 +78,16 @@ For simple, quick TypeScript script tests: `pnpm exec tsx src/test-file.ts` (ens
 - **Documentation**: JSDoc comments for public functions/classes.
 - **Testing**: Vitest for unit and integration tests.
 - **UI Components**: Use shadcn/ui components wherever possible for consistent design and functionality.
-- **Date/Time Handling**: Always use date-fns for date and time operations, formatting, and calculations.
+- **Date/Time Handling**: Always use dayjs for date and time operations, formatting, and calculations.
 - **Millisecond Handling**: Use the "ms" library for parsing and formatting millisecond durations.
 
 **Date/Time patterns**:
 
-- **date-fns**: Use date-fns for all date/time operations, formatting, and calculations
-- **Import specific functions**: Import only the functions you need (e.g., `import { format, formatDistanceToNow } from 'date-fns'`)
-- **Consistent formatting**: Use date-fns formatting functions for user-facing date displays
-- **Timezone handling**: Use date-fns timezone functions when timezone conversion is needed
-- **Date calculations**: Use date-fns for date arithmetic, comparisons, and relative time calculations
-- **Avoid native Date methods**: Prefer date-fns functions over native JavaScript Date methods for consistency and reliability
+- **dayjs**: Use dayjs for all date/time operations, formatting, and calculations
+- **Consistent formatting**: Use dayjs formatting functions for user-facing date displays
+- **Timezone handling**: Use dayjs timezone plugin when timezone conversion is needed
+- **Date calculations**: Use dayjs for date arithmetic, comparisons, and relative time calculations
+- **Avoid native Date methods**: Prefer dayjs functions over native JavaScript Date methods for consistency and reliability
 - **Millisecond parsing**: Use the "ms" library for parsing human-readable time strings to milliseconds
 - **Millisecond formatting**: Use the "ms" library for converting milliseconds to human-readable time strings
 
@@ -123,7 +122,7 @@ Example:
 
 ```typescript
 import { ValidationError } from '@/lib/errors'
-import { format, formatDistanceToNow, isAfter, addDays } from 'date-fns'
+import dayjs from 'dayjs'
 import ms from 'ms'
 
 const processData = async (data: Record<string, any>): Promise<Result> => {
@@ -140,11 +139,12 @@ const processData = async (data: Record<string, any>): Promise<Result> => {
 
 // Date/Time example
 const formatLastSync = (date: Date): string => {
-  const now = new Date()
-  if (isAfter(date, addDays(now, -1))) {
-    return `Last synced ${formatDistanceToNow(date)} ago`
+  const now = dayjs()
+  const syncDate = dayjs(date)
+  if (syncDate.isAfter(now.subtract(1, 'day'))) {
+    return `Last synced ${syncDate.fromNow()} ago`
   }
-  return `Last synced on ${format(date, 'PPP')}`
+  return `Last synced on ${syncDate.format('MMMM D, YYYY')}`
 }
 
 // Millisecond handling example
@@ -313,7 +313,7 @@ export const createPerformer = async (data: CreatePerformerInput): Promise<Perfo
 - Large AI refactors in a single commit (makes `git bisect` difficult).
 - Delegating test/spec writing entirely to AI (can lead to false confidence).
 - **Note about generated code**: Always regenerate after schema changes, never edit generated files directly.
-- Using native JavaScript Date methods instead of date-fns functions for date/time operations.
+- Using native JavaScript Date methods instead of dayjs functions for date/time operations.
 - Manually parsing time strings or calculating millisecond durations instead of using the "ms" library.
 
 ---
@@ -362,7 +362,7 @@ This section provides pointers to important files and common patterns within the
 - **ThePornDB/StashDB**: External APIs for scene metadata and availability
 - **AIDEV-NOTE/TODO/QUESTION**: Specially formatted comments to provide inline context or tasks for AI assistants and developers
 - **shadcn/ui**: Component library built on Radix UI primitives and Tailwind CSS for consistent, accessible UI components
-- **date-fns**: Date utility library for consistent date/time operations, formatting, and calculations throughout the application
+- **dayjs**: Date utility library for consistent date/time operations, formatting, and calculations throughout the application
 - **ms**: Millisecond utility library for parsing and formatting human-readable time durations
 
 ---
