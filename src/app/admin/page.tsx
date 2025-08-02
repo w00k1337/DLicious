@@ -35,7 +35,6 @@ const AdminPage = async (): Promise<ReactElement> => {
     bulkQueue.getWaitingChildren() // AIDEV-NOTE: BullMQ flows store parent jobs waiting for children here
   ])
 
-  // Import is running if there are jobs in any of the bulk import queue states
   const isImportRunning = activeBulkJobs.length > 0 || waitingBulkJobs.length > 0 || waitingChildrenJobs.length > 0
 
   return (
