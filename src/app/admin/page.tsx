@@ -8,6 +8,8 @@ import { getStashPerformerBulkImportQueue } from '@/lib/queue/jobs/stash-perform
 
 import { ImportButton } from './import-button'
 
+export const dynamic = 'force-dynamic'
+
 const bulkImportAction = async (): Promise<void> => {
   'use server'
 
