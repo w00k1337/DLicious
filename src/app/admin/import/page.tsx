@@ -1,7 +1,7 @@
 import { ReactElement } from 'react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { bulkImportAction } from '@/lib/actions/bulk-import'
+import { bulkImportAction } from '@/lib/actions'
 import { getBulkImportJobs, isAnyBulkImportRunning } from '@/lib/queue/jobs/stash-performer-bulk-import/queries'
 
 import { BulkImportJobsTable } from './bulk-import-jobs-table'
