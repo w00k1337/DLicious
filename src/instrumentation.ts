@@ -1,4 +1,4 @@
-import ms from 'ms'
+// import ms from 'ms'
 
 import logger from '@/lib/logger'
 
@@ -7,15 +7,15 @@ export const register = async (): Promise<void> => {
     const { stashPerformerImportWorker } = await import('@/lib/queue/jobs/stash-performer-import')
     const {
       stashPerformerBulkImportSchedulerWorker,
-      getStashPerformerBulkImportSchedulerQueue,
+      // getStashPerformerBulkImportSchedulerQueue,
       stashPerformerBulkImportWorker
     } = await import('@/lib/queue/jobs/stash-performer-bulk-import')
 
-    await getStashPerformerBulkImportSchedulerQueue().add(
-      'daily-stash-performer-bulk-import',
-      {},
-      { repeat: { every: ms('1d') } }
-    )
+    // await getStashPerformerBulkImportSchedulerQueue().add(
+    //   'daily-stash-performer-bulk-import',
+    //   {},
+    //   { repeat: { every: ms('1d') } }
+    // )
 
     stashPerformerImportWorker.start()
     stashPerformerBulkImportWorker.start()

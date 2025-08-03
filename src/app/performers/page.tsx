@@ -1,50 +1,50 @@
-import { ReactElement } from 'react'
+import { ReactElement, Suspense } from 'react'
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import prisma from '@/lib/prisma'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+import { PerformersTable } from './performers-table'
 
 // AIDEV-NOTE: Because we use prisma in this page, we need to force dynamic rendering so the build doesn't fail.
 export const dynamic = 'force-dynamic'
 
-// AIDEV-NOTE: This page will be refactored soon. The table will be replaced with a more user-friendly interface.
-const PerformersPage = async (): Promise<ReactElement> => {
-  const performers = await prisma.performer.findMany({
-    select: {
-      id: true,
-      name: true,
-      hasNaturalBreasts: true,
-      bandSize: true,
-      cupSize: true,
-      isFavorite: true,
-      isMonitored: true
-    }
-  })
-
+const PerformersPage = (): ReactElement => {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Breast Type</TableHead>
-          <TableHead>Band Size</TableHead>
-          <TableHead>Cup Size</TableHead>
-          <TableHead>Favorite</TableHead>
-          <TableHead>Monitored</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {performers.map(p => (
-          <TableRow key={p.id}>
-            <TableCell>{p.name}</TableCell>
-            <TableCell>{p.hasNaturalBreasts == null ? '-' : p.hasNaturalBreasts ? 'Natural' : 'Fake'}</TableCell>
-            <TableCell>{p.bandSize ?? '-'}</TableCell>
-            <TableCell>{p.cupSize ?? '-'}</TableCell>
-            <TableCell>{p.isFavorite ? 'Yes' : 'No'}</TableCell>
-            <TableCell>{p.isMonitored ? 'Yes' : 'No'}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div>
+      <Tabs defaultValue="all" className="w-full">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="pt-6 pb-6">
+            <h1 className="text-3xl font-bold">Performers</h1>
+            <p className="text-muted-foreground">Manage and view your tracked performers</p>
+          </div>
+
+          <div className="pb-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all">All Performers</TabsTrigger>
+              <TabsTrigger value="monitored">Monitored</TabsTrigger>
+              <TabsTrigger value="favorites">Favorites</TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
+
+        <TabsContent value="all" className="mt-6">
+          <Suspense fallback={<div>Loading all performers...</div>}>
+            <PerformersTable filter="all" />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="monitored" className="mt-6">
+          <Suspense fallback={<div>Loading monitored performers...</div>}>
+            <PerformersTable filter="monitored" />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="favorites" className="mt-6">
+          <Suspense fallback={<div>Loading favorite performers...</div>}>
+            <PerformersTable filter="favorites" />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
 

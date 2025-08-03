@@ -1,8 +1,3 @@
-/**
- * AIDEV-NOTE: Renamed from jobs-table.tsx for better clarity.
- * Component displays bulk import job history using JobWithMetadata for proper typing.
- */
-
 import { JobState } from 'bullmq'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
