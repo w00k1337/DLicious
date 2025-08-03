@@ -21,6 +21,16 @@ const createPrismaClient = () =>
             return urlObj.toString()
           }
         }
+      },
+      scene: {
+        imageUrl: {
+          needs: { imageUrl: true },
+          compute: (scene: { imageUrl: string }) => {
+            const urlObj = new URL(scene.imageUrl)
+            urlObj.searchParams.set('apikey', env.STASH_API_KEY)
+            return urlObj.toString()
+          }
+        }
       }
     }
   })

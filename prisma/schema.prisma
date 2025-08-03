@@ -52,7 +52,22 @@ model Performer {
   hasNaturalBreasts Boolean?
   isFavorite        Boolean   @default(false)
   isMonitored       Boolean   @default(false)
+  scenes            Scene[]
   syncedAt          DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model Scene {
+  id         String      @id @default(cuid())
+  title      String
+  imageUrl   String
+  releasedAt DateTime
+  stashId    Int?        @unique
+  stashDbId  String?     @unique
+  phash      String?     @unique
+  oshash     String?     @unique
+  performers Performer[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
