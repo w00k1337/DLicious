@@ -9,15 +9,15 @@ import { ImportButton } from './import-button'
 
 export const dynamic = 'force-dynamic'
 
-const AdminPage = async (): Promise<ReactElement> => {
+const ImportPage = async (): Promise<ReactElement> => {
   const isImportRunning = await isAnyBulkImportRunning()
   const jobs = await getBulkImportJobs()
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Administrative tools and operations</p>
+        <h1 className="text-3xl font-bold">Import</h1>
+        <p className="text-muted-foreground">Bulk import performers and manage import jobs</p>
       </div>
 
       <Card>
@@ -50,4 +50,4 @@ const AdminPage = async (): Promise<ReactElement> => {
   )
 }
 
-export default AdminPage
+export default ImportPage

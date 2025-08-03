@@ -37,15 +37,22 @@ const mainMenuItems: MenuItem[] = [
 
 const adminMenuItems: MenuItem[] = [
   {
-    title: 'Settings',
-    url: '/admin',
+    title: 'Import',
+    url: '/admin/import',
     icon: Settings
   }
 ]
 
 export const AppSidebar = (): ReactElement => (
   <Sidebar>
-    <SidebarHeader></SidebarHeader>
+    <SidebarHeader>
+      <div className="flex items-center gap-2 px-2 py-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground">
+          DL
+        </div>
+        <span className="text-lg font-semibold">DLicious</span>
+      </div>
+    </SidebarHeader>
 
     <SidebarContent>
       <SidebarGroup>

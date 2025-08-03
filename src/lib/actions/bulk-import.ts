@@ -6,7 +6,13 @@ import logger from '@/lib/logger'
 import { triggerBulkImport } from '@/lib/queue/jobs/stash-performer-bulk-import/flow'
 
 /**
- * AIDEV-NOTE: Consider migrating to tRPC/React Query in the future for better type safety.
+ * AIDEV-NOTE: tRPC evaluation completed - current server actions approach is appropriate.
+ * Reasoning:
+ * - Single action function with minimal complexity
+ * - Built-in Next.js form integration works well
+ * - tRPC would add complexity without significant benefit for this simple use case
+ * - Type safety is already provided by TypeScript and server actions
+ * - If more complex API patterns emerge, reconsider tRPC then
  */
 export const bulkImportAction = async (): Promise<void> => {
   try {
