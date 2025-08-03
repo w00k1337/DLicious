@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { ReactElement } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -78,10 +79,14 @@ export const PerformersTable = async ({ filter }: PerformersTableProps): Promise
           <TableBody>
             {performers.map(performer => (
               <TableRow key={performer.id} className="hover:bg-muted/50">
-                <TableCell className="pl-6 font-medium">{performer.name}</TableCell>
+                <TableCell className="pl-6 font-medium">
+                  <Link href={`/performers/${performer.id}`} className="hover:text-primary hover:underline">
+                    {performer.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   {performer.hasNaturalBreasts == null ? (
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-muted-foreground"></span>
                   ) : (
                     <Badge variant={performer.hasNaturalBreasts ? 'default' : 'secondary'}>
                       {performer.hasNaturalBreasts ? 'Natural' : 'Enhanced'}

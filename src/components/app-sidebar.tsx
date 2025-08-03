@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, Users } from 'lucide-react'
+import { Import, LayoutDashboard, Users } from 'lucide-react'
 import type { Route } from 'next'
 import Link from 'next/link'
 import { ReactElement } from 'react'
@@ -39,7 +39,7 @@ const adminMenuItems: MenuItem[] = [
   {
     title: 'Import',
     url: '/admin/import',
-    icon: Settings
+    icon: Import
   }
 ]
 
