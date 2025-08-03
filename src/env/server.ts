@@ -12,7 +12,8 @@ export const env = createEnv({
     REDIS_USERNAME: z.string().default('default'),
     REDIS_PASSWORD: z.string().optional(),
     STASH_BASE_URL: z.url(),
-    STASH_API_KEY: z.string()
+    STASH_API_KEY: z.string(),
+    STASHDB_API_KEY: z.string()
   },
   experimental__runtimeEnv: process.env
 })

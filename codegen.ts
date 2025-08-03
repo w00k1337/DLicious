@@ -11,6 +11,12 @@ const config: CodegenConfig = {
       documents: ['src/lib/api/stash/**/*.ts'],
       preset: 'client',
       config: { documentMode: 'string' }
+    },
+    'src/generated/stashdb/': {
+      schema: [{ ['https://stashdb.org/graphql']: { headers: { ApiKey: process.env.STASHDB_API_KEY ?? '' } } }],
+      documents: ['src/lib/api/stashdb/**/*.ts'],
+      preset: 'client',
+      config: { documentMode: 'string' }
     }
   },
   hooks: {
