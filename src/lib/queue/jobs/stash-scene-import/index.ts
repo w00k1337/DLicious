@@ -65,53 +65,81 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
   async process(job: Job<StashSceneImportJobData, StashSceneImportJobResult>): Promise<StashSceneImportJobResult> {
     const { stashId } = job.data
 
-    logger.debug(
+    logger.info(
       {
         jobId: job.id,
         stashId,
         isChildJob: !!job.parent
       },
-      'Processing stash scene import'
+      'Starting scene import process'
     )
 
-    const stashScene = await getScene(stashId)
+    try {
+      const stashScene = await getScene(stashId)
 
-    if (!stashScene) throw new Error(`Scene with stashId ${String(stashId)} not found`)
+      if (!stashScene) throw new Error(`Scene with stashId ${String(stashId)} not found`)
 
-    logger.debug(
-      {
-        jobId: job.id,
+      logger.info(
+        {
+          jobId: job.id,
+          stashId,
+          sceneTitle: stashScene.title,
+          performerCount: stashScene.performers.length
+        },
+        'Successfully fetched scene from Stash API'
+      )
+
+      const sceneData = mapSceneToPrisma(stashScene)
+
+      // AIDEV-TODO: I guess we should check if the scene already exists in the db by comparing the hashes
+      const existingScene = await prisma.scene.findUnique({ where: { stashId } })
+
+      const existingPerformers = await prisma.performer.findMany({
+        where: {
+          stashId: {
+            in: stashScene.performers.map(performer => performer.id)
+          }
+        },
+        select: { stashId: true }
+      })
+
+      logger.debug(
+        {
+          jobId: job.id,
+          stashId,
+          totalPerformersInScene: stashScene.performers.length,
+          existingPerformersCount: existingPerformers.length,
+          existingPerformerIds: existingPerformers.map(p => p.stashId)
+        },
+        'Found existing performers to connect'
+      )
+
+      const scene = await prisma.scene.upsert({
+        where: { stashId },
+        update: {
+          ...sceneData,
+          performers: {
+            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+          }
+        },
+        create: {
+          ...sceneData,
+          performers: {
+            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+          }
+        }
+      })
+
+      logger.info({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully upserted scene')
+
+      return {
         stashId,
-        sceneTitle: stashScene.title,
-        performerCount: stashScene.performers.length
-      },
-      'Fetched scene from Stash API'
-    )
-
-    const sceneData = mapSceneToPrisma(stashScene)
-
-    const existingScene = await prisma.scene.findUnique({ where: { stashId } })
-
-    const scene = await prisma.scene.upsert({
-      where: { stashId },
-      update: {
-        ...sceneData,
-        performers: {
-          connect: stashScene.performers.map(performer => ({ stashId: performer.id }))
-        }
-      },
-      create: {
-        ...sceneData,
-        performers: {
-          connect: stashScene.performers.map(performer => ({ stashId: performer.id }))
-        }
+        title: scene.title,
+        action: existingScene ? 'updated' : 'created'
       }
-    })
-
-    return {
-      stashId,
-      title: scene.title,
-      action: existingScene ? 'updated' : 'created'
+    } catch (error) {
+      logger.error({ jobId: job.id, stashId, error }, 'Scene import job failed')
+      throw error
     }
   }
 }

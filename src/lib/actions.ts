@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 import { triggerBulkImport } from '@/lib/queue/jobs/stash-performer-bulk-import/flow'
+import { triggerPerformerSceneBulkImport } from '@/lib/queue/jobs/stash-performer-scene-bulk-import'
 
 export const bulkImportAction = async (): Promise<void> => {
   try {
@@ -15,6 +16,22 @@ export const bulkImportAction = async (): Promise<void> => {
     throw error
   } finally {
     revalidatePath('/admin')
+  }
+}
+
+export const importPerformerScenesAction = async (formData: FormData): Promise<void> => {
+  try {
+    const stashId = formData.get('stashId') as string
+
+    if (!stashId) {
+      throw new Error('Stash ID is required')
+    }
+
+    await triggerPerformerSceneBulkImport(Number(stashId))
+    logger.info({ stashId }, 'Scene import triggered successfully from performer page')
+  } catch (error) {
+    logger.error({ error }, 'Failed to trigger scene import from performer page')
+    throw error
   }
 }
 
