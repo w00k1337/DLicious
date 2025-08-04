@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const breastTypeSchema = z.enum(['Fake', 'Natural'])
 export const fingerprintTypeSchema = z.enum(['oshash', 'phash'])
 
-export const performerIdSchema = z.coerce.number().int().positive()
+export const idSchema = z.coerce.number().int().positive()
 
 export const stashSchema = z.object({
   id: z.uuid(),
@@ -25,7 +25,7 @@ export const sceneFileSchema = z.object({
 })
 
 export const performerSchema = z.object({
-  id: performerIdSchema,
+  id: idSchema,
   name: z.string(),
   aliases: z.array(z.string()),
   imageUrl: z.url().optional(),
@@ -45,7 +45,7 @@ export const performerSchema = z.object({
 })
 
 export const sceneSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: idSchema,
   title: z.string(),
   paths: scenePathsSchema,
   files: z.array(sceneFileSchema),

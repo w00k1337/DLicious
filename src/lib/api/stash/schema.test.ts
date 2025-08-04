@@ -4,7 +4,7 @@ import {
   breastTypeSchema,
   fingerprintSchema,
   fingerprintTypeSchema,
-  performerIdSchema,
+  idSchema,
   performerSchema,
   sceneFileSchema,
   scenePathsSchema,
@@ -39,19 +39,19 @@ describe('fingerprintTypeSchema', () => {
   })
 })
 
-describe('performerIdSchema', () => {
+describe('idSchema', () => {
   it('should parse valid performer IDs', () => {
-    expect(performerIdSchema.parse(1)).toBe(1)
-    expect(performerIdSchema.parse('123')).toBe(123)
-    expect(performerIdSchema.parse(999999)).toBe(999999)
+    expect(idSchema.parse(1)).toBe(1)
+    expect(idSchema.parse('123')).toBe(123)
+    expect(idSchema.parse(999999)).toBe(999999)
   })
 
   it('should reject invalid performer IDs', () => {
-    expect(() => performerIdSchema.parse(0)).toThrow()
-    expect(() => performerIdSchema.parse(-1)).toThrow()
-    expect(() => performerIdSchema.parse(1.5)).toThrow()
-    expect(() => performerIdSchema.parse('abc')).toThrow()
-    expect(() => performerIdSchema.parse('')).toThrow()
+    expect(() => idSchema.parse(0)).toThrow()
+    expect(() => idSchema.parse(-1)).toThrow()
+    expect(() => idSchema.parse(1.5)).toThrow()
+    expect(() => idSchema.parse('abc')).toThrow()
+    expect(() => idSchema.parse('')).toThrow()
   })
 })
 

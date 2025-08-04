@@ -16,7 +16,7 @@ import {
 } from '@/generated/stash/graphql'
 
 import { fetchGraphQL } from '../utils'
-import { performerIdSchema, performerSchema, sceneSchema } from './schema'
+import { idSchema, performerSchema, sceneSchema } from './schema'
 import type { Performer, Scene } from './types'
 
 export { GraphQLApiError, NetworkError, ValidationError } from '../utils'
@@ -45,7 +45,7 @@ export const getPerformerIds = async (): Promise<number[]> => {
   `)
 
   const { allPerformers } = await callStashAPI<AllPerformerIdsQuery, AllPerformerIdsQueryVariables>(query)
-  return allPerformers.map(performer => performerIdSchema.parse(performer.id))
+  return allPerformers.map(performer => idSchema.parse(performer.id))
 }
 
 export const getPerformers = async (): Promise<Performer[]> => {
@@ -62,7 +62,7 @@ export const getPerformers = async (): Promise<Performer[]> => {
 }
 
 export const getPerformer = async (id: number): Promise<Performer | undefined> => {
-  const validatedId = performerIdSchema.parse(id)
+  const validatedId = idSchema.parse(id)
 
   const query = graphql(`
     query FindPerformer($id: ID!) {
@@ -80,8 +80,46 @@ export const getPerformer = async (id: number): Promise<Performer | undefined> =
   return performerSchema.parse(findPerformer)
 }
 
+export const getScene = async (id: number): Promise<Scene | undefined> => {
+  const validatedId = idSchema.parse(id)
+
+  const query = graphql(`
+    query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {
+      findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {
+        scenes {
+          id
+          title
+          paths {
+            screenshot
+          }
+          stashes: stash_ids {
+            ...StashFields
+          }
+          files {
+            basename
+            fingerprints {
+              type
+              value
+            }
+          }
+          performers {
+            ...PerformerFields
+          }
+          releasedAt: date
+        }
+      }
+    }
+  `)
+
+  const { findScenes } = await callStashAPI<FindScenesQuery, FindScenesQueryVariables>(query, {
+    ids: [String(validatedId)]
+  })
+
+  return findScenes.scenes.length > 0 ? sceneSchema.parse(findScenes.scenes[0]) : undefined
+}
+
 export const getPerformerScenes = async (id: number): Promise<Scene[]> => {
-  const validatedId = performerIdSchema.parse(id)
+  const validatedId = idSchema.parse(id)
 
   const query = graphql(`
     query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {

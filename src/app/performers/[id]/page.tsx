@@ -1,6 +1,6 @@
 import * as countryCodes from 'country-codes-list'
 import dayjs from 'dayjs'
-import { Calendar, Globe, Heart, Users } from 'lucide-react'
+import { Calendar, Film, Globe, Heart, Users } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -17,9 +17,12 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { importPerformerScenesAction } from '@/lib/actions'
 import prisma from '@/lib/prisma'
 
+import { ImportScenesButton } from './import-scenes-button'
 import { MonitorButton } from './monitor-button'
+import { SceneCard } from './scene-card'
 
 // AIDEV-NOTE: Dynamic page for individual performer details with full data display
 export const dynamic = 'force-dynamic'
@@ -47,7 +50,26 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
       isMonitored: true,
       syncedAt: true,
       createdAt: true,
-      updatedAt: true
+      updatedAt: true,
+      scenes: {
+        select: {
+          id: true,
+          title: true,
+          imageUrl: true,
+          releasedAt: true,
+          stashId: true,
+          stashDbId: true,
+          hashes: {
+            select: {
+              type: true,
+              value: true
+            }
+          }
+        },
+        orderBy: {
+          releasedAt: 'desc'
+        }
+      }
     }
   })
 
@@ -199,6 +221,36 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Film className="h-5 w-5" />
+                  Scenes ({performer.scenes.length})
+                </div>
+                <form action={importPerformerScenesAction}>
+                  <input type="hidden" name="stashId" value={performer.stashId} />
+                  <ImportScenesButton />
+                </form>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {performer.scenes.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {performer.scenes.map(scene => (
+                    <SceneCard key={scene.id} scene={scene} />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <Film className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="text-muted-foreground">No scenes found</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Import scenes for this performer from Stash</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
