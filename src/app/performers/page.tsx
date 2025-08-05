@@ -1,3 +1,4 @@
+import { Users } from 'lucide-react'
 import { ReactElement, Suspense } from 'react'
 
 import { Header } from '@/components/header'
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic'
 const PerformersPage = (): ReactElement => {
   return (
     <>
-      <Header breadcrumbs={[{ label: 'Performers' }]} />
+      <Header breadcrumbs={[{ label: 'Performers', icon: Users }]} />
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold">Performers</h1>

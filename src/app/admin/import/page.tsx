@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react'
 import { ReactElement } from 'react'
 
 import { Header } from '@/components/header'
@@ -16,7 +17,7 @@ const ImportPage = async (): Promise<ReactElement> => {
 
   return (
     <>
-      <Header breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Import' }]} />
+      <Header breadcrumbs={[{ label: 'Admin', icon: Settings }, { label: 'Import' }]} />
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold">Import</h1>
