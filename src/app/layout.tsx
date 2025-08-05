@@ -4,7 +4,6 @@ import { Metadata } from 'next'
 import { ReactElement, ReactNode } from 'react'
 
 import { AppSidebar } from '@/components/app-sidebar'
-import { Header } from '@/components/header'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
@@ -26,8 +25,7 @@ const RootLayout = ({ children }: RootLayoutProps): ReactElement => {
             <div className="flex min-h-screen w-full">
               <AppSidebar />
               <div className="flex flex-1 flex-col">
-                <Header />
-                <main className="flex-1 p-6">{children}</main>
+                <main className="flex-1">{children}</main>
               </div>
             </div>
           </SidebarProvider>

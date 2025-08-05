@@ -1,5 +1,6 @@
 import { ReactElement } from 'react'
 
+import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import prisma from '@/lib/prisma'
 
@@ -11,20 +12,30 @@ const Dashboard = async (): Promise<ReactElement> => {
   const totalMonitored = await prisma.performer.count({ where: { isMonitored: true } })
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Performers</CardTitle>
-        </CardHeader>
-        <CardContent>{totalPerformers}</CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Monitored Performers</CardTitle>
-        </CardHeader>
-        <CardContent>{totalMonitored}</CardContent>
-      </Card>
-    </div>
+    <>
+      <Header breadcrumbs={[{ label: 'Dashboard' }]} />
+      <div className="space-y-6 p-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your performer tracking and monitoring</p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Total Performers</CardTitle>
+            </CardHeader>
+            <CardContent>{totalPerformers}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Monitored Performers</CardTitle>
+            </CardHeader>
+            <CardContent>{totalMonitored}</CardContent>
+          </Card>
+        </div>
+      </div>
+    </>
   )
 }
 
