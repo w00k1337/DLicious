@@ -1,3 +1,4 @@
+import { LayoutDashboard } from 'lucide-react'
 import { ReactElement } from 'react'
 
 import { Header } from '@/components/header'
@@ -13,7 +14,7 @@ const Dashboard = async (): Promise<ReactElement> => {
 
   return (
     <>
-      <Header breadcrumbs={[{ label: 'Dashboard' }]} />
+      <Header breadcrumbs={[{ label: 'Dashboard', icon: LayoutDashboard }]} />
       <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>

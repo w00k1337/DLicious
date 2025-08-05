@@ -86,7 +86,7 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
 
   return (
     <>
-      <Header breadcrumbs={[{ label: 'Performers', href: '/performers' }, { label: performer.name }]} />
+      <Header breadcrumbs={[{ label: 'Performers', href: '/performers', icon: Users }, { label: performer.name }]} />
       <div className="space-y-6 p-6">
         <div className="grid gap-6 md:grid-cols-3">
           <Card className="overflow-hidden p-0 md:col-span-1">

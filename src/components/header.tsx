@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 export interface BreadcrumbItem {
   label: string
   href?: string
+  icon?: React.ElementType
 }
 
 interface HeaderProps {
@@ -32,9 +33,15 @@ export const Header = ({ breadcrumbs }: HeaderProps): ReactElement => {
               <div key={index} className="flex items-center">
                 <BreadcrumbItem>
                   {item.href ? (
-                    <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                    <BreadcrumbLink href={item.href} className="flex items-center gap-1.5">
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      {item.label}
+                    </BreadcrumbLink>
                   ) : (
-                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                    <BreadcrumbPage className="flex items-center gap-1.5">
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      {item.label}
+                    </BreadcrumbPage>
                   )}
                 </BreadcrumbItem>
                 {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
