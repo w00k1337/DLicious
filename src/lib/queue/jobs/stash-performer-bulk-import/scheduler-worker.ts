@@ -1,26 +1,17 @@
 import 'server-only'
 
-import { type Job, Worker } from 'bullmq'
+import { type Job } from 'bullmq'
 
 import logger from '@/lib/logger'
 
-import { BaseWorker } from '../../base'
-import { defaultWorkerOptions } from '../../config'
-import { closeFlowProducer, triggerBulkImport } from './flow'
+import { closeFlowProducer } from '../../flow-producer'
+import { BaseWorker } from '../../worker-factory'
+import { triggerBulkImport } from './flow'
 import { STASH_PERFORMER_BULK_IMPORT_SCHEDULER_QUEUE_NAME } from './queues'
 
-export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<void, void> {
+export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<undefined, undefined> {
   getQueueName(): string {
     return STASH_PERFORMER_BULK_IMPORT_SCHEDULER_QUEUE_NAME
-  }
-
-  start(): void {
-    super.start()
-
-    if (this.worker) return
-
-    this.worker = new Worker(this.getQueueName(), this.process.bind(this), defaultWorkerOptions)
-    this.setupWorkerEventHandlers()
   }
 
   async stop(): Promise<void> {
@@ -35,7 +26,7 @@ export class StashPerformerBulkImportSchedulerWorker extends BaseWorker<void, vo
     await super.stop()
   }
 
-  async process(job: Job): Promise<void> {
+  async process(job: Job): Promise<undefined> {
     logger.debug({ jobId: job.id, jobName: job.name }, 'Processing scheduled bulk import')
     await triggerBulkImport()
   }

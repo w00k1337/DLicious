@@ -1,12 +1,11 @@
 import 'server-only'
 
-import { type Job, Worker } from 'bullmq'
+import { type Job } from 'bullmq'
 
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
-import { BaseWorker } from '../../base'
-import { defaultWorkerOptions } from '../../config'
+import { BaseWorker } from '../../worker-factory'
 import { type StashSceneImportJobResult } from '../stash-scene-import'
 import { STASH_PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME } from './queues'
 import { type StashPerformerSceneBulkImportJobData, type StashPerformerSceneBulkImportJobResult } from './types'
@@ -17,24 +16,6 @@ export class StashPerformerSceneBulkImportWorker extends BaseWorker<
 > {
   getQueueName(): string {
     return STASH_PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME
-  }
-
-  start(): void {
-    super.start()
-
-    if (this.worker) return
-
-    this.worker = new Worker<StashPerformerSceneBulkImportJobData, StashPerformerSceneBulkImportJobResult>(
-      this.getQueueName(),
-      this.process.bind(this),
-      defaultWorkerOptions
-    )
-
-    this.setupWorkerEventHandlers()
-  }
-
-  async stop(): Promise<void> {
-    await super.stop()
   }
 
   async process(

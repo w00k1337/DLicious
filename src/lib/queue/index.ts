@@ -1,3 +1,6 @@
 export * from './config'
+export * from './flow-producer'
 export * from './jobs'
+export * from './queue-factory'
 export * from './types'
+export * from './worker-factory'

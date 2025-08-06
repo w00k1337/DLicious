@@ -1,43 +1,17 @@
-import { FlowProducer } from 'bullmq'
-
 import { getPerformerScenes } from '@/lib/api/stash'
 import logger from '@/lib/logger'
 
-import { defaultQueueOptions } from '../../config'
+import { getFlowProducer } from '../../flow-producer'
 import { getStashSceneImportQueue } from '../stash-scene-import'
-import { getStashPerformerSceneBulkImportQueue } from './index'
-
-// AIDEV-NOTE: Lazy-initialized instances because we don't want to connect to Redis during build
-let flowProducer: FlowProducer | null = null
-let isClosing = false
-
-const getFlowProducer = (): FlowProducer => {
-  if (isClosing) {
-    throw new Error('FlowProducer is being closed, cannot create new operations')
-  }
-  flowProducer ??= new FlowProducer({ connection: defaultQueueOptions.connection })
-  return flowProducer
-}
-
-export const closeSceneFlowProducer = async (): Promise<void> => {
-  if (!flowProducer || isClosing) return
-
-  isClosing = true
-  try {
-    await flowProducer.close()
-    flowProducer = null
-  } finally {
-    isClosing = false
-  }
-}
+import { getStashPerformerSceneBulkImportQueue } from './queues'
 
 export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<void> => {
-  logger.info({ stashId }, 'Triggering bulk import of scenes for performer')
+  logger.debug({ stashId }, 'Triggering bulk import of scenes for performer')
 
   const stashScenes = await getPerformerScenes(stashId)
 
   if (stashScenes.length === 0) {
-    logger.info({ stashId }, 'No scenes found for performer, skipping bulk import')
+    logger.warn({ stashId }, 'No scenes found for performer, skipping bulk import')
     return
   }
 
@@ -57,5 +31,5 @@ export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<
     }))
   })
 
-  logger.info({ stashId, sceneCount: stashScenes.length }, 'Performer scene bulk import triggered successfully')
+  logger.debug({ stashId, sceneCount: stashScenes.length }, 'Performer scene bulk import triggered successfully')
 }
