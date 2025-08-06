@@ -2,9 +2,10 @@ import { FlowProducer } from 'bullmq'
 
 import logger from '@/lib/logger'
 
-import { defaultQueueOptions } from './config'
+import { getSharedRedisConnection } from './config'
 
 // AIDEV-NOTE: Lazy initialization of FlowProducer to avoid connection to Redis on build time
+// Now uses shared Redis connection to prevent connection pool exhaustion
 let flowProducer: FlowProducer | null = null
 let isClosing = false
 
@@ -14,8 +15,8 @@ export const getFlowProducer = (): FlowProducer => {
   }
 
   if (!flowProducer) {
-    flowProducer = new FlowProducer({ connection: defaultQueueOptions.connection })
-    logger.debug('FlowProducer instance created')
+    flowProducer = new FlowProducer({ connection: getSharedRedisConnection() })
+    logger.debug('FlowProducer instance created with shared Redis connection')
   }
 
   return flowProducer

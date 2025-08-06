@@ -49,10 +49,10 @@ pnpm build            # Build for production
 pnpm start            # Start production server
 
 # Code Quality
-pnpm lint             # Run Next.js linter
 pnpm lint:js          # Run ESLint with max 0 warnings
 pnpm prettier:check   # Check code formatting
 pnpm prettier:fix     # Fix code formatting
+pnpm typecheck        # Run tsc
 
 # Testing
 pnpm test             # Run Vitest tests
