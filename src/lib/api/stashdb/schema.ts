@@ -19,7 +19,7 @@ export const hashSchema = z.object({
 export const performerSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  disambiguation: z.string().optional()
+  disambiguation: z.string().nullable().optional()
 })
 
 export const performerAppearanceSchema = z.object({
@@ -29,7 +29,7 @@ export const performerAppearanceSchema = z.object({
 export const siteSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  url: z.url().optional()
+  url: z.string().nullable().optional()
 })
 
 export const urlSchema = z.object({
@@ -39,12 +39,12 @@ export const urlSchema = z.object({
 
 export const sceneSchema = z.object({
   id: z.uuid(),
-  title: z.string().optional(),
-  details: z.string().optional(),
-  director: z.string().optional(),
-  code: z.string().optional(),
-  releasedAt: z.coerce.date().optional(),
-  duration: z.number().optional(),
+  title: z.string().nullable().optional(),
+  details: z.string().nullable().optional(),
+  director: z.string().nullable().optional(),
+  code: z.string().nullable().optional(),
+  releasedAt: z.coerce.date().nullable().optional(),
+  duration: z.number().nullable().optional(),
   images: z.array(imageSchema).default([]),
   fingerprints: z.array(hashSchema).default([]),
   performers: z.array(performerAppearanceSchema).default([]),

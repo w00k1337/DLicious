@@ -48,6 +48,7 @@ enum HashType {
 model Performer {
   id                String    @id @default(cuid())
   stashId           Int       @unique
+  stashDbId         String?   @unique
   name              String
   aliases           String[]  @default([])
   imageUrl          String

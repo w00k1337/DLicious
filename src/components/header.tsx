@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 
-// AIDEV-NOTE: Header component with data-driven breadcrumbs and global actions
 export interface BreadcrumbItem {
   label: string
   href?: string
@@ -52,6 +51,7 @@ export const Header = ({ breadcrumbs }: HeaderProps): ReactElement => {
 
         <div className="flex items-center gap-2">
           <div className="relative">
+            {/* AIDEV-NOTE: This is a placeholder for notifications. */}
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <Badge

@@ -43,8 +43,28 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
 
     const sceneData = mapSceneToPrisma(stashScene)
 
-    // AIDEV-TODO: I guess we should check if the scene already exists in the db by comparing the hashes too
-    const existingScene = await prisma.scene.findUnique({ where: { stashId } })
+    // AIDEV-NOTE: Hash-based scene identification - find existing scene by hashes (true identifier)
+    let existingScene = null
+    if (sceneData.hashes && 'connectOrCreate' in sceneData.hashes && Array.isArray(sceneData.hashes.connectOrCreate)) {
+      const hashValues = sceneData.hashes.connectOrCreate.map(h => h.create.value)
+
+      existingScene = await prisma.scene.findFirst({
+        where: {
+          hashes: {
+            some: {
+              value: { in: hashValues }
+            }
+          }
+        },
+        select: { id: true, title: true, stashId: true, stashDbId: true }
+      })
+    }
+
+    // If no scene found by hash, check by stashId as fallback
+    existingScene ??= await prisma.scene.findUnique({
+      where: { stashId },
+      select: { id: true, title: true, stashId: true, stashDbId: true }
+    })
 
     const existingPerformers = await prisma.performer.findMany({
       where: {
@@ -61,33 +81,50 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
         stashId,
         totalPerformersInScene: stashScene.performers.length,
         existingPerformersCount: existingPerformers.length,
-        existingPerformerIds: existingPerformers.map(p => p.stashId)
+        existingPerformerIds: existingPerformers.map(p => p.stashId),
+        existingSceneFound: !!existingScene,
+        foundBy: existingScene?.stashId === stashId ? 'stashId' : 'hash'
       },
-      'Found existing performers to connect'
+      'Found existing performers and scene info'
     )
 
-    const scene = await prisma.scene.upsert({
-      where: { stashId },
-      update: {
-        ...sceneData,
-        performers: {
-          connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+    if (existingScene) {
+      // Update existing scene (found by hash or stashId)
+      const scene = await prisma.scene.update({
+        where: { id: existingScene.id },
+        data: {
+          ...sceneData,
+          performers: {
+            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+          }
         }
-      },
-      create: {
-        ...sceneData,
-        performers: {
-          connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-        }
+      })
+
+      logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully updated scene')
+
+      return {
+        stashId,
+        title: scene.title,
+        action: 'updated'
       }
-    })
+    } else {
+      // Create new scene
+      const scene = await prisma.scene.create({
+        data: {
+          ...sceneData,
+          performers: {
+            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+          }
+        }
+      })
 
-    logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully upserted scene')
+      logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully created scene')
 
-    return {
-      stashId,
-      title: scene.title,
-      action: existingScene ? 'updated' : 'created'
+      return {
+        stashId,
+        title: scene.title,
+        action: 'created'
+      }
     }
   }
 }
