@@ -2,15 +2,18 @@ import { Job, Worker } from 'bullmq'
 
 import logger from '@/lib/logger'
 
-import { defaultWorkerOptions } from './config'
+import { getSharedRedisConnection, getWorkerOptions } from './config'
 
 export const createWorker = <TJobData, TJobResult>(
   queueName: string,
   processor: (job: Job<TJobData, TJobResult>) => Promise<TJobResult>
 ): Worker<TJobData, TJobResult> => {
-  logger.debug({ queueName }, 'Creating worker')
+  // AIDEV-NOTE: Initialize shared connection early to ensure connection reuse
+  getSharedRedisConnection()
 
-  const worker = new Worker<TJobData, TJobResult>(queueName, processor, defaultWorkerOptions)
+  logger.debug({ queueName }, 'Creating worker with optimized Redis connection')
+
+  const worker = new Worker<TJobData, TJobResult>(queueName, processor, getWorkerOptions())
 
   worker.on('completed', (job, result) => {
     logger.info({ queueName, jobId: job.id, result }, 'Job completed')
@@ -50,7 +53,7 @@ export abstract class BaseWorker<TJobData, TJobResult> {
     this.worker ??= createWorker<TJobData, TJobResult>(this.getQueueName(), this.process.bind(this))
 
     this.isRunning = true
-    logger.info({ queueName: this.getQueueName() }, 'Worker started')
+    logger.debug({ queueName: this.getQueueName() }, 'Worker started')
   }
 
   async stop(): Promise<void> {
@@ -78,7 +81,7 @@ export abstract class BaseWorker<TJobData, TJobResult> {
     }
 
     this.isRunning = false
-    logger.info({ queueName: this.getQueueName() }, 'Worker stopped')
+    logger.debug({ queueName: this.getQueueName() }, 'Worker stopped')
   }
 
   isActive(): boolean {

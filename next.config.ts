@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     ]
   },
   output: 'standalone',
-  serverExternalPackages: ['bullmq', 'pino']
+  serverExternalPackages: ['bullmq', 'ioredis', 'pino']
 }
 
 export default nextConfig

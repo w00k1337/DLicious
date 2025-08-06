@@ -1,5 +1,3 @@
-// import ms from 'ms'
-
 import logger from '@/lib/logger'
 
 export const register = async (): Promise<void> => {
@@ -12,10 +10,12 @@ export const register = async (): Promise<void> => {
     const { stashPerformerSceneBulkImportWorker } = await import('@/lib/queue/jobs/stash-performer-scene-bulk-import')
 
     stashPerformerImportWorker.start()
-    stashPerformerBulkImportWorker.start()
-    stashPerformerBulkImportSchedulerWorker.start()
     stashSceneImportWorker.start()
+
+    stashPerformerBulkImportWorker.start()
     stashPerformerSceneBulkImportWorker.start()
+
+    stashPerformerBulkImportSchedulerWorker.start()
 
     logger.info('Background workers initialized and recurring jobs scheduled')
   }

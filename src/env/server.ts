@@ -7,6 +7,7 @@ export const env = createEnv({
     DATABASE_URL: z.url(),
     DIRECT_URL: z.url(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    QUEUE_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(5),
     REDIS_HOST: z.string().default('localhost'),
     REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
     REDIS_USERNAME: z.string().default('default'),

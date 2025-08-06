@@ -15,6 +15,8 @@ export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<
     return
   }
 
+  logger.debug({ stashId, totalScenes: stashScenes.length }, 'Creating unified flow for scene import')
+
   await getFlowProducer().add({
     name: `bulk-import-performer-${String(stashId)}-scenes`,
     queueName: getStashPerformerSceneBulkImportQueue().name,
@@ -30,6 +32,4 @@ export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<
       }
     }))
   })
-
-  logger.debug({ stashId, sceneCount: stashScenes.length }, 'Performer scene bulk import triggered successfully')
 }

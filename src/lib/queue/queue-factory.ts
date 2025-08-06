@@ -2,21 +2,18 @@ import { type JobsOptions, Queue } from 'bullmq'
 
 import logger from '@/lib/logger'
 
-import { defaultQueueOptions } from './config'
+import { getQueueOptions, getSharedRedisConnection } from './config'
 
 export const createQueue = <TJobData = unknown, TJobResult = unknown>(
   queueName: string,
   customJobOptions?: Partial<JobsOptions>
 ): Queue<TJobData, TJobResult> => {
-  logger.debug({ queueName }, 'Creating queue')
+  // AIDEV-NOTE: Initialize shared connection early to ensure connection reuse
+  getSharedRedisConnection()
 
-  return new Queue<TJobData, TJobResult>(queueName, {
-    ...defaultQueueOptions,
-    defaultJobOptions: {
-      ...defaultQueueOptions.defaultJobOptions,
-      ...customJobOptions
-    }
-  })
+  logger.debug({ queueName }, 'Creating queue with optimized Redis connection')
+
+  return new Queue<TJobData, TJobResult>(queueName, getQueueOptions(customJobOptions))
 }
 
 // AIDEV-NOTE: Lazy initialization to avoid connection to Redis on build time
