@@ -2,6 +2,38 @@ import { Job, Worker } from 'bullmq'
 
 import logger from '@/lib/logger'
 
+import { defaultWorkerOptions } from './config'
+
+export const createWorker = <TJobData, TJobResult>(
+  queueName: string,
+  processor: (job: Job<TJobData, TJobResult>) => Promise<TJobResult>
+): Worker<TJobData, TJobResult> => {
+  logger.debug({ queueName }, 'Creating worker')
+
+  const worker = new Worker<TJobData, TJobResult>(queueName, processor, defaultWorkerOptions)
+
+  worker.on('completed', (job, result) => {
+    logger.info({ queueName, jobId: job.id, result }, 'Job completed')
+  })
+
+  worker.on('error', error => {
+    logger.error({ queueName, error: error.message }, 'Worker error')
+  })
+
+  worker.on('failed', (job, error) => {
+    logger.error(
+      {
+        jobId: job?.id,
+        queueName,
+        error: error.message
+      },
+      'Job failed'
+    )
+  })
+
+  return worker
+}
+
 export abstract class BaseWorker<TJobData, TJobResult> {
   protected worker: Worker<TJobData, TJobResult> | null = null
   protected isRunning = false
@@ -15,31 +47,10 @@ export abstract class BaseWorker<TJobData, TJobResult> {
       return
     }
 
+    this.worker ??= createWorker<TJobData, TJobResult>(this.getQueueName(), this.process.bind(this))
+
     this.isRunning = true
-    logger.info({ queueName: this.getQueueName() }, 'Starting worker')
-  }
-
-  protected setupWorkerEventHandlers(): void {
-    if (!this.worker) return
-
-    this.worker.on('completed', (job, result) => {
-      logger.info({ queueName: this.getQueueName(), jobId: job.id, result }, 'Job completed')
-    })
-
-    this.worker.on('error', error => {
-      logger.error({ queueName: this.getQueueName(), error: error.message }, 'Worker error')
-    })
-
-    this.worker.on('failed', (job, error) => {
-      logger.error(
-        {
-          jobId: job?.id,
-          queueName: this.getQueueName(),
-          error: error.message
-        },
-        'Job failed'
-      )
-    })
+    logger.info({ queueName: this.getQueueName() }, 'Worker started')
   }
 
   async stop(): Promise<void> {
@@ -48,7 +59,7 @@ export abstract class BaseWorker<TJobData, TJobResult> {
       return
     }
 
-    logger.info({ queueName: this.getQueueName() }, 'Stopping worker...')
+    logger.debug({ queueName: this.getQueueName() }, 'Stopping worker...')
 
     if (this.worker) {
       try {
