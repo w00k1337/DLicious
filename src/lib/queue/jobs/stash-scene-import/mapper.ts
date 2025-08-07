@@ -48,9 +48,12 @@ export const mapSceneToPrisma = (
     // AIDEV-TODO: Add a placeholder image url
     imageUrl: scene.paths.screenshot ?? '',
     releasedAt: scene.releasedAt,
+    isAvailableLocally: true,
     hashes: {
       connectOrCreate: hashes.map(({ type, value }) => ({
-        where: { type_value: { type, value } },
+        where: {
+          type_value: { type, value }
+        },
         create: { type, value }
       }))
     }

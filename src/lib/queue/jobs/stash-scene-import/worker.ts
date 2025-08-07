@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { type Job } from 'bullmq'
+import ms from 'ms'
 
 import { getScene } from '@/lib/api/stash'
 import logger from '@/lib/logger'
@@ -43,52 +44,62 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
 
     const sceneData = mapSceneToPrisma(stashScene)
 
-    // AIDEV-TODO: I guess we should check if the scene already exists in the db by comparing the hashes too
-    const existingScene = await prisma.scene.findUnique({ where: { stashId } })
+    const result = await prisma.$transaction(
+      async tx => {
+        // AIDEV-NOTE: Find existing performers first to avoid multiple queries
+        const existingPerformers = await tx.performer.findMany({
+          where: {
+            stashId: {
+              in: stashScene.performers.map(performer => performer.id)
+            }
+          },
+          select: { stashId: true }
+        })
 
-    const existingPerformers = await prisma.performer.findMany({
-      where: {
-        stashId: {
-          in: stashScene.performers.map(performer => performer.id)
+        // AIDEV-NOTE: Use upsert to handle race conditions elegantly
+        const scene = await tx.scene.upsert({
+          where: { stashId },
+          update: {
+            ...sceneData,
+            performers: {
+              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+            }
+          },
+          create: {
+            ...sceneData,
+            performers: {
+              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+            }
+          }
+        })
+
+        const action: 'created' | 'updated' =
+          scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
+
+        logger.debug(
+          {
+            jobId: job.id,
+            stashId,
+            sceneId: scene.id,
+            sceneTitle: scene.title,
+            action,
+            performerCount: existingPerformers.length
+          },
+          `Successfully ${action} scene`
+        )
+
+        return {
+          stashId,
+          title: scene.title,
+          action
         }
       },
-      select: { stashId: true }
-    })
-
-    logger.debug(
       {
-        jobId: job.id,
-        stashId,
-        totalPerformersInScene: stashScene.performers.length,
-        existingPerformersCount: existingPerformers.length,
-        existingPerformerIds: existingPerformers.map(p => p.stashId)
-      },
-      'Found existing performers to connect'
+        timeout: ms('30s')
+      }
     )
 
-    const scene = await prisma.scene.upsert({
-      where: { stashId },
-      update: {
-        ...sceneData,
-        performers: {
-          connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-        }
-      },
-      create: {
-        ...sceneData,
-        performers: {
-          connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-        }
-      }
-    })
-
-    logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully upserted scene')
-
-    return {
-      stashId,
-      title: scene.title,
-      action: existingScene ? 'updated' : 'created'
-    }
+    return result
   }
 }
 

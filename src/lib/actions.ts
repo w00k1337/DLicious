@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
+import { idSchema } from '@/lib/api/stash/schema'
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 import { triggerBulkImport } from '@/lib/queue/jobs/stash-performer-bulk-import/flow'
@@ -21,13 +23,9 @@ export const bulkImportAction = async (): Promise<void> => {
 
 export const importPerformerScenesAction = async (formData: FormData): Promise<void> => {
   try {
-    const stashId = formData.get('stashId') as string
+    const stashId = idSchema.parse(formData.get('stashId'))
 
-    if (!stashId) {
-      throw new Error('Stash ID is required')
-    }
-
-    await triggerPerformerSceneBulkImport(Number(stashId))
+    await triggerPerformerSceneBulkImport(stashId)
     logger.info({ stashId }, 'Scene import triggered successfully from performer page')
   } catch (error) {
     logger.error({ error }, 'Failed to trigger scene import from performer page')
@@ -37,11 +35,8 @@ export const importPerformerScenesAction = async (formData: FormData): Promise<v
 
 export const togglePerformerMonitoringFormAction = async (formData: FormData): Promise<void> => {
   try {
-    const performerId = formData.get('performerId') as string
-
-    if (!performerId) {
-      throw new Error('Performer ID is required')
-    }
+    const schema = z.object({ performerId: z.string().min(1) })
+    const { performerId } = schema.parse({ performerId: formData.get('performerId') })
 
     const currentPerformer = await prisma.performer.findUnique({
       where: { id: performerId },
@@ -58,7 +53,7 @@ export const togglePerformerMonitoringFormAction = async (formData: FormData): P
     revalidatePath(`/performers/${performerId}`)
     revalidatePath('/performers')
   } catch (error) {
-    logger.error(error, 'Error toggling performer monitoring')
+    logger.error({ error }, 'Error toggling performer monitoring')
     throw error
   }
 }

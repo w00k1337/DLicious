@@ -5,6 +5,10 @@ import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import prisma from '@/lib/prisma'
 
+/**
+ * AIDEV-NOTE: This page is a placeholder for the dashboard. Whenever new features are added, we should check if we can incorporate them here.
+ */
+
 // AIDEV-NOTE: Because we use prisma in this page, we need to force dynamic rendering so the build doesn't fail.
 export const dynamic = 'force-dynamic'
 

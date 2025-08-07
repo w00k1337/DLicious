@@ -13,8 +13,20 @@ export const mapPerformerToPrisma = (
   const { cupSize, bandSize } = parsedMeasurements.success ? parsedMeasurements.data : { cupSize: null, bandSize: null }
   const validatedCountry = parsedCountry?.success ? parsedCountry.data : performer.country
 
+  // AIDEV-NOTE: Extract StashDB ID from stashes array if it exists
+  const stashDbId =
+    performer.stashes.find(stash => {
+      try {
+        const host = new URL(stash.endpoint).host
+        return host === 'stashdb.org' || host.endsWith('.stashdb.org')
+      } catch {
+        return false
+      }
+    })?.id ?? null
+
   return {
     stashId: performer.id,
+    stashDbId,
     name: performer.name,
     aliases: performer.aliases,
     imageUrl: performer.imageUrl ?? '',

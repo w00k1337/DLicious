@@ -6,6 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { PerformersTable } from './performers-table'
 
+/**
+ * AIDEV-NOTE: This page uses a table to display performers for now. We want to replace this with a grid view.
+ */
+
 // AIDEV-NOTE: Because we use prisma in this page, we need to force dynamic rendering so the build doesn't fail.
 export const dynamic = 'force-dynamic'
 

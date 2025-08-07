@@ -16,9 +16,19 @@ const createPrismaClient = () =>
         imageUrl: {
           needs: { imageUrl: true },
           compute: (performer: { imageUrl: string }) => {
-            const urlObj = new URL(performer.imageUrl)
-            urlObj.searchParams.set('apikey', env.STASH_API_KEY)
-            return urlObj.toString()
+            try {
+              const originalUrl = new URL(performer.imageUrl)
+              const stashBase = new URL(env.STASH_BASE_URL)
+              // Proxy only Stash-hosted images to avoid exposing the API key to clients
+              if (originalUrl.host === stashBase.host) {
+                const proxyUrl = new URL('/api/image', stashBase.origin)
+                proxyUrl.searchParams.set('url', performer.imageUrl)
+                return proxyUrl.pathname + '?' + proxyUrl.searchParams.toString()
+              }
+              return performer.imageUrl
+            } catch {
+              return performer.imageUrl
+            }
           }
         }
       },
@@ -26,9 +36,18 @@ const createPrismaClient = () =>
         imageUrl: {
           needs: { imageUrl: true },
           compute: (scene: { imageUrl: string }) => {
-            const urlObj = new URL(scene.imageUrl)
-            urlObj.searchParams.set('apikey', env.STASH_API_KEY)
-            return urlObj.toString()
+            try {
+              const originalUrl = new URL(scene.imageUrl)
+              const stashBase = new URL(env.STASH_BASE_URL)
+              if (originalUrl.host === stashBase.host) {
+                const proxyUrl = new URL('/api/image', stashBase.origin)
+                proxyUrl.searchParams.set('url', scene.imageUrl)
+                return proxyUrl.pathname + '?' + proxyUrl.searchParams.toString()
+              }
+              return scene.imageUrl
+            } catch {
+              return scene.imageUrl
+            }
           }
         }
       }

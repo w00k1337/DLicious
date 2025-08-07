@@ -7,8 +7,11 @@ import prisma from '@/lib/prisma'
 
 import { BaseWorker } from '../../worker-factory'
 import { type StashSceneImportJobResult } from '../stash-scene-import'
+import { type StashDbSceneImportJobResult } from '../stashdb-scene-import'
 import { STASH_PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME } from './queues'
 import { type StashPerformerSceneBulkImportJobData, type StashPerformerSceneBulkImportJobResult } from './types'
+
+type SceneImportResult = StashSceneImportJobResult | StashDbSceneImportJobResult
 
 export class StashPerformerSceneBulkImportWorker extends BaseWorker<
   StashPerformerSceneBulkImportJobData,
@@ -23,17 +26,41 @@ export class StashPerformerSceneBulkImportWorker extends BaseWorker<
   ): Promise<StashPerformerSceneBulkImportJobResult> {
     const { stashId } = job.data
 
-    logger.debug({ jobId: job.id, stashId }, 'Processing performer scene bulk import')
+    logger.debug({ jobId: job.id, stashId }, 'Processing performer scene bulk import from both Stash and StashDB')
 
     const performer = await prisma.performer.findUnique({ where: { stashId } })
 
     if (!performer) throw new Error(`Performer with stashId ${String(stashId)} not found`)
 
-    const childrenValues = await job.getChildrenValues<StashSceneImportJobResult>()
+    const childrenValues = await job.getChildrenValues<SceneImportResult>()
+    const results = Object.values(childrenValues)
 
-    const totalProcessed = Object.values(childrenValues).length
-    const totalCreated = Object.values(childrenValues).filter(result => result.action === 'created').length
-    const totalUpdated = Object.values(childrenValues).filter(result => result.action === 'updated').length
+    // Separate results by source (distinguish by field presence)
+    const stashResults = results.filter(
+      (result): result is StashSceneImportJobResult => 'stashId' in result && typeof result.stashId === 'number'
+    )
+    const stashDbResults = results.filter(
+      (result): result is StashDbSceneImportJobResult => 'stashDbId' in result && typeof result.stashDbId === 'string'
+    )
+
+    // Calculate totals
+    const totalProcessed = results.length
+    const totalCreated = results.filter(result => result.action === 'created').length
+    const totalUpdated = results.filter(result => result.action === 'updated').length
+
+    // Calculate Stash breakdown
+    const stashStats = {
+      processed: stashResults.length,
+      created: stashResults.filter(result => result.action === 'created').length,
+      updated: stashResults.filter(result => result.action === 'updated').length
+    }
+
+    // Calculate StashDb breakdown
+    const stashDbStats = {
+      processed: stashDbResults.length,
+      created: stashDbResults.filter(result => result.action === 'created').length,
+      updated: stashDbResults.filter(result => result.action === 'updated').length
+    }
 
     logger.debug(
       {
@@ -42,9 +69,11 @@ export class StashPerformerSceneBulkImportWorker extends BaseWorker<
         performerName: performer.name,
         totalProcessed,
         totalCreated,
-        totalUpdated
+        totalUpdated,
+        stashStats,
+        stashDbStats
       },
-      'Completed performer scene bulk import'
+      'Completed performer scene bulk import from both sources'
     )
 
     return {
@@ -52,7 +81,9 @@ export class StashPerformerSceneBulkImportWorker extends BaseWorker<
       performerName: performer.name,
       totalProcessed,
       totalCreated,
-      totalUpdated
+      totalUpdated,
+      stash: stashStats,
+      stashdb: stashDbStats
     }
   }
 }

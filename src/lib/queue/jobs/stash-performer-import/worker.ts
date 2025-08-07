@@ -37,19 +37,20 @@ export class StashPerformerImportWorker extends BaseWorker<StashPerformerImportJ
 
     const performerData = mapPerformerToPrisma(stashPerformer)
 
-    const existingPerformer = await prisma.performer.findUnique({ where: { stashId } })
-
     const performer = await prisma.performer.upsert({
       where: { stashId },
       update: performerData,
       create: performerData
     })
 
+    const action: 'created' | 'updated' =
+      performer.createdAt.getTime() === performer.updatedAt.getTime() ? 'created' : 'updated'
+
     return {
       stashId,
       performerId: performer.id,
       name: performer.name,
-      action: existingPerformer ? 'updated' : 'created'
+      action
     }
   }
 }
