@@ -51,6 +51,7 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
           releasedAt: true,
           stashId: true,
           stashDbId: true,
+          isAvailableLocally: true,
           hashes: {
             select: {
               type: true,

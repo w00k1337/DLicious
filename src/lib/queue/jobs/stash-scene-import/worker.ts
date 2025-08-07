@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { type Job } from 'bullmq'
+import ms from 'ms'
 
 import { getScene } from '@/lib/api/stash'
 import logger from '@/lib/logger'
@@ -43,89 +44,62 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
 
     const sceneData = mapSceneToPrisma(stashScene)
 
-    // AIDEV-NOTE: Hash-based scene identification - find existing scene by hashes (true identifier)
-    let existingScene = null
-    if (sceneData.hashes && 'connectOrCreate' in sceneData.hashes && Array.isArray(sceneData.hashes.connectOrCreate)) {
-      const hashValues = sceneData.hashes.connectOrCreate.map(h => h.create.value)
+    const result = await prisma.$transaction(
+      async tx => {
+        // AIDEV-NOTE: Find existing performers first to avoid multiple queries
+        const existingPerformers = await tx.performer.findMany({
+          where: {
+            stashId: {
+              in: stashScene.performers.map(performer => performer.id)
+            }
+          },
+          select: { stashId: true }
+        })
 
-      existingScene = await prisma.scene.findFirst({
-        where: {
-          hashes: {
-            some: {
-              value: { in: hashValues }
+        // AIDEV-NOTE: Use upsert to handle race conditions elegantly
+        const scene = await tx.scene.upsert({
+          where: { stashId },
+          update: {
+            ...sceneData,
+            performers: {
+              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+            }
+          },
+          create: {
+            ...sceneData,
+            performers: {
+              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
             }
           }
-        },
-        select: { id: true, title: true, stashId: true, stashDbId: true }
-      })
-    }
+        })
 
-    // If no scene found by hash, check by stashId as fallback
-    existingScene ??= await prisma.scene.findUnique({
-      where: { stashId },
-      select: { id: true, title: true, stashId: true, stashDbId: true }
-    })
+        const action: 'created' | 'updated' =
+          scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
 
-    const existingPerformers = await prisma.performer.findMany({
-      where: {
-        stashId: {
-          in: stashScene.performers.map(performer => performer.id)
+        logger.debug(
+          {
+            jobId: job.id,
+            stashId,
+            sceneId: scene.id,
+            sceneTitle: scene.title,
+            action,
+            performerCount: existingPerformers.length
+          },
+          `Successfully ${action} scene`
+        )
+
+        return {
+          stashId,
+          title: scene.title,
+          action
         }
       },
-      select: { stashId: true }
-    })
-
-    logger.debug(
       {
-        jobId: job.id,
-        stashId,
-        totalPerformersInScene: stashScene.performers.length,
-        existingPerformersCount: existingPerformers.length,
-        existingPerformerIds: existingPerformers.map(p => p.stashId),
-        existingSceneFound: !!existingScene,
-        foundBy: existingScene?.stashId === stashId ? 'stashId' : 'hash'
-      },
-      'Found existing performers and scene info'
+        timeout: ms('30s')
+      }
     )
 
-    if (existingScene) {
-      // Update existing scene (found by hash or stashId)
-      const scene = await prisma.scene.update({
-        where: { id: existingScene.id },
-        data: {
-          ...sceneData,
-          performers: {
-            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-          }
-        }
-      })
-
-      logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully updated scene')
-
-      return {
-        stashId,
-        title: scene.title,
-        action: 'updated'
-      }
-    } else {
-      // Create new scene
-      const scene = await prisma.scene.create({
-        data: {
-          ...sceneData,
-          performers: {
-            connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-          }
-        }
-      })
-
-      logger.debug({ jobId: job.id, stashId, sceneId: scene.id, sceneTitle: scene.title }, 'Successfully created scene')
-
-      return {
-        stashId,
-        title: scene.title,
-        action: 'created'
-      }
-    }
+    return result
   }
 }
 

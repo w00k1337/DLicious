@@ -25,16 +25,39 @@ export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<
   const stashDbScenes: { id: string }[] = []
 
   if (performer.stashDbId) {
-    const stashDbResults = await getStashDbPerformerScenes(performer.stashDbId)
-    stashDbScenes.push(...stashDbResults.scenes)
+    // AIDEV-NOTE: Fetch all paginated scenes from StashDB
+    let currentPage = 1
+    let hasNextPage = true
+
+    while (hasNextPage) {
+      const stashDbResults = await getStashDbPerformerScenes(performer.stashDbId, currentPage)
+      stashDbScenes.push(...stashDbResults.scenes)
+
+      logger.debug(
+        {
+          stashId,
+          stashDbId: performer.stashDbId,
+          currentPage,
+          scenesInPage: stashDbResults.scenes.length,
+          totalFetchedSoFar: stashDbScenes.length,
+          totalScenes: stashDbResults.totalCount,
+          hasNextPage: stashDbResults.hasNextPage
+        },
+        'Fetched StashDb scenes page'
+      )
+
+      hasNextPage = stashDbResults.hasNextPage
+      currentPage++
+    }
 
     logger.debug(
       {
         stashId,
         stashDbId: performer.stashDbId,
-        totalStashDbScenes: stashDbScenes.length
+        totalStashDbScenes: stashDbScenes.length,
+        totalPagesFetched: currentPage - 1
       },
-      'Fetched scenes from StashDb'
+      'Completed fetching all StashDb scenes'
     )
   } else {
     logger.debug({ stashId }, 'Performer has no StashDb ID, skipping StashDb scene import')

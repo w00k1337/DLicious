@@ -1,4 +1,5 @@
 import dayjs from 'dayjs'
+import { Play } from 'lucide-react'
 import Image from 'next/image'
 import { ReactElement } from 'react'
 
@@ -13,6 +14,7 @@ interface SceneCardProps {
     releasedAt: Date
     stashId: number | null
     stashDbId: string | null
+    isAvailableLocally: boolean
     hashes: {
       type: string
       value: string
@@ -20,10 +22,9 @@ interface SceneCardProps {
   }
 }
 
-// AIDEV-NOTE: Scene card component for displaying individual scenes with metadata and hashes
+// AIDEV-NOTE: Scene card component for displaying individual scenes with metadata and local availability
 export const SceneCard = ({ scene }: SceneCardProps): ReactElement => {
   const releaseDateFormatted = dayjs(scene.releasedAt).format('MMM D, YYYY')
-  const hasHashes = scene.hashes.length > 0
 
   return (
     <Card className="overflow-hidden p-0">
@@ -38,9 +39,10 @@ export const SceneCard = ({ scene }: SceneCardProps): ReactElement => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {hasHashes && (
-              <Badge variant="secondary" className="text-xs">
-                {scene.hashes.length} hash{scene.hashes.length !== 1 ? 'es' : ''}
+            {scene.isAvailableLocally && (
+              <Badge variant="default" className="text-xs">
+                <Play className="mr-1 h-3 w-3" />
+                Available
               </Badge>
             )}
           </div>

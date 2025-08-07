@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { type Job } from 'bullmq'
+import ms from 'ms'
 
 import { getSceneById } from '@/lib/api/stashdb'
 import logger from '@/lib/logger'
@@ -45,99 +46,76 @@ export class StashDbSceneImportWorker extends BaseWorker<StashDbSceneImportJobDa
 
     const sceneData = mapStashDbSceneToPrisma(stashDbScene)
 
-    // AIDEV-NOTE: Hash-based scene identification - find existing scene by hashes (true identifier)
-    let existingScene = null
+    // AIDEV-NOTE: Handle hash race conditions by retrying the transaction on unique constraint failures
+    const result = await this.executeWithRetry(
+      async () => {
+        return await prisma.$transaction(
+          async tx => {
+            // AIDEV-NOTE: Find existing performers first to avoid multiple queries
+            const existingPerformers = await tx.performer.findMany({
+              where: {
+                stashDbId: {
+                  in: stashDbScene.performers.map(performer => performer.performer.id)
+                }
+              },
+              select: { stashDbId: true }
+            })
 
-    if (sceneData.hashes && 'connectOrCreate' in sceneData.hashes && Array.isArray(sceneData.hashes.connectOrCreate)) {
-      const hashValues = sceneData.hashes.connectOrCreate.map(h => h.create.value)
+            // AIDEV-NOTE: Use upsert to handle race conditions elegantly
+            const scene = await tx.scene.upsert({
+              where: { stashDbId },
+              update: {
+                ...sceneData,
+                // AIDEV-NOTE: Don't overwrite isAvailableLocally - preserve Stash availability status
+                isAvailableLocally: undefined,
+                performers: {
+                  connect: existingPerformers
+                    .filter((performer): performer is { stashDbId: string } => performer.stashDbId !== null)
+                    .map(performer => ({ stashDbId: performer.stashDbId }))
+                }
+              },
+              create: {
+                ...sceneData,
+                performers: {
+                  connect: existingPerformers
+                    .filter((performer): performer is { stashDbId: string } => performer.stashDbId !== null)
+                    .map(performer => ({ stashDbId: performer.stashDbId }))
+                }
+              }
+            })
 
-      existingScene = await prisma.scene.findFirst({
-        where: {
-          hashes: {
-            some: {
-              value: { in: hashValues }
+            const action: 'created' | 'updated' =
+              scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
+
+            logger.debug(
+              {
+                jobId: job.id,
+                stashDbId,
+                sceneId: scene.id,
+                sceneTitle: scene.title,
+                action,
+                performerCount: existingPerformers.length
+              },
+              `Successfully ${action} StashDb scene`
+            )
+
+            return {
+              stashDbId,
+              title: scene.title,
+              action
             }
+          },
+          {
+            timeout: ms('30s'),
+            maxWait: ms('30s')
           }
-        },
-        select: { id: true, title: true, stashId: true, stashDbId: true }
-      })
-    }
-
-    // If no scene found by hash, check by stashDbId as fallback
-    existingScene ??= await prisma.scene.findUnique({
-      where: { stashDbId },
-      select: { id: true, title: true, stashId: true, stashDbId: true }
-    })
-
-    if (existingScene) {
-      logger.debug(
-        {
-          jobId: job.id,
-          stashDbId,
-          existingSceneId: existingScene.id,
-          existingStashId: existingScene.stashId,
-          existingStashDbId: existingScene.stashDbId,
-          foundBy: existingScene.stashDbId === stashDbId ? 'stashDbId' : 'hash'
-        },
-        'Scene already exists, updating with StashDb data'
-      )
-
-      // Update using the scene ID (works regardless of how we found it)
-      const scene = await prisma.scene.update({
-        where: { id: existingScene.id },
-        data: sceneData
-      })
-
-      return {
-        stashDbId,
-        title: scene.title,
-        action: 'updated'
-      }
-    }
-
-    // Find existing performers by stashDbId to connect them
-    const existingPerformers = await prisma.performer.findMany({
-      where: {
-        stashDbId: {
-          in: stashDbScene.performers.map(performer => performer.performer.id)
-        }
+        )
       },
-      select: { stashDbId: true }
-    })
-
-    logger.debug(
-      {
-        jobId: job.id,
-        stashDbId,
-        totalPerformersInScene: stashDbScene.performers.length,
-        existingPerformersCount: existingPerformers.length,
-        existingPerformerIds: existingPerformers.map(p => p.stashDbId)
-      },
-      'Found existing performers to connect'
+      'hash unique constraint',
+      3
     )
 
-    // Create new scene
-    const scene = await prisma.scene.create({
-      data: {
-        ...sceneData,
-        performers: {
-          connect: existingPerformers
-            .filter((performer): performer is { stashDbId: string } => performer.stashDbId !== null)
-            .map(performer => ({ stashDbId: performer.stashDbId }))
-        }
-      }
-    })
-
-    logger.debug(
-      { jobId: job.id, stashDbId, sceneId: scene.id, sceneTitle: scene.title },
-      'Successfully created StashDb scene'
-    )
-
-    return {
-      stashDbId,
-      title: scene.title,
-      action: 'created'
-    }
+    return result
   }
 }
 
