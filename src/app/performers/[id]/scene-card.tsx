@@ -25,11 +25,12 @@ interface SceneCardProps {
 // AIDEV-NOTE: Scene card component for displaying individual scenes with metadata and local availability
 export const SceneCard = ({ scene }: SceneCardProps): ReactElement => {
   const releaseDateFormatted = dayjs(scene.releasedAt).format('MMM D, YYYY')
+  const safeImageSrc = scene.imageUrl && scene.imageUrl.trim().length > 0 ? scene.imageUrl : '/placeholder.svg'
 
   return (
     <Card className="overflow-hidden p-0">
       <div className="aspect-video w-full overflow-hidden">
-        <Image src={scene.imageUrl} alt={scene.title} width={300} height={169} className="h-full w-full object-cover" />
+        <Image src={safeImageSrc} alt={scene.title} width={300} height={169} className="h-full w-full object-cover" />
       </div>
       <CardContent className="p-4">
         <div className="space-y-3">

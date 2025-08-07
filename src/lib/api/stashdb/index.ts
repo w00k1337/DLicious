@@ -1,6 +1,8 @@
 // Import fragments to ensure they're included in the bundle
 import './fragments'
 
+import { z } from 'zod'
+
 import { env } from '@/env/server'
 import { graphql } from '@/generated/stashdb'
 import type {
@@ -48,14 +50,6 @@ export const getSceneById = async (id: string): Promise<Scene | undefined> => {
   return sceneSchema.parse(findScene)
 }
 
-interface SceneSearchOptions {
-  text?: string
-  performerIds?: string[]
-  studioIds?: string[]
-  tagIds?: string[]
-  page?: number
-}
-
 interface PaginatedSceneResults {
   scenes: Scene[]
   totalCount: number
@@ -65,9 +59,18 @@ interface PaginatedSceneResults {
   hasPreviousPage: boolean
 }
 
-// AIDEV-TODO: Validate page number
-export const searchScenes = async (options: SceneSearchOptions = {}): Promise<PaginatedSceneResults> => {
-  const { text, performerIds = [], studioIds = [], tagIds = [], page = 1 } = options
+const sceneSearchOptionsSchema = z
+  .object({
+    text: z.string().trim().min(1).optional(),
+    performerIds: z.array(z.uuid()).optional().default([]),
+    studioIds: z.array(z.uuid()).optional().default([]),
+    tagIds: z.array(z.uuid()).optional().default([]),
+    page: z.coerce.number().int().min(1).optional().default(1)
+  })
+  .strict()
+
+export const searchScenes = async (options: unknown = {}): Promise<PaginatedSceneResults> => {
+  const { text, performerIds, studioIds, tagIds, page } = sceneSearchOptionsSchema.parse(options)
 
   const perPage = 100
 
