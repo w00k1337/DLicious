@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// AIDEV-NOTE: StashDB schemas focused on scene fetching only
 export const imageSchema = z.object({
   id: z.uuid(),
   url: z.url(),
@@ -50,3 +49,13 @@ export const sceneSchema = z.object({
   performers: z.array(performerAppearanceSchema).default([]),
   urls: z.array(urlSchema).default([])
 })
+
+export const sceneSearchOptionsSchema = z
+  .object({
+    text: z.string().trim().min(1).optional(),
+    performerIds: z.array(z.uuid()).optional().default([]),
+    studioIds: z.array(z.uuid()).optional().default([]),
+    tagIds: z.array(z.uuid()).optional().default([]),
+    page: z.coerce.number().int().min(1).optional().default(1)
+  })
+  .strict()
