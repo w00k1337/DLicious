@@ -1,31 +1,25 @@
-import { Hash as PrismaHash, HashType } from '@/generated/prisma'
+import { HashType } from '@/generated/prisma'
 import { getScene } from '@/lib/api/stash'
 import type { Scene } from '@/lib/api/stash/types'
 
-import type { PrismaTransaction, SceneImportHandler, SceneImportJobAction, SceneTransactionResult } from '../types'
-
-type Hash = Pick<PrismaHash, 'type' | 'value'>
+import type { PrismaTransaction, SceneImportHandler, SceneTransactionResult } from '../types'
+import { dedupeHashes, determineAction, type Hash, mapHashesToConnectOrCreate } from './utils'
 
 const extractHashesFromScene = (scene: Scene): Hash[] => {
-  const allFingerprints = scene.files.flatMap(file => file.fingerprints)
-  const uniqueHashes = new Map<string, Hash>()
-
   const typeToEnum: Record<string, HashType | undefined> = {
     phash: HashType.PHASH,
     oshash: HashType.OSHASH
   }
 
-  for (const fp of allFingerprints) {
-    const enumVal = typeToEnum[fp.type]
-    if (enumVal !== undefined) {
-      const key = `${String(enumVal)}:${fp.value}`
-      if (!uniqueHashes.has(key)) {
-        uniqueHashes.set(key, { type: enumVal, value: fp.value })
-      }
-    }
-  }
+  const entries = scene.files
+    .flatMap(file => file.fingerprints)
+    .map(fp => {
+      const enumVal = typeToEnum[fp.type]
+      return enumVal ? { type: enumVal, value: fp.value } : null
+    })
+    .filter((v): v is Hash => v !== null)
 
-  return Array.from(uniqueHashes.values())
+  return dedupeHashes(entries)
 }
 
 export class StashSceneHandler implements SceneImportHandler<Scene> {
@@ -69,37 +63,27 @@ export class StashSceneHandler implements SceneImportHandler<Scene> {
       imageUrl: screenshot,
       // AIDEV-NOTE: Every scene should have a release date, but we'll default to now if it doesn't exist which is a bit of a hack
       releasedAt: releasedAt ?? new Date(),
-      hashes: {
-        connectOrCreate: hashes.map(({ type, value }) => ({
-          where: { type_value: { type, value } },
-          create: { type, value }
-        }))
-      }
+      hashes: { connectOrCreate: mapHashesToConnectOrCreate(hashes) }
     }
 
     // Upsert scene with performer connections
+    const connectPerformers = existingPerformers
+      .filter((performer: { stashId: number | null }): performer is { stashId: number } => performer.stashId !== null)
+      .map((performer: { stashId: number }) => ({ stashId: performer.stashId }))
+
     const upsertedScene = await tx.scene.upsert({
       where: { stashId },
       update: {
         ...sceneData,
-        performers: {
-          connect: existingPerformers
-            .filter((performer: { stashId: number | null }) => performer.stashId !== null)
-            .map((performer: { stashId: number }) => ({ stashId: performer.stashId }))
-        }
+        performers: { connect: connectPerformers }
       },
       create: {
         ...sceneData,
-        performers: {
-          connect: existingPerformers
-            .filter((performer: { stashId: number | null }) => performer.stashId !== null)
-            .map((performer: { stashId: number }) => ({ stashId: performer.stashId }))
-        }
+        performers: { connect: connectPerformers }
       }
     })
 
-    const action: SceneImportJobAction =
-      upsertedScene.createdAt.getTime() === upsertedScene.updatedAt.getTime() ? 'created' : 'updated'
+    const action = determineAction(upsertedScene.createdAt, upsertedScene.updatedAt)
 
     return {
       scene: {

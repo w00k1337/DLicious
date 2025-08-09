@@ -1,33 +1,26 @@
 // AIDEV-NOTE: ESLint disable rules removed due to proper transaction typing
-import { Hash as PrismaHash, HashType } from '@/generated/prisma'
+import { HashType } from '@/generated/prisma'
 import { getSceneById } from '@/lib/api/stashdb'
 import type { Scene } from '@/lib/api/stashdb/types'
 
-import type { PrismaTransaction, SceneImportHandler, SceneImportJobAction, SceneTransactionResult } from '../types'
-
-type Hash = Pick<PrismaHash, 'type' | 'value'>
+import type { PrismaTransaction, SceneImportHandler, SceneTransactionResult } from '../types'
+import { dedupeHashes, determineAction, type Hash, mapHashesToConnectOrCreate } from './utils'
 
 const extractHashesFromStashDbScene = (scene: Scene): Hash[] => {
-  const uniqueHashes = new Map<string, Hash>()
-
   const algoToEnum: Record<string, HashType | undefined> = {
     phash: HashType.PHASH,
     oshash: HashType.OSHASH,
     md5: HashType.MD5
   }
 
-  for (const fp of scene.fingerprints) {
-    const algo = fp.algorithm.toLowerCase()
-    const enumVal = algoToEnum[algo]
-    if (enumVal !== undefined) {
-      const key = `${String(enumVal)}:${fp.hash}`
-      if (!uniqueHashes.has(key)) {
-        uniqueHashes.set(key, { type: enumVal, value: fp.hash })
-      }
-    }
-  }
+  const entries = scene.fingerprints
+    .map(fp => {
+      const enumVal = algoToEnum[fp.algorithm.toLowerCase()]
+      return enumVal ? { type: enumVal, value: fp.hash } : null
+    })
+    .filter((v): v is Hash => v !== null)
 
-  return Array.from(uniqueHashes.values())
+  return dedupeHashes(entries)
 }
 
 export class StashDbSceneHandler implements SceneImportHandler<Scene> {
@@ -59,43 +52,29 @@ export class StashDbSceneHandler implements SceneImportHandler<Scene> {
       title: scene.title ?? 'Untitled Scene',
       imageUrl,
       releasedAt: scene.releasedAt ?? new Date(),
-      hashes: {
-        connectOrCreate: hashes.map(({ type, value }) => ({
-          where: { type_value: { type, value } },
-          create: { type, value }
-        }))
-      }
+      hashes: { connectOrCreate: mapHashesToConnectOrCreate(hashes) }
     }
 
     // Upsert scene with performer connections
+    const connectPerformers = existingPerformers
+      .filter(
+        (performer: { stashDbId: string | null }): performer is { stashDbId: string } => performer.stashDbId !== null
+      )
+      .map((performer: { stashDbId: string }) => ({ stashDbId: performer.stashDbId }))
+
     const upsertedScene = await tx.scene.upsert({
       where: { stashDbId: sourceId },
       update: {
         ...sceneData,
-        performers: {
-          connect: existingPerformers
-            .filter(
-              (performer: { stashDbId: string | null }): performer is { stashDbId: string } =>
-                performer.stashDbId !== null
-            )
-            .map((performer: { stashDbId: string }) => ({ stashDbId: performer.stashDbId }))
-        }
+        performers: { connect: connectPerformers }
       },
       create: {
         ...sceneData,
-        performers: {
-          connect: existingPerformers
-            .filter(
-              (performer: { stashDbId: string | null }): performer is { stashDbId: string } =>
-                performer.stashDbId !== null
-            )
-            .map((performer: { stashDbId: string }) => ({ stashDbId: performer.stashDbId }))
-        }
+        performers: { connect: connectPerformers }
       }
     })
 
-    const action: SceneImportJobAction =
-      upsertedScene.createdAt.getTime() === upsertedScene.updatedAt.getTime() ? 'created' : 'updated'
+    const action = determineAction(upsertedScene.createdAt, upsertedScene.updatedAt)
 
     return {
       scene: {
