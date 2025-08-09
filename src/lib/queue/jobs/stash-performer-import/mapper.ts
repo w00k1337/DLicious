@@ -29,7 +29,7 @@ export const mapPerformerToPrisma = (
     stashDbId,
     name: performer.name,
     aliases: performer.aliases,
-    imageUrl: performer.imageUrl ?? '',
+    imageUrl: performer.imageUrl ?? '/placeholder.svg',
     country: validatedCountry,
     birthdate: performer.birthdate,
     cupSize,

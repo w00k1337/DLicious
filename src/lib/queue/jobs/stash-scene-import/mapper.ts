@@ -13,8 +13,8 @@ const extractHashesFromScene = (scene: Scene): Hash[] => {
   const uniqueHashes = new Map<string, Hash>()
 
   for (const fp of allFingerprints) {
-    const validTypes = ['phash', 'oshash', 'md5'] as const
-    if (validTypes.includes(fp.type as (typeof validTypes)[number])) {
+    const validTypes = ['phash', 'oshash'] as const
+    if (validTypes.includes(fp.type)) {
       const hashType = fp.type.toUpperCase() as HashType
       const key = `${hashType}:${fp.value}`
 
@@ -45,9 +45,8 @@ export const mapSceneToPrisma = (
     stashId: scene.id,
     stashDbId,
     title: scene.title,
-    // AIDEV-TODO: Add a placeholder image url
-    imageUrl: scene.paths.screenshot ?? '',
-    releasedAt: scene.releasedAt,
+    imageUrl: scene.paths.screenshot ?? '/placeholder.svg',
+    releasedAt: scene.releasedAt ?? new Date(),
     isAvailableLocally: true,
     hashes: {
       connectOrCreate: hashes.map(({ type, value }) => ({

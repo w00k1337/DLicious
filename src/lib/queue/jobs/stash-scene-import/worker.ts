@@ -44,59 +44,64 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
 
     const sceneData = mapSceneToPrisma(stashScene)
 
-    const result = await prisma.$transaction(
-      async tx => {
-        // AIDEV-NOTE: Find existing performers first to avoid multiple queries
-        const existingPerformers = await tx.performer.findMany({
-          where: {
-            stashId: {
-              in: stashScene.performers.map(performer => performer.id)
+    const result = await this.executeWithRetry(
+      async () =>
+        prisma.$transaction(
+          async tx => {
+            // AIDEV-NOTE: Find existing performers first to avoid multiple queries
+            const existingPerformers = await tx.performer.findMany({
+              where: {
+                stashId: {
+                  in: stashScene.performers.map(performer => performer.id)
+                }
+              },
+              select: { stashId: true }
+            })
+
+            // AIDEV-NOTE: Use upsert to handle race conditions elegantly
+            const scene = await tx.scene.upsert({
+              where: { stashId },
+              update: {
+                ...sceneData,
+                performers: {
+                  connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+                }
+              },
+              create: {
+                ...sceneData,
+                performers: {
+                  connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
+                }
+              }
+            })
+
+            const action: 'created' | 'updated' =
+              scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
+
+            logger.debug(
+              {
+                jobId: job.id,
+                stashId,
+                sceneId: scene.id,
+                sceneTitle: scene.title,
+                action,
+                performerCount: existingPerformers.length
+              },
+              `Successfully ${action} scene`
+            )
+
+            return {
+              stashId,
+              title: scene.title,
+              action
             }
           },
-          select: { stashId: true }
-        })
-
-        // AIDEV-NOTE: Use upsert to handle race conditions elegantly
-        const scene = await tx.scene.upsert({
-          where: { stashId },
-          update: {
-            ...sceneData,
-            performers: {
-              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-            }
-          },
-          create: {
-            ...sceneData,
-            performers: {
-              connect: existingPerformers.map(performer => ({ stashId: performer.stashId }))
-            }
-          }
-        })
-
-        const action: 'created' | 'updated' =
-          scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
-
-        logger.debug(
           {
-            jobId: job.id,
-            stashId,
-            sceneId: scene.id,
-            sceneTitle: scene.title,
-            action,
-            performerCount: existingPerformers.length
-          },
-          `Successfully ${action} scene`
-        )
-
-        return {
-          stashId,
-          title: scene.title,
-          action
-        }
-      },
-      {
-        timeout: ms('30s')
-      }
+            timeout: ms('30s')
+          }
+        ),
+      'hash unique constraint',
+      3
     )
 
     return result

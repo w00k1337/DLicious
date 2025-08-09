@@ -17,12 +17,26 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       return NextResponse.redirect(originalUrl.toString(), 302)
     }
 
+    // Basic path/extension allowlist to reduce risk of proxying non-images
+    const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg']
+    const lowerPathname = originalUrl.pathname.toLowerCase()
+    const hasAllowedExtension = allowedImageExtensions.some(ext => lowerPathname.endsWith(ext))
+    if (!hasAllowedExtension) {
+      return NextResponse.json({ error: 'Forbidden path' }, { status: 403 })
+    }
+
     originalUrl.searchParams.set('apikey', env.STASH_API_KEY)
 
-    const res = await fetch(originalUrl.toString())
+    const res = await fetch(originalUrl.toString(), {
+      headers: { Accept: 'image/*' }
+    })
     if (!res.ok) return NextResponse.json({ error: 'Upstream error' }, { status: 502 })
 
     const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+    // Ensure we only ever return images
+    if (!contentType.toLowerCase().startsWith('image/')) {
+      return NextResponse.json({ error: 'Upstream returned non-image content' }, { status: 502 })
+    }
     const buf = await res.arrayBuffer()
     return new NextResponse(buf, {
       status: 200,

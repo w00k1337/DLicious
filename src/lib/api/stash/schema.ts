@@ -51,5 +51,5 @@ export const sceneSchema = z.object({
   files: z.array(sceneFileSchema),
   stashes: z.array(stashSchema),
   performers: z.array(performerSchema),
-  releasedAt: z.coerce.date()
+  releasedAt: z.coerce.date().nullable().optional()
 })
