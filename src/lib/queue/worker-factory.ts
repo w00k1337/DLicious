@@ -1,6 +1,7 @@
 import { Job, Worker } from 'bullmq'
 import ms from 'ms'
 
+import { Prisma } from '@/generated/prisma'
 import logger from '@/lib/logger'
 
 import { getSharedRedisConnection, getWorkerOptions } from './config'
@@ -104,9 +105,8 @@ export abstract class BaseWorker<TJobData, TJobResult> {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error')
 
-        // Check if this is a retryable error (unique constraint violation)
-        const isRetryableError =
-          lastError.message.includes('Unique constraint failed') || lastError.message.includes('unique constraint')
+        const isKnown = error instanceof Prisma.PrismaClientKnownRequestError
+        const isRetryableError = isKnown && (error.code === 'P2002' || error.code === 'P2034')
 
         if (!isRetryableError || attempt === maxRetries) {
           logger.error(

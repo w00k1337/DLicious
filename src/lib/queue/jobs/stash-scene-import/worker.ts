@@ -10,7 +10,7 @@ import prisma from '@/lib/prisma'
 import { BaseWorker } from '../../worker-factory'
 import { STASH_SCENE_IMPORT_QUEUE_NAME } from '.'
 import { mapSceneToPrisma } from './mapper'
-import { type StashSceneImportJobData, type StashSceneImportJobResult } from './types'
+import { StashSceneImportJobAction, type StashSceneImportJobData, type StashSceneImportJobResult } from './types'
 
 export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, StashSceneImportJobResult> {
   getQueueName(): string {
@@ -75,7 +75,7 @@ export class StashSceneImportWorker extends BaseWorker<StashSceneImportJobData, 
               }
             })
 
-            const action: 'created' | 'updated' =
+            const action: StashSceneImportJobAction =
               scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
 
             logger.debug(

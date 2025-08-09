@@ -12,15 +12,14 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     const originalUrl = new URL(urlParam)
     const stashBase = new URL(env.STASH_BASE_URL)
 
-    // Only proxy images from the configured Stash instance
     if (originalUrl.host !== stashBase.host) {
       return NextResponse.redirect(originalUrl.toString(), 302)
     }
 
-    // Basic path/extension allowlist to reduce risk of proxying non-images
-    const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg']
+    const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']
     const lowerPathname = originalUrl.pathname.toLowerCase()
     const hasAllowedExtension = allowedImageExtensions.some(ext => lowerPathname.endsWith(ext))
+
     if (!hasAllowedExtension) {
       return NextResponse.json({ error: 'Forbidden path' }, { status: 403 })
     }
@@ -33,7 +32,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     if (!res.ok) return NextResponse.json({ error: 'Upstream error' }, { status: 502 })
 
     const contentType = res.headers.get('content-type') ?? 'image/jpeg'
-    // Ensure we only ever return images
+
     if (!contentType.toLowerCase().startsWith('image/')) {
       return NextResponse.json({ error: 'Upstream returned non-image content' }, { status: 502 })
     }

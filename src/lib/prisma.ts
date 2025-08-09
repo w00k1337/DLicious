@@ -1,7 +1,6 @@
 import { env } from '@/env/server'
 import { PrismaClient } from '@/generated/prisma'
 
-// Define factory returning the extended Prisma client to capture its type
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const createExtendedPrismaClient = () =>
   new PrismaClient({

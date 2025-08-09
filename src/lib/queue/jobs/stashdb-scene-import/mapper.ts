@@ -1,24 +1,24 @@
-import type { Prisma } from '@/generated/prisma'
+import { Hash as PrismaHash, HashType, type Prisma } from '@/generated/prisma'
 import type { Scene } from '@/lib/api/stashdb/types'
 
-type HashType = 'PHASH' | 'OSHASH' | 'MD5'
-
-interface Hash {
-  type: HashType
-  value: string
-}
+type Hash = Pick<PrismaHash, 'type' | 'value'>
 
 const extractHashesFromStashDbScene = (scene: Scene): Hash[] => {
   const uniqueHashes = new Map<string, Hash>()
 
-  for (const fp of scene.fingerprints) {
-    const validTypes = ['phash', 'oshash', 'md5'] as const
-    if (validTypes.includes(fp.algorithm.toLowerCase() as (typeof validTypes)[number])) {
-      const hashType = fp.algorithm.toUpperCase() as HashType
-      const key = `${hashType}:${fp.hash}`
+  const algoToEnum: Record<string, HashType | undefined> = {
+    phash: HashType.PHASH,
+    oshash: HashType.OSHASH,
+    md5: HashType.MD5
+  }
 
+  for (const fp of scene.fingerprints) {
+    const algo = fp.algorithm.toLowerCase()
+    const enumVal = algoToEnum[algo]
+    if (enumVal !== undefined) {
+      const key = `${String(enumVal)}:${fp.hash}`
       if (!uniqueHashes.has(key)) {
-        uniqueHashes.set(key, { type: hashType, value: fp.hash })
+        uniqueHashes.set(key, { type: enumVal, value: fp.hash })
       }
     }
   }

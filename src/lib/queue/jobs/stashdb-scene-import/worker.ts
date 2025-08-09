@@ -10,7 +10,7 @@ import prisma from '@/lib/prisma'
 import { BaseWorker } from '../../worker-factory'
 import { STASHDB_SCENE_IMPORT_QUEUE_NAME } from '.'
 import { mapStashDbSceneToPrisma } from './mapper'
-import { type StashDbSceneImportJobData, type StashDbSceneImportJobResult } from './types'
+import { StashDbSceneImportJobAction, type StashDbSceneImportJobData, type StashDbSceneImportJobResult } from './types'
 
 export class StashDbSceneImportWorker extends BaseWorker<StashDbSceneImportJobData, StashDbSceneImportJobResult> {
   getQueueName(): string {
@@ -66,8 +66,6 @@ export class StashDbSceneImportWorker extends BaseWorker<StashDbSceneImportJobDa
               where: { stashDbId },
               update: {
                 ...sceneData,
-                // AIDEV-NOTE: Don't overwrite isAvailableLocally - preserve Stash availability status
-                isAvailableLocally: undefined,
                 performers: {
                   connect: existingPerformers
                     .filter((performer): performer is { stashDbId: string } => performer.stashDbId !== null)
@@ -84,7 +82,7 @@ export class StashDbSceneImportWorker extends BaseWorker<StashDbSceneImportJobDa
               }
             })
 
-            const action: 'created' | 'updated' =
+            const action: StashDbSceneImportJobAction =
               scene.createdAt.getTime() === scene.updatedAt.getTime() ? 'created' : 'updated'
 
             logger.debug(
@@ -106,8 +104,7 @@ export class StashDbSceneImportWorker extends BaseWorker<StashDbSceneImportJobDa
             }
           },
           {
-            timeout: ms('30s'),
-            maxWait: ms('30s')
+            timeout: ms('30s')
           }
         )
       },

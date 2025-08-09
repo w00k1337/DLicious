@@ -1,3 +1,5 @@
+export type StashSceneImportJobAction = 'created' | 'updated'
+
 export interface StashSceneImportJobData {
   stashId: number
 }
@@ -5,5 +7,5 @@ export interface StashSceneImportJobData {
 export interface StashSceneImportJobResult {
   stashId: number
   title: string
-  action: 'created' | 'updated'
+  action: StashSceneImportJobAction
 }
