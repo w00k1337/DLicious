@@ -1,8 +1,8 @@
-import { Hash as PrismaHash, HashType, type Prisma } from '@/generated/prisma'
+import { Hash as PrismaHash, HashType } from '@/generated/prisma'
 import { getScene } from '@/lib/api/stash'
 import type { Scene } from '@/lib/api/stash/types'
 
-import type { SceneImportHandler } from '../types'
+import type { PrismaTransaction, SceneImportHandler, SceneImportJobAction, SceneTransactionResult } from '../types'
 
 type Hash = Pick<PrismaHash, 'type' | 'value'>
 
@@ -38,8 +38,18 @@ export class StashSceneHandler implements SceneImportHandler<Scene> {
     return scene
   }
 
-  mapToPrisma(scene: Scene): Omit<Prisma.SceneCreateInput, 'id' | 'createdAt' | 'updatedAt' | 'performers'> {
-    const { id, title, paths, releasedAt } = scene
+  async executeTransaction(tx: PrismaTransaction, scene: Scene, sourceId: string): Promise<SceneTransactionResult> {
+    const stashId = parseInt(sourceId, 10)
+    const performerIds = scene.performers.map(performer => performer.id)
+
+    // Find existing performers
+    const existingPerformers = await tx.performer.findMany({
+      where: { stashId: { in: performerIds } },
+      select: { stashId: true }
+    })
+
+    // Map scene data to Prisma format
+    const { title, paths, releasedAt } = scene
     const { screenshot } = paths
     const hashes = extractHashesFromScene(scene)
     const stashDbId =
@@ -52,8 +62,8 @@ export class StashSceneHandler implements SceneImportHandler<Scene> {
         }
       })?.id ?? null
 
-    return {
-      stashId: id,
+    const sceneData = {
+      stashId: scene.id,
       stashDbId,
       title,
       imageUrl: screenshot,
@@ -66,17 +76,40 @@ export class StashSceneHandler implements SceneImportHandler<Scene> {
         }))
       }
     }
-  }
 
-  getPerformerIds(scene: Scene): number[] {
-    return scene.performers.map(performer => performer.id)
-  }
+    // Upsert scene with performer connections
+    const upsertedScene = await tx.scene.upsert({
+      where: { stashId },
+      update: {
+        ...sceneData,
+        performers: {
+          connect: existingPerformers
+            .filter((performer: { stashId: number | null }) => performer.stashId !== null)
+            .map((performer: { stashId: number }) => ({ stashId: performer.stashId }))
+        }
+      },
+      create: {
+        ...sceneData,
+        performers: {
+          connect: existingPerformers
+            .filter((performer: { stashId: number | null }) => performer.stashId !== null)
+            .map((performer: { stashId: number }) => ({ stashId: performer.stashId }))
+        }
+      }
+    })
 
-  getPerformerConnectionField(): string {
-    return 'stashId'
-  }
+    const action: SceneImportJobAction =
+      upsertedScene.createdAt.getTime() === upsertedScene.updatedAt.getTime() ? 'created' : 'updated'
 
-  getSceneIdField(): string {
-    return 'stashId'
+    return {
+      scene: {
+        id: upsertedScene.id,
+        title: upsertedScene.title,
+        createdAt: upsertedScene.createdAt,
+        updatedAt: upsertedScene.updatedAt
+      },
+      action,
+      performerCount: existingPerformers.length
+    }
   }
 }
