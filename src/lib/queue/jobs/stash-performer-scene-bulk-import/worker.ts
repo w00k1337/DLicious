@@ -6,12 +6,9 @@ import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
 import { BaseWorker } from '../../worker-factory'
-import { type StashSceneImportJobResult } from '../stash-scene-import'
-import { type StashDbSceneImportJobResult } from '../stashdb-scene-import'
+import { type SceneImportJobResult } from '../scene-import'
 import { STASH_PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME } from './queues'
 import { type StashPerformerSceneBulkImportJobData, type StashPerformerSceneBulkImportJobResult } from './types'
-
-type SceneImportResult = StashSceneImportJobResult | StashDbSceneImportJobResult
 
 export class StashPerformerSceneBulkImportWorker extends BaseWorker<
   StashPerformerSceneBulkImportJobData,
@@ -32,16 +29,12 @@ export class StashPerformerSceneBulkImportWorker extends BaseWorker<
 
     if (!performer) throw new Error(`Performer with stashId ${String(stashId)} not found`)
 
-    const childrenValues = await job.getChildrenValues<SceneImportResult>()
+    const childrenValues = await job.getChildrenValues<SceneImportJobResult>()
     const results = Object.values(childrenValues)
 
-    // Separate results by source (distinguish by field presence)
-    const stashResults = results.filter(
-      (result): result is StashSceneImportJobResult => 'stashId' in result && typeof result.stashId === 'number'
-    )
-    const stashDbResults = results.filter(
-      (result): result is StashDbSceneImportJobResult => 'stashDbId' in result && typeof result.stashDbId === 'string'
-    )
+    // Separate results by source
+    const stashResults = results.filter(result => result.source === 'stash')
+    const stashDbResults = results.filter(result => result.source === 'stashdb')
 
     // Calculate totals
     const totalProcessed = results.length

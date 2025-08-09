@@ -4,8 +4,7 @@ import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
 import { getFlowProducer } from '../../flow-producer'
-import { getStashSceneImportQueue } from '../stash-scene-import'
-import { getStashDbSceneImportQueue } from '../stashdb-scene-import'
+import { getSceneImportQueue } from '../scene-import'
 import { getStashPerformerSceneBulkImportQueue } from './queues'
 
 export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<void> => {
@@ -83,24 +82,24 @@ export const triggerPerformerSceneBulkImport = async (stashId: number): Promise<
 
   // Create child jobs for Stash scenes
   const stashChildJobs = stashScenes.map(scene => ({
-    name: `import-stash-scene-${String(scene.id)}`,
-    queueName: getStashSceneImportQueue().name,
-    data: { stashId: scene.id },
+    name: `import-scene-stash-${String(scene.id)}`,
+    queueName: getSceneImportQueue().name,
+    data: { source: 'stash' as const, sourceId: String(scene.id) },
     // AIDEV-NOTE: We explicitly set the jobId and removeOnComplete to true to avoid importing the same scene multiple times
     opts: {
-      jobId: `import-stash-scene-${String(scene.id)}`,
+      jobId: `import-scene-stash-${String(scene.id)}`,
       removeOnComplete: true
     }
   }))
 
   // Create child jobs for StashDb scenes
   const stashDbChildJobs = stashDbScenes.map(scene => ({
-    name: `import-stashdb-scene-${scene.id}`,
-    queueName: getStashDbSceneImportQueue().name,
-    data: { stashDbId: scene.id },
+    name: `import-scene-stashdb-${scene.id}`,
+    queueName: getSceneImportQueue().name,
+    data: { source: 'stashdb' as const, sourceId: scene.id },
     // AIDEV-NOTE: We explicitly set the jobId and removeOnComplete to true to avoid importing the same scene multiple times
     opts: {
-      jobId: `import-stashdb-scene-${scene.id}`,
+      jobId: `import-scene-stashdb-${scene.id}`,
       removeOnComplete: true
     }
   }))
