@@ -31,7 +31,6 @@ export const mapStashDbSceneToPrisma = (
 ): Omit<Prisma.SceneCreateInput, 'id' | 'createdAt' | 'updatedAt' | 'performers' | 'stashId'> => {
   const hashes = extractHashesFromStashDbScene(scene)
 
-  // Get the best available image (largest resolution)
   const imageUrl = scene.images.sort((a, b) => b.width * b.height - a.width * a.height)[0]?.url ?? ''
 
   return {

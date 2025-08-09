@@ -25,7 +25,7 @@ const extractHashesFromScene = (scene: Scene): Hash[] => {
   return Array.from(uniqueHashes.values())
 }
 
-export const mapSceneToPrisma = (
+export const mapStashSceneToPrisma = (
   scene: Scene
 ): Omit<Prisma.SceneCreateInput, 'id' | 'createdAt' | 'updatedAt' | 'performers'> => {
   const { id, title, paths, releasedAt } = scene
@@ -46,7 +46,6 @@ export const mapSceneToPrisma = (
     stashDbId,
     title,
     imageUrl: screenshot,
-    // AIDEV-NOTE: Every scene should have a release date, but we'll default to now if it doesn't exist which is a bit of a hack
     releasedAt: releasedAt ?? new Date(),
     hashes: {
       connectOrCreate: hashes.map(({ type, value }) => ({
