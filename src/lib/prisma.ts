@@ -1,12 +1,8 @@
 import { env } from '@/env/server'
 import { PrismaClient } from '@/generated/prisma'
 
-const globalForPrisma = global as unknown as {
-  prisma?: ReturnType<typeof createPrismaClient>
-}
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const createPrismaClient = () =>
+const createExtendedPrismaClient = () =>
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     errorFormat: 'minimal'
@@ -53,6 +49,14 @@ const createPrismaClient = () =>
       }
     }
   })
+
+type ExtendedPrismaClient = ReturnType<typeof createExtendedPrismaClient>
+
+const globalForPrisma = global as unknown as {
+  prisma?: ExtendedPrismaClient
+}
+
+const createPrismaClient = (): ExtendedPrismaClient => createExtendedPrismaClient()
 
 const prisma = globalForPrisma.prisma ?? createPrismaClient()
 

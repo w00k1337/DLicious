@@ -24,6 +24,7 @@ RUN apk add openssl3
 
 COPY .npmrc package.json pnpm-lock.yaml pnpm-workspace.yaml next.config.ts postcss.config.js tsconfig.json eslint.config.js prettier.config.js vitest.config.ts ./
 COPY prisma/ ./prisma
+COPY public/ ./public
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
@@ -44,6 +45,7 @@ COPY --from=builder --chown=node /app/.next/standalone ./
 COPY --from=builder --chown=node /app/.next/static ./.next/static
 COPY --from=builder --chown=node /app/prisma ./prisma
 COPY --from=builder --chown=node /app/node_modules/@prisma/client/package.json ./node_modules/@prisma/client/package.json
+COPY --from=builder --chown=node /app/public ./public
 
 RUN npm install --global --save-exact "prisma@$(node --print 'require("./node_modules/@prisma/client/package.json").version')"
 

@@ -68,7 +68,8 @@ const isRetryableError = (error: unknown): boolean => {
   if (error instanceof NetworkError) {
     return !error.status || error.status >= 500
   }
-  return error instanceof TypeError && error.message.includes('fetch')
+  const message = error instanceof Error ? error.message : ''
+  return message.includes('AbortError') || (error instanceof TypeError && message.includes('fetch'))
 }
 
 export const fetchGraphQL = async <TResult, TVariables>({

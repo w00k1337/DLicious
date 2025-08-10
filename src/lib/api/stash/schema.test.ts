@@ -98,6 +98,8 @@ describe('fingerprintSchema', () => {
     expect(fingerprintSchema.parse(validFingerprint)).toEqual(validFingerprint)
   })
 
+  // no md5 support for Stash fingerprints
+
   it('should reject invalid fingerprint objects', () => {
     expect(() => fingerprintSchema.parse({})).toThrow()
     expect(() => fingerprintSchema.parse({ type: 'invalid' })).toThrow()
@@ -256,6 +258,19 @@ describe('sceneSchema', () => {
     }
     const result = sceneSchema.parse(sceneWithStringId)
     expect(result.id).toBe(123)
+  })
+
+  it('should handle missing releasedAt', () => {
+    const sceneMissingReleasedAt = {
+      id: 2,
+      title: 'No Date Scene',
+      paths: {},
+      files: [],
+      stashes: [],
+      performers: []
+    }
+    const result = sceneSchema.parse(sceneMissingReleasedAt)
+    expect(result.releasedAt).toBeUndefined()
   })
 
   it('should reject invalid scene objects', () => {

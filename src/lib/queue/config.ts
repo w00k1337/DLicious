@@ -5,11 +5,9 @@ import ms from 'ms'
 import { env } from '@/env/server'
 import logger from '@/lib/logger'
 
-const defaultRemoveOnCompleteCount = 5
-const defaultRemoveOnFailCount = 20
+const DEFAULT_REMOVE_ON_COMPLETE_COUNT = 1
+const DEFAULT_REMOVE_ON_FAIL_COUNT = 10
 
-// AIDEV-NOTE: Shared Redis connection instance to prevent connection pool exhaustion
-// Each BullMQ Queue normally creates 3 connections, but by reusing this instance we reduce to ~3 total
 let sharedRedisConnection: Redis | null = null
 
 export const redisConnection: ConnectionOptions = {
@@ -79,7 +77,7 @@ export const getQueueOptions = (customJobOptions?: Partial<JobsOptions>): QueueO
 
 export const getWorkerOptions = (): WorkerOptions => ({
   connection: sharedRedisConnection ?? redisConnection,
-  removeOnComplete: { count: defaultRemoveOnCompleteCount },
-  removeOnFail: { count: defaultRemoveOnFailCount },
+  removeOnComplete: { count: DEFAULT_REMOVE_ON_COMPLETE_COUNT },
+  removeOnFail: { count: DEFAULT_REMOVE_ON_FAIL_COUNT },
   concurrency: env.QUEUE_WORKER_CONCURRENCY
 })

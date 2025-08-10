@@ -7,13 +7,13 @@ import { measurementsSchema } from './measurements'
 export const mapPerformerToPrisma = (
   performer: Performer
 ): Omit<Prisma.PerformerCreateInput, 'id' | 'createdAt' | 'updatedAt' | 'isMonitored'> => {
-  const parsedMeasurements = measurementsSchema.safeParse(performer.measurements)
-  const parsedCountry = performer.country ? countryCodeSchema.safeParse(performer.country) : null
+  const { imageUrl, measurements, country, aliases, isFavorite, birthdate, breastType } = performer
+  const parsedMeasurements = measurementsSchema.safeParse(measurements)
+  const parsedCountry = country ? countryCodeSchema.safeParse(country) : null
 
   const { cupSize, bandSize } = parsedMeasurements.success ? parsedMeasurements.data : { cupSize: null, bandSize: null }
-  const validatedCountry = parsedCountry?.success ? parsedCountry.data : performer.country
+  const validatedCountry = parsedCountry?.success ? parsedCountry.data : country
 
-  // AIDEV-NOTE: Extract StashDB ID from stashes array if it exists
   const stashDbId =
     performer.stashes.find(stash => {
       try {
@@ -28,14 +28,14 @@ export const mapPerformerToPrisma = (
     stashId: performer.id,
     stashDbId,
     name: performer.name,
-    aliases: performer.aliases,
-    imageUrl: performer.imageUrl ?? '',
+    aliases,
+    imageUrl,
     country: validatedCountry,
-    birthdate: performer.birthdate,
+    birthdate,
     cupSize,
     bandSize,
-    hasNaturalBreasts: performer.breastType === 'Natural' ? true : performer.breastType === 'Fake' ? false : null,
-    isFavorite: performer.isFavorite,
+    hasNaturalBreasts: breastType === 'Natural' ? true : breastType === 'Fake' ? false : null,
+    isFavorite,
     syncedAt: new Date()
   }
 }
