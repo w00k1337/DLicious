@@ -1,6 +1,6 @@
 # AGENTS.md. DLicious
 
-_Last updated 2025-08-01_
+_Last updated 2025-08-10_
 
 > **purpose** – This file is the onboarding manual for every AI assistant (Claude, Cursor, GPT, etc.) and every human who edits this repository.  
 > It encodes our coding standards, guard-rails, and workflow tricks so the _human 30 %_ (architecture, tests, domain judgment) stays in human hands.[^1]
@@ -69,54 +69,23 @@ For simple, quick TypeScript script tests: `pnpm exec tsx src/test-file.ts` (ens
 
 ## 3. Coding standards
 
-- **TypeScript**: 5.0+, Next.js 15, `async/await` preferred.
+- **TypeScript**: 5.0+, Next.js 15, `async/await` preferred, strict mode.
 - **Formatting**: Prettier enforces consistent formatting, ESLint for code quality.
 - **Typing**: Strict TypeScript with Zod schemas for validation.
-- **Functions**: Always use arrow functions except in classes. All functions must have explicit return types.
-- **Naming**: `camelCase` (functions/variables), `PascalCase` (classes/components), `SCREAMING_SNAKE` (global / exported constants).
-- **Error Handling**: Typed exceptions; proper error boundaries for React components.
-- **Documentation**: JSDoc comments for public functions/classes.
+- **Functions**: Arrow functions except in classes. All functions must have explicit return types.
+- **Naming**: `camelCase` (functions/variables), `PascalCase` (classes/components), `SCREAMING_SNAKE` (constants).
+- **Error Handling**: Typed exceptions in `src/lib/errors/`, React error boundaries.
+- **Documentation**: JSDoc for public functions/classes.
 - **Testing**: Vitest for unit and integration tests.
-- **UI Components**: Use shadcn/ui components wherever possible for consistent design and functionality.
-- **Date/Time Handling**: Always use dayjs for date and time operations, formatting, and calculations.
-- **Millisecond Handling**: Use the "ms" library for parsing and formatting millisecond durations.
+- **UI**: Use shadcn/ui components from `src/components/ui/`.
+- **Date/Time**: Use dayjs for all date operations, ms library for durations.
+- **Security**: Never log/commit secrets, use env vars only.
 
-**Date/Time patterns**:
+**Key patterns**:
 
-- **dayjs**: Use dayjs for all date/time operations, formatting, and calculations
-- **Consistent formatting**: Use dayjs formatting functions for user-facing date displays
-- **Timezone handling**: Use dayjs timezone plugin when timezone conversion is needed
-- **Date calculations**: Use dayjs for date arithmetic, comparisons, and relative time calculations
-- **Avoid native Date methods**: Prefer dayjs functions over native JavaScript Date methods for consistency and reliability
-- **Millisecond parsing**: Use the "ms" library for parsing human-readable time strings to milliseconds
-- **Millisecond formatting**: Use the "ms" library for converting milliseconds to human-readable time strings
-
-**Function patterns**:
-
-- **Arrow functions**: Always use arrow functions except in classes
-- **Explicit return types**: All functions must have explicit return types
-- **Async/await**: Prefer async/await over Promise chains
-- **Type safety**: Use strict TypeScript with proper type annotations
-
-**Error handling patterns**:
-
-- **Fail fast**: Handle invalid states immediately with meaningful error messages
-- **Custom error types**: Create domain-specific errors in `src/lib/errors/`
-- **React boundaries**: Implement Error Boundaries for component tree protection
-- **API consistency**: Return consistent error formats with proper HTTP status codes
-- **Async safety**: Use try-catch with async/await, handle Promise rejections explicitly
-- **Recovery**: Implement retry mechanisms for transient failures, graceful degradation
-
-**UI component patterns**:
-
-- **shadcn/ui**: Use shadcn/ui components as the primary UI library for all new components
-- **Component composition**: Prefer composition over inheritance, use compound components where appropriate
-- **Accessibility**: All components must be accessible (ARIA labels, keyboard navigation, screen reader support)
-- **Responsive design**: Components should work across all screen sizes
-- **Dark mode**: Support both light and dark themes using CSS variables
-- **Consistent styling**: Use Tailwind CSS classes and shadcn/ui design tokens
-- **Loading states**: Implement proper loading states for async operations
-- **Error states**: Show meaningful error messages with recovery options
+- **Functions**: Arrow functions with explicit return types, async/await over Promises
+- **Errors**: Fail fast, custom error types, consistent API error formats
+- **Components**: Accessibility required, dark mode support, loading/error states
 
 Example:
 
@@ -146,15 +115,6 @@ const formatLastSync = (date: Date): string => {
   }
   return `Last synced on ${syncDate.format('MMMM D, YYYY')}`
 }
-
-// Millisecond handling example
-const parseTimeout = (timeout: string): number => {
-  return ms(timeout) // Converts "5m", "2h", "1d" to milliseconds
-}
-
-const formatDuration = (milliseconds: number): string => {
-  return ms(milliseconds, { long: true }) // Converts milliseconds to "5 minutes", "2 hours", etc.
-}
 ```
 
 ---
@@ -172,19 +132,9 @@ const formatDuration = (milliseconds: number): string => {
 | `src/generated/`     | Auto-generated code (Prisma, GraphQL)            |
 | `prisma/`            | Database schema and migrations                   |
 
-**Key domain models**:
+**Key domain models**: Performer (actors tracked for discovery), Scene (content with metadata)
 
-- **Performer**: Individual performers tracked for content discovery
-- **Scene**: Individual content pieces with metadata
-
-**shadcn/ui Setup**:
-
-- **Installation**: shadcn/ui is configured with Tailwind CSS and Radix UI primitives
-- **Component location**: All shadcn/ui components are in `src/components/ui/`
-- **Adding components**: Use `npx shadcn@latest add [component-name]` to add new components
-- **Customization**: Modify `src/components/ui/` components directly for project-specific styling
-- **Theming**: Use CSS variables for consistent theming across light and dark modes
-- **Icons**: Use Lucide React icons (included with shadcn/ui) for consistent iconography
+**Ignore files**: `.agentignore` and `.agentindexignore` control AI tool file access - never modify without permission.
 
 ---
 
@@ -210,9 +160,7 @@ Example:
 
 ```typescript
 // AIDEV-NOTE: perf-hot-path; avoid extra allocations in queue processing
-const processQueueItem = async (...args): Promise<void> => {
-  ...
-}
+const processQueueItem = async (...args): Promise<void> => { ... }
 ```
 
 ---
@@ -237,7 +185,7 @@ const processQueueItem = async (...args): Promise<void> => {
 
 ```typescript
 // Route definition
-export const POST = async (request: NextRequest): Promise<NextResponse> => {
+export const POST = async (request: NextRequest): Promise<NextResponse<Result>> => {
   try {
     const body = await request.json()
     const validatedData = performerSchema.parse(body)
@@ -254,20 +202,19 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
 
 ## 8. External API integrations
 
-- **Stash GraphQL API**: Primary data source for performers and scenes
-- **ThePornDB API**: Scene metadata and availability lookup
-- **StashDB GraphQL API**: Additional scene metadata and availability
-- **Hydra2 API**: Usenet content search
-- **Sabnzbd API**: Download client for NZB files
+See implementations in `src/lib/api/`:
+
+- **Stash/StashDB**: GraphQL APIs for performer/scene data
+- **ThePornDB**: Scene metadata and availability
+- **Hydra2**: Usenet content search
+- **Sabnzbd**: NZB download client
 
 ---
 
 ## 9. Background job processing
 
-- **BullMQ**: Redis-based job queue for background processing
-- **Job definitions**: Located in `src/lib/queue/jobs/`
-- **Worker registration**: In `src/instrumentation.ts`
-- **Job patterns**: Use typed job data with Zod validation
+BullMQ with Redis. See `src/lib/queue/jobs/` for job definitions, `src/instrumentation.ts` for worker registration.
+Jobs must implement retry logic and dead letter queues. Use typed data with Zod validation.
 
 ---
 
@@ -282,26 +229,11 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
 
 ## 11. Database patterns
 
-- **Prisma ORM**: Type-safe database access
-- **Custom client output**: Generated to `src/generated/prisma/`
-- **Migrations**: Managed through Prisma CLI
-- **Schema patterns**: Use enums for constrained values (e.g., European cup sizes)
-
-**Database pattern example**:
-
-```typescript
-import { prisma } from '@/lib/prisma'
-
-export const createPerformer = async (data: CreatePerformerInput): Promise<Performer> => {
-  return await prisma.performer.create({
-    data: {
-      name: data.name,
-      cupSize: data.cupSize // European cup size enum
-      // ... other fields
-    }
-  })
-}
-```
+- **Prisma ORM**: Type-safe database access, client at `src/lib/prisma.ts`
+- **Generated client**: Output to `src/generated/prisma/`
+- **Migrations**: `pnpm exec prisma migrate dev`
+- **Transactions**: Use `prisma.$transaction()` for multi-table writes
+- **Schema**: See `prisma/schema.prisma` for models and enums
 
 ---
 
@@ -365,67 +297,4 @@ This section provides pointers to important files and common patterns within the
 - **dayjs**: Date utility library for consistent date/time operations, formatting, and calculations throughout the application
 - **ms**: Millisecond utility library for parsing and formatting human-readable time durations
 
----
-
-## 16. Meta: Guidelines for updating AGENTS.md files
-
-### Elements that would be helpful to add:
-
-1. **Decision flowchart**: A simple decision tree for "when to use X vs Y" for key architectural choices would guide my recommendations.
-2. **Reference links**: Links to key files or implementation examples that demonstrate best practices.
-3. **Domain-specific terminology**: A small glossary of project-specific terms would help me understand domain language correctly.
-4. **Versioning conventions**: How the project handles versioning, both for APIs and internal components.
-
-### Format preferences:
-
-1. **Consistent syntax highlighting**: Ensure all code blocks have proper language tags (`typescript`, `bash`, etc.).
-2. **Hierarchical organization**: Consider using hierarchical numbering for subsections to make referencing easier.
-3. **Tabular format for key facts**: The tables are very helpful - more structured data in tabular format would be valuable.
-4. **Keywords or tags**: Adding semantic markers (like `#performance` or `#security`) to certain sections would help me quickly locate relevant guidance.
-
 [^1]: This principle emphasizes human oversight for critical aspects like architecture, testing, and domain-specific decisions, ensuring AI assists rather than fully dictates development.
-
----
-
-## 17. Files to NOT modify
-
-These files control which files should be ignored by AI tools and indexing systems:
-
-- @.agentignore : Specifies files that should be ignored by the Cursor IDE, including:
-  - Build and distribution directories
-  - Environment and configuration files
-  - Large data files
-  - Generated documentation
-  - Package-manager files (lock files)
-  - Logs and cache directories
-  - IDE and editor files
-  - Compiled binaries and media files
-
-- @.agentindexignore : Controls which files are excluded from Cursor's indexing to improve performance, including:
-  - All files in `.agentignore`
-  - Files that may contain sensitive information
-  - Large JSON data files
-  - Generated TypeSpec outputs
-  - Memory-store migration files
-  - Docker templates and configuration files
-
-**Never modify these ignore files** without explicit permission, as they're carefully configured to optimize IDE performance while ensuring all relevant code is properly indexed.
-
-**When adding new files or directories**, check these ignore patterns to ensure your files will be properly included in the IDE's indexing and AI assistance features.
-
----
-
-## AI Assistant Workflow: Step-by-Step Methodology
-
-When responding to user instructions, the AI assistant (Claude, Cursor, GPT, etc.) should follow this process to ensure clarity, correctness, and maintainability:
-
-1. **Consult Relevant Guidance**: When the user gives an instruction, consult the relevant instructions from `AGENTS.md` files (both root and directory-specific) for the request.
-2. **Clarify Ambiguities**: Based on what you could gather, see if there's any need for clarifications. If so, ask the user targeted questions before proceeding.
-3. **Break Down & Plan**: Break down the task at hand and chalk out a rough plan for carrying it out, referencing project conventions and best practices.
-4. **Trivial Tasks**: If the plan/request is trivial, go ahead and get started immediately.
-5. **Non-Trivial Tasks**: Otherwise, present the plan to the user for review and iterate based on their feedback.
-6. **Track Progress**: Use a to-do list (internally, or optionally in a `TODOS.md` file) to keep track of your progress on multi-step or complex tasks.
-7. **If Stuck, Re-plan**: If you get stuck or blocked, return to step 3 to re-evaluate and adjust your plan.
-8. **Update Documentation**: Once the user's request is fulfilled, update relevant anchor comments (`AIDEV-NOTE`, etc.) and `AGENTS.md` files in the files and directories you touched.
-9. **User Review**: After completing the task, ask the user to review what you've done, and repeat the process as needed.
-10. **Session Boundaries**: If the user's request isn't directly related to the current context and can be safely started in a fresh session, suggest starting from scratch to avoid context confusion.
