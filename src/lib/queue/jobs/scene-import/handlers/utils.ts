@@ -7,7 +7,7 @@ export type Hash = Pick<PrismaHash, 'type' | 'value'>
 export const dedupeHashes = (list: Hash[]): Hash[] => {
   const uniqueByKey = new Map<string, Hash>()
   for (const hash of list) {
-    const key = `${String(hash.type)}:${hash.value}`
+    const key = `${hash.type}:${hash.value}`
     if (!uniqueByKey.has(key)) uniqueByKey.set(key, hash)
   }
   return Array.from(uniqueByKey.values())
