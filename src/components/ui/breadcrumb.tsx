@@ -1,14 +1,14 @@
 import { Slot } from '@radix-ui/react-slot'
 import { ChevronRight, MoreHorizontal } from 'lucide-react'
-import { ReactElement } from 'react'
+import { ComponentProps, ReactElement } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const Breadcrumb = ({ ...props }: React.ComponentProps<'nav'>): ReactElement => (
+const Breadcrumb = ({ ...props }: ComponentProps<'nav'>): ReactElement => (
   <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
 )
 
-const BreadcrumbList = ({ className, ...props }: React.ComponentProps<'ol'>): ReactElement => (
+const BreadcrumbList = ({ className, ...props }: ComponentProps<'ol'>): ReactElement => (
   <ol
     data-slot="breadcrumb-list"
     className={cn(
@@ -19,7 +19,7 @@ const BreadcrumbList = ({ className, ...props }: React.ComponentProps<'ol'>): Re
   />
 )
 
-const BreadcrumbItem = ({ className, ...props }: React.ComponentProps<'li'>): ReactElement => (
+const BreadcrumbItem = ({ className, ...props }: ComponentProps<'li'>): ReactElement => (
   <li data-slot="breadcrumb-item" className={cn('inline-flex items-center gap-1.5', className)} {...props} />
 )
 
@@ -27,9 +27,7 @@ const BreadcrumbLink = ({
   asChild,
   className,
   ...props
-}: React.ComponentProps<'a'> & {
-  asChild?: boolean
-}): ReactElement => {
+}: ComponentProps<'a'> & { asChild?: boolean }): ReactElement => {
   const Comp = asChild ? Slot : 'a'
 
   return (
@@ -37,7 +35,7 @@ const BreadcrumbLink = ({
   )
 }
 
-const BreadcrumbPage = ({ className, ...props }: React.ComponentProps<'span'>): ReactElement => (
+const BreadcrumbPage = ({ className, ...props }: ComponentProps<'span'>): ReactElement => (
   <span
     data-slot="breadcrumb-page"
     role="link"
@@ -48,7 +46,7 @@ const BreadcrumbPage = ({ className, ...props }: React.ComponentProps<'span'>): 
   />
 )
 
-const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<'li'>): ReactElement => (
+const BreadcrumbSeparator = ({ children, className, ...props }: ComponentProps<'li'>): ReactElement => (
   <li
     data-slot="breadcrumb-separator"
     role="presentation"
@@ -60,7 +58,7 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
   </li>
 )
 
-const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<'span'>): ReactElement => (
+const BreadcrumbEllipsis = ({ className, ...props }: ComponentProps<'span'>): ReactElement => (
   <span
     data-slot="breadcrumb-ellipsis"
     role="presentation"

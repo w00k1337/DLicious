@@ -1,7 +1,7 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { ReactElement } from 'react'
+import { CSSProperties, ReactElement } from 'react'
 import { Toaster as Sonner, ToasterProps } from 'sonner'
 
 const Toaster = ({ ...props }: ToasterProps): ReactElement => {
@@ -16,7 +16,7 @@ const Toaster = ({ ...props }: ToasterProps): ReactElement => {
           '--normal-bg': 'var(--popover)',
           '--normal-text': 'var(--popover-foreground)',
           '--normal-border': 'var(--border)'
-        } as React.CSSProperties
+        } as CSSProperties
       }
       {...props}
     />

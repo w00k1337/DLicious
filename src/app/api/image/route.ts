@@ -16,11 +16,19 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
       return NextResponse.redirect(originalUrl.toString(), 302)
     }
 
+    // AIDEV-NOTE: Allow Stash dynamic image endpoints (performer/scene/studio images)
     const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']
     const lowerPathname = originalUrl.pathname.toLowerCase()
     const hasAllowedExtension = allowedImageExtensions.some(ext => lowerPathname.endsWith(ext))
 
-    if (!hasAllowedExtension) {
+    // Check if it's a Stash dynamic image endpoint
+    const isStashImageEndpoint =
+      /\/performer\/\d+\/image/.test(lowerPathname) ||
+      /\/scene\/\d+\/screenshot/.test(lowerPathname) ||
+      /\/studio\/\d+\/image/.test(lowerPathname) ||
+      /\/gallery\/\d+\/cover/.test(lowerPathname)
+
+    if (!hasAllowedExtension && !isStashImageEndpoint) {
       return NextResponse.json({ error: 'Forbidden path' }, { status: 403 })
     }
 
