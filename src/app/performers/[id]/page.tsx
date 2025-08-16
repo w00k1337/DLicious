@@ -151,8 +151,8 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
                           <Image
                             src={scene.studio.imageUrl}
                             alt={scene.studio.name}
-                            width={40}
-                            height={20}
+                            width={80}
+                            height={40}
                             className="object-contain"
                             title={scene.studio.name}
                             unoptimized

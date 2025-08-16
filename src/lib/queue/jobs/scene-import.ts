@@ -394,7 +394,7 @@ export class SceneImportWorker extends BaseWorker<SceneImportJobData, SceneImpor
             }
           },
           {
-            timeout: ms('30s')
+            timeout: ms('120s') // AIDEV-NOTE: Increased timeout to handle slow StashDB API responses
           }
         ),
       'hash unique constraint',
