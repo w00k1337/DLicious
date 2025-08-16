@@ -1,21 +1,74 @@
-import { Job, Worker } from 'bullmq'
+import { Job, JobsOptions, Queue, Worker, WorkerOptions } from 'bullmq'
 import ms from 'ms'
 
+import { env } from '@/env/server'
 import { Prisma } from '@/generated/prisma'
 import logger from '@/lib/logger'
 
-import { getSharedRedisConnection, getWorkerOptions } from './config'
+import { getConnectionOptions, getSharedRedisConnection } from './connection'
+
+const DEFAULT_REMOVE_ON_COMPLETE_COUNT = 1
+const DEFAULT_REMOVE_ON_FAIL_COUNT = 10
+
+const defaultJobOptions: JobsOptions = {
+  attempts: 5,
+  backoff: {
+    type: 'exponential',
+    delay: ms('1s')
+  }
+}
+
+const defaultWorkerOptions: Omit<WorkerOptions, 'connection'> = {
+  removeOnComplete: { count: DEFAULT_REMOVE_ON_COMPLETE_COUNT },
+  removeOnFail: { count: DEFAULT_REMOVE_ON_FAIL_COUNT },
+  concurrency: env.QUEUE_WORKER_CONCURRENCY
+}
+
+export const createQueue = <TJobData = unknown, TJobResult = unknown>(
+  queueName: string,
+  customJobOptions?: Partial<JobsOptions>
+): Queue<TJobData, TJobResult> => {
+  // AIDEV-NOTE: Initialize connection early
+  getSharedRedisConnection()
+
+  logger.debug({ queueName }, 'Creating queue')
+
+  return new Queue<TJobData, TJobResult>(queueName, {
+    connection: getConnectionOptions(),
+    defaultJobOptions: {
+      ...defaultJobOptions,
+      ...customJobOptions
+    }
+  })
+}
+
+export const createLazyQueue = <TJobData = unknown, TJobResult = unknown>(
+  queueName: string,
+  customJobOptions?: Partial<JobsOptions>
+): (() => Queue<TJobData, TJobResult>) => {
+  let queue: Queue<TJobData, TJobResult> | null = null
+
+  return (): Queue<TJobData, TJobResult> => {
+    queue ??= createQueue<TJobData, TJobResult>(queueName, customJobOptions)
+    return queue
+  }
+}
 
 export const createWorker = <TJobData, TJobResult>(
   queueName: string,
-  processor: (job: Job<TJobData, TJobResult>) => Promise<TJobResult>
+  processor: (job: Job<TJobData, TJobResult>) => Promise<TJobResult>,
+  customOptions?: Partial<WorkerOptions>
 ): Worker<TJobData, TJobResult> => {
-  // AIDEV-NOTE: Initialize shared connection early to ensure connection reuse
+  // AIDEV-NOTE: Initialize connection early
   getSharedRedisConnection()
 
-  logger.debug({ queueName }, 'Creating worker with optimized Redis connection')
+  logger.debug({ queueName }, 'Creating worker')
 
-  const worker = new Worker<TJobData, TJobResult>(queueName, processor, getWorkerOptions())
+  const worker = new Worker<TJobData, TJobResult>(queueName, processor, {
+    connection: getConnectionOptions(),
+    ...defaultWorkerOptions,
+    ...customOptions
+  })
 
   worker.on('completed', (job, result) => {
     logger.info({ queueName, jobId: job.id, result }, 'Job completed')
@@ -90,7 +143,7 @@ export abstract class BaseWorker<TJobData, TJobResult> {
     return this.isRunning
   }
 
-  // AIDEV-NOTE: Retry logic for handling race conditions like unique constraint violations
+  // AIDEV-NOTE: Common retry logic for database race conditions
   protected async executeWithRetry<T>(
     operation: () => Promise<T>,
     errorContext: string,
@@ -140,7 +193,6 @@ export abstract class BaseWorker<TJobData, TJobResult> {
       }
     }
 
-    // This should never be reached, but TypeScript needs it
     throw lastError ?? new Error('Operation failed after retries')
   }
 }

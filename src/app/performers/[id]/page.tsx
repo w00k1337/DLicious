@@ -19,13 +19,17 @@ interface PerformerDetailPageProps {
   }>
 }
 
+// AIDEV-TODO: This page is a work in progress and needs to be refactored and improved in the future
 const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promise<ReactElement> => {
   const { id } = await params
   const performer = await prisma.performer.findUnique({
     where: { id },
     include: {
       scenes: {
-        orderBy: { releasedAt: 'desc' }
+        orderBy: { releasedAt: 'desc' },
+        include: {
+          studio: true
+        }
       }
     }
   })
@@ -36,7 +40,6 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
 
   return (
     <div className="space-y-6">
-      {/* AIDEV-NOTE: Performer header section with image and basic info */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="md:col-span-1">
           {performer.imageUrl ? (
@@ -116,15 +119,10 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
             </Card>
           </div>
 
-          <PerformerActions
-            performerId={performer.id}
-            isMonitored={performer.isMonitored}
-            isFavorite={performer.isFavorite}
-          />
+          <PerformerActions performerId={performer.id} isMonitored={performer.isMonitored} />
         </div>
       </div>
 
-      {/* AIDEV-NOTE: Scenes section showing all scenes for this performer */}
       <div>
         <h2 className="mb-4 text-2xl font-bold">Scenes ({performer.scenes.length})</h2>
 
@@ -144,8 +142,48 @@ const PerformerDetailPage = async ({ params }: PerformerDetailPageProps): Promis
                   </AspectRatio>
                 )}
                 <CardHeader className="p-4">
-                  <CardTitle className="line-clamp-2 text-sm">{scene.title}</CardTitle>
-                  <CardDescription>{dayjs(scene.releasedAt).format('MMM D, YYYY')}</CardDescription>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="line-clamp-2 flex-1 text-sm">{scene.title}</CardTitle>
+
+                    <div className="flex-shrink-0">
+                      {scene.studio ? (
+                        scene.studio.imageUrl ? (
+                          <Image
+                            src={scene.studio.imageUrl}
+                            alt={scene.studio.name}
+                            width={40}
+                            height={20}
+                            className="object-contain"
+                            title={scene.studio.name}
+                            unoptimized
+                          />
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            {scene.studio.name}
+                          </Badge>
+                        )
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          No Studio
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <CardDescription className="flex items-center justify-between">
+                    <span>{dayjs(scene.releasedAt).format('MMM D, YYYY')}</span>
+                    <div className="flex gap-1">
+                      {scene.stashDbId && (
+                        <Badge variant="outline" className="text-xs">
+                          StashDB
+                        </Badge>
+                      )}
+                      {scene.stashId && (
+                        <Badge variant="outline" className="text-xs">
+                          Stash
+                        </Badge>
+                      )}
+                    </div>
+                  </CardDescription>
                 </CardHeader>
               </Card>
             ))}

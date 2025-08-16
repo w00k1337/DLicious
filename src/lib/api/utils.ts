@@ -1,43 +1,38 @@
 import ms from 'ms'
+import { z } from 'zod'
 
 import logger from '@/lib/logger'
 
 export class GraphQLApiError extends Error {
-  public readonly errors: GraphQLError[]
-  public readonly query: string
-
-  constructor(errors: GraphQLError[], query: string) {
-    const message = `GraphQL API Error: ${errors.map(e => e.message).join(', ')}`
-    super(message)
+  constructor(
+    public readonly errors: GraphQLError[],
+    public readonly query: string
+  ) {
+    super(`GraphQL API Error: ${errors.map(e => e.message).join(', ')}`)
     this.name = 'GraphQLApiError'
-    this.errors = errors
-    this.query = query
   }
 }
 
 export class NetworkError extends Error {
-  public readonly status?: number
-  public readonly statusText?: string
-  public readonly url: string
-
-  constructor(message: string, url: string, status?: number, statusText?: string) {
+  constructor(
+    message: string,
+    public readonly url: string,
+    public readonly status?: number,
+    public readonly statusText?: string
+  ) {
     super(message)
     this.name = 'NetworkError'
-    this.url = url
-    this.status = status
-    this.statusText = statusText
   }
 }
 
 export class ValidationError extends Error {
-  public readonly field: string
-  public readonly value: unknown
-
-  constructor(message: string, field: string, value: unknown) {
+  constructor(
+    message: string,
+    public readonly field: string,
+    public readonly value: unknown
+  ) {
     super(message)
     this.name = 'ValidationError'
-    this.field = field
-    this.value = value
   }
 }
 
@@ -62,14 +57,14 @@ interface FetchGraphQLOptions<TVariables> {
   maxRetries?: number
 }
 
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
+const delay = (duration: number): Promise<void> => new Promise(resolve => setTimeout(resolve, duration))
 
 const isRetryableError = (error: unknown): boolean => {
   if (error instanceof NetworkError) {
     return !error.status || error.status >= 500
   }
-  const message = error instanceof Error ? error.message : ''
-  return message.includes('AbortError') || (error instanceof TypeError && message.includes('fetch'))
+  if (!(error instanceof Error)) return false
+  return error.message.includes('AbortError') || (error instanceof TypeError && error.message.includes('fetch'))
 }
 
 export const fetchGraphQL = async <TResult, TVariables>({
@@ -118,7 +113,7 @@ export const fetchGraphQL = async <TResult, TVariables>({
 
       if (!response.ok) {
         const error = new NetworkError(
-          `HTTP ${String(response.status)}: ${response.statusText}`,
+          `HTTP ${response.status.toString()}: ${response.statusText}`,
           url,
           response.status,
           response.statusText
@@ -142,9 +137,9 @@ export const fetchGraphQL = async <TResult, TVariables>({
         lastError = error
         if (attempt === maxRetries) throw error
 
-        const delay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
-        logger.warn({ attempt, delay, maxRetries }, 'Retrying GraphQL request after server error')
-        await sleep(delay)
+        const backoffDelay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
+        logger.warn({ attempt, delay: backoffDelay, maxRetries }, 'Retrying GraphQL request after server error')
+        await delay(backoffDelay)
         continue
       }
 
@@ -192,17 +187,17 @@ export const fetchGraphQL = async <TResult, TVariables>({
       }
 
       if (attempt < maxRetries) {
-        const delay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
+        const backoffDelay = Math.min(ms('1s') * Math.pow(2, attempt - 1), ms('10s'))
         logger.warn(
           {
             error: error instanceof Error ? error.message : 'Unknown error',
             attempt,
-            delay,
+            delay: backoffDelay,
             maxRetries
           },
           'Retrying GraphQL request after retryable error'
         )
-        await sleep(delay)
+        await delay(backoffDelay)
       }
     }
   }
@@ -218,3 +213,37 @@ export const fetchGraphQL = async <TResult, TVariables>({
 
   throw lastError
 }
+
+interface GraphQLClientConfig {
+  apiBaseUrl: string
+  apiKey: string
+  timeout?: number
+  maxRetries?: number
+}
+
+export const createGraphQLClient = (
+  config: GraphQLClientConfig
+): {
+  query: <TResult>(query: { toString(): string }, variables?: unknown) => Promise<TResult>
+} => {
+  const { apiBaseUrl, apiKey, timeout = ms('30s'), maxRetries = 3 } = config
+
+  return {
+    query: async <TResult>(query: { toString(): string }, variables?: unknown): Promise<TResult> => {
+      return fetchGraphQL<TResult, unknown>({
+        apiBaseUrl,
+        apiKey,
+        query,
+        variables,
+        timeout,
+        maxRetries
+      })
+    }
+  }
+}
+
+export const validateWith =
+  <T>(schema: z.ZodType<T>) =>
+  (data: unknown): T => {
+    return schema.parse(data)
+  }

@@ -2173,6 +2173,13 @@ export type SceneFieldsFragment = {
     }
   >
   urls: Array<{ __typename?: 'URL' } & { ' $fragmentRefs'?: { UrlFieldsFragment: UrlFieldsFragment } }>
+  studio?: {
+    __typename?: 'Studio'
+    id: string
+    name: string
+    aliases: Array<string>
+    images: Array<{ __typename?: 'Image' } & { ' $fragmentRefs'?: { ImageFieldsFragment: ImageFieldsFragment } }>
+  } | null
 } & { ' $fragmentName'?: 'SceneFieldsFragment' }
 
 export type FindSceneQueryVariables = Exact<{
@@ -2193,7 +2200,7 @@ export type QueryScenesQuery = {
   queryScenes: {
     __typename?: 'QueryScenesResultType'
     count: number
-    scenes: Array<{ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }>
+    scenes: Array<{ __typename?: 'Scene'; id: string }>
   }
 }
 
@@ -2295,6 +2302,14 @@ export const SceneFieldsFragmentDoc = new TypedDocumentString(
   urls {
     ...UrlFields
   }
+  studio {
+    id
+    name
+    images {
+      ...ImageFields
+    }
+    aliases
+  }
 }
     fragment ImageFields on Image {
   id
@@ -2382,63 +2397,22 @@ fragment SceneFields on Scene {
   urls {
     ...UrlFields
   }
+  studio {
+    id
+    name
+    images {
+      ...ImageFields
+    }
+    aliases
+  }
 }`) as unknown as TypedDocumentString<FindSceneQuery, FindSceneQueryVariables>
 export const QueryScenesDocument = new TypedDocumentString(`
     query QueryScenes($input: SceneQueryInput!) {
   queryScenes(input: $input) {
     count
     scenes {
-      ...SceneFields
+      id
     }
   }
 }
-    fragment ImageFields on Image {
-  id
-  url
-  width
-  height
-}
-fragment FingerprintFields on Fingerprint {
-  hash
-  algorithm
-  duration
-}
-fragment PerformerAppearanceFields on PerformerAppearance {
-  performer {
-    id
-    name
-    disambiguation
-  }
-}
-fragment SiteFields on Site {
-  id
-  name
-  url
-}
-fragment UrlFields on URL {
-  url
-  site {
-    ...SiteFields
-  }
-}
-fragment SceneFields on Scene {
-  id
-  title
-  details
-  director
-  code
-  releasedAt: release_date
-  duration
-  images {
-    ...ImageFields
-  }
-  fingerprints {
-    ...FingerprintFields
-  }
-  performers {
-    ...PerformerAppearanceFields
-  }
-  urls {
-    ...UrlFields
-  }
-}`) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>
+    `) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>

@@ -65,5 +65,13 @@ export const SceneFieldsFragment = graphql(`
     urls {
       ...UrlFields
     }
+    studio {
+      id
+      name
+      images {
+        ...ImageFields
+      }
+      aliases
+    }
   }
 `)

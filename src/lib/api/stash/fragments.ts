@@ -23,3 +23,39 @@ export const StashFieldsFragment = graphql(`
     endpoint
   }
 `)
+
+export const StudioFieldsFragment = graphql(`
+  fragment StudioFields on Studio {
+    id
+    name
+    imageUrl: image_path
+    aliases
+  }
+`)
+
+export const SceneFieldsFragment = graphql(`
+  fragment SceneFields on Scene {
+    id
+    title
+    paths {
+      screenshot
+    }
+    stashes: stash_ids {
+      ...StashFields
+    }
+    studio {
+      ...StudioFields
+    }
+    files {
+      basename
+      fingerprints {
+        type
+        value
+      }
+    }
+    performers {
+      ...PerformerFields
+    }
+    releasedAt: date
+  }
+`)

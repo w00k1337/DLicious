@@ -3,19 +3,16 @@
 import { revalidatePath } from 'next/cache'
 
 import prisma from '@/lib/prisma'
-import { getStashPerformerImportQueue } from '@/lib/queue/jobs/stash-performer-import/queues'
-import { triggerPerformerSceneBulkImport } from '@/lib/queue/jobs/stash-performer-scene-bulk-import/flow'
+import { triggerPerformerSceneBulkImport } from '@/lib/queue/jobs/performer-scene-bulk-import'
+import { getStashPerformerImportQueue } from '@/lib/queue/jobs/stash-performer-import'
 
 export const syncPerformer = async (performerId: string): Promise<void> => {
-  // AIDEV-NOTE: Queue sync job for performer using BullMQ
   const performer = await prisma.performer.findUnique({
     where: { id: performerId },
     select: { stashId: true }
   })
 
-  if (!performer) {
-    throw new Error('Performer not found')
-  }
+  if (!performer) throw new Error('Performer not found')
 
   const queue = getStashPerformerImportQueue()
   await queue.add(
@@ -41,9 +38,7 @@ export const toggleMonitoring = async (performerId: string): Promise<void> => {
     select: { isMonitored: true }
   })
 
-  if (!performer) {
-    throw new Error('Performer not found')
-  }
+  if (!performer) throw new Error('Performer not found')
 
   await prisma.performer.update({
     where: { id: performerId },
@@ -54,37 +49,8 @@ export const toggleMonitoring = async (performerId: string): Promise<void> => {
   revalidatePath('/performers')
 }
 
-export const toggleFavorite = async (performerId: string): Promise<void> => {
-  const performer = await prisma.performer.findUnique({
-    where: { id: performerId },
-    select: { isFavorite: true }
-  })
-
-  if (!performer) {
-    throw new Error('Performer not found')
-  }
-
-  await prisma.performer.update({
-    where: { id: performerId },
-    data: { isFavorite: !performer.isFavorite }
-  })
-
-  revalidatePath(`/performers/${performerId}`)
-  revalidatePath('/performers')
-}
-
 export const bulkImportScenes = async (performerId: string): Promise<void> => {
-  // AIDEV-NOTE: Trigger bulk scene import flow for performer
-  const performer = await prisma.performer.findUnique({
-    where: { id: performerId },
-    select: { stashId: true }
-  })
-
-  if (!performer) {
-    throw new Error('Performer not found')
-  }
-
-  await triggerPerformerSceneBulkImport(performer.stashId)
+  await triggerPerformerSceneBulkImport(performerId)
 
   revalidatePath(`/performers/${performerId}`)
 }
