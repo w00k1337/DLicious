@@ -14,7 +14,8 @@ export const env = createEnv({
     REDIS_PASSWORD: z.string().optional(),
     STASH_BASE_URL: z.url(),
     STASH_API_KEY: z.string(),
-    STASHDB_API_KEY: z.string()
+    STASHDB_API_KEY: z.string(),
+    THEPORNDB_API_KEY: z.string()
   },
   experimental__runtimeEnv: process.env
 })

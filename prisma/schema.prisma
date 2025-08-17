@@ -49,6 +49,8 @@ model Performer {
   id                String    @id @default(cuid())
   stashId           Int       @unique
   stashDbId         String?   @unique
+  thePornDbId       String?   @unique // UDID from ThePornDB
+  thePornDbNumericId Int?     @unique // Numeric ID from ThePornDB
   name              String
   aliases           String[]  @default([])
   imageUrl          String?
