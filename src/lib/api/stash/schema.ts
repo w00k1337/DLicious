@@ -60,7 +60,13 @@ export const sceneSchema = z.object({
   releasedAt: z.coerce.date().nullable().optional()
 })
 
+// AIDEV-NOTE: Scene schema with source discriminator for type-safe union types
+export const sceneWithSourceSchema = sceneSchema.extend({
+  source: z.literal('stash')
+})
+
 export type Scene = z.infer<typeof sceneSchema>
+export type SceneWithSource = z.infer<typeof sceneWithSourceSchema>
 export type Performer = z.infer<typeof performerSchema>
 export type Studio = z.infer<typeof studioSchema>
 export type Stash = z.infer<typeof stashSchema>

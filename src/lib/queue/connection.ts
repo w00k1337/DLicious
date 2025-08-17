@@ -54,9 +54,7 @@ export const getConnectionOptions = (): ConnectionOptions => {
 }
 
 export const getFlowProducer = (): FlowProducer => {
-  if (isClosing) {
-    throw new Error('FlowProducer is being closed, cannot create new operations')
-  }
+  if (isClosing) throw new Error('FlowProducer is being closed, cannot create new operations')
 
   if (!flowProducer) {
     flowProducer = new FlowProducer({ connection: getSharedRedisConnection() })

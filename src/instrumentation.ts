@@ -4,11 +4,11 @@ export const register = async (): Promise<void> => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { stashPerformerImportWorker } = await import('@/lib/queue/jobs/stash-performer-import')
     const { stashPerformerBulkImportWorker } = await import('@/lib/queue/jobs/stash-performer-bulk-import')
-    const { sceneImportWorker } = await import('@/lib/queue/jobs/scene-import')
+    const { sceneBulkImportWorker } = await import('@/lib/queue/jobs/scene-import')
     const { performerSceneBulkImportWorker } = await import('@/lib/queue/jobs/performer-scene-bulk-import')
 
     stashPerformerImportWorker.start()
-    sceneImportWorker.start()
+    sceneBulkImportWorker.start()
 
     stashPerformerBulkImportWorker.start()
     performerSceneBulkImportWorker.start()

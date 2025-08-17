@@ -2200,7 +2200,7 @@ export type QueryScenesQuery = {
   queryScenes: {
     __typename?: 'QueryScenesResultType'
     count: number
-    scenes: Array<{ __typename?: 'Scene'; id: string }>
+    scenes: Array<{ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }>
   }
 }
 
@@ -2411,8 +2411,65 @@ export const QueryScenesDocument = new TypedDocumentString(`
   queryScenes(input: $input) {
     count
     scenes {
-      id
+      ...SceneFields
     }
   }
 }
-    `) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>
+    fragment ImageFields on Image {
+  id
+  url
+  width
+  height
+}
+fragment FingerprintFields on Fingerprint {
+  hash
+  algorithm
+  duration
+}
+fragment PerformerAppearanceFields on PerformerAppearance {
+  performer {
+    id
+    name
+    disambiguation
+  }
+}
+fragment SiteFields on Site {
+  id
+  name
+  url
+}
+fragment UrlFields on URL {
+  url
+  site {
+    ...SiteFields
+  }
+}
+fragment SceneFields on Scene {
+  id
+  title
+  details
+  director
+  code
+  releasedAt: release_date
+  duration
+  images {
+    ...ImageFields
+  }
+  fingerprints {
+    ...FingerprintFields
+  }
+  performers {
+    ...PerformerAppearanceFields
+  }
+  urls {
+    ...UrlFields
+  }
+  studio {
+    id
+    name
+    images {
+      ...ImageFields
+    }
+    aliases
+  }
+}`) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>

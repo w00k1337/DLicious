@@ -74,7 +74,7 @@ export const searchScenes = async (options: SceneSearchOptionsInput = {}): Promi
       queryScenes(input: $input) {
         count
         scenes {
-          id
+          ...SceneFields
         }
       }
     }

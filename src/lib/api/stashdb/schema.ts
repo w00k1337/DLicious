@@ -60,6 +60,11 @@ export const sceneSchema = z.object({
   studio: studioSchema.nullable().optional()
 })
 
+// AIDEV-NOTE: Scene schema with source discriminator for type-safe union types
+export const sceneWithSourceSchema = sceneSchema.extend({
+  source: z.literal('stashdb')
+})
+
 export const sceneSearchOptionsSchema = z.object({
   text: z.string().trim().min(1).optional(),
   performerIds: z.array(z.uuid()).optional().default([]),
@@ -69,6 +74,7 @@ export const sceneSearchOptionsSchema = z.object({
 })
 
 export type Scene = z.infer<typeof sceneSchema>
+export type SceneWithSource = z.infer<typeof sceneWithSourceSchema>
 export type SceneSearchOptions = z.infer<typeof sceneSearchOptionsSchema>
 export type SceneSearchOptionsInput = Partial<SceneSearchOptions>
 export type HashAlgorithm = z.infer<typeof hashAlgorithmSchema>

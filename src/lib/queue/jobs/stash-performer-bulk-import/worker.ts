@@ -2,45 +2,11 @@ import 'server-only'
 
 import { type Job, type Queue } from 'bullmq'
 
-import { getPerformerIds } from '@/lib/api/stash'
 import logger from '@/lib/logger'
 
-import { getFlowProducer } from '../connection'
-import { BaseWorker, createLazyQueue } from '../core'
-import { getStashPerformerImportQueue, type StashPerformerImportJobResult } from './stash-performer-import'
-
-export interface StashPerformerBulkImportJobResult {
-  totalProcessed: number
-  totalCreated: number
-  totalUpdated: number
-}
-
-export const triggerPerformerBulkImport = async (): Promise<void> => {
-  logger.debug('Triggering bulk import of all performers')
-
-  const stashPerformerIds = await getPerformerIds()
-
-  if (stashPerformerIds.length === 0) {
-    logger.warn('No performers found, skipping bulk import')
-    return
-  }
-
-  await getFlowProducer().add({
-    name: 'bulk-import-stash-performers',
-    queueName: getStashPerformerBulkImportQueue().name,
-    children: stashPerformerIds.map(stashId => ({
-      name: 'import-stash-performer',
-      queueName: getStashPerformerImportQueue().name,
-      data: { stashId },
-      opts: {
-        jobId: `import-stash-performer-${String(stashId)}`,
-        removeOnComplete: true
-      }
-    }))
-  })
-
-  logger.debug({ performerCount: stashPerformerIds.length }, 'Bulk import triggered successfully')
-}
+import { BaseWorker, createLazyQueue } from '../../core'
+import { type StashPerformerImportJobResult } from '../stash-performer-import'
+import type { StashPerformerBulkImportJobResult } from './types'
 
 export const STASH_PERFORMER_BULK_IMPORT_QUEUE_NAME = 'stash-performer-bulk-import' as const
 

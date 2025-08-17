@@ -188,7 +188,6 @@ export abstract class BaseWorker<TJobData, TJobResult> {
           `Retryable error occurred, retrying in ${String(delayMs * attempt)}ms...`
         )
 
-        // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, delayMs * attempt))
       }
     }
