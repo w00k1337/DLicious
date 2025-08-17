@@ -49,8 +49,7 @@ model Performer {
   id                String    @id @default(cuid())
   stashId           Int       @unique
   stashDbId         String?   @unique
-  thePornDbId       String?   @unique // UDID from ThePornDB
-  thePornDbNumericId Int?     @unique // Numeric ID from ThePornDB
+  thePornDbId       String?   @unique
   name              String
   aliases           String[]  @default([])
   imageUrl          String?
@@ -68,30 +67,32 @@ model Performer {
 }
 
 model Scene {
-  id         String      @id @default(cuid())
-  title      String
-  imageUrl   String?
-  releasedAt DateTime
-  stashId    Int?        @unique
-  stashDbId  String?     @unique
-  studioId   String?
-  studio     Studio?     @relation(fields: [studioId], references: [id])
-  hashes     Hash[]
-  performers Performer[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  title       String
+  imageUrl    String?
+  releasedAt  DateTime
+  stashId     Int?        @unique
+  stashDbId   String?     @unique
+  thePornDbId String?     @unique
+  studioId    String?
+  studio      Studio?     @relation(fields: [studioId], references: [id])
+  hashes      Hash[]
+  performers  Performer[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Studio {
-  id        String   @id @default(cuid())
-  name      String
-  imageUrl  String?
-  stashId   Int?     @unique
-  stashDbId String?  @unique
-  aliases   String[] @default([])
-  scenes    Scene[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  imageUrl    String?
+  stashId     Int?     @unique
+  stashDbId   String?  @unique
+  thePornDbId Int?     @unique
+  aliases     String[] @default([])
+  scenes      Scene[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Hash {

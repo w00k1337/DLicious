@@ -123,6 +123,34 @@ Pre-commit hooks via Husky and lint-staged ensure:
 
 ## Important Patterns
 
+### Simplicity First
+
+**Always prefer the simplest solution that works.** Don't overengineer - we can build upon the foundation later. Less code is better. Start with the most straightforward approach and only add complexity when it's absolutely necessary.
+
+### File Size Guidelines
+
+**If a file has more than 300 lines of code, refactor it.** Large files are harder to maintain, understand, and test. Break them down into smaller, focused modules with clear responsibilities.
+
+### Library Documentation
+
+**Always look up the official documentation when dealing with libraries or packages.** Use Context7 as an MCP server for the lookup to ensure you're using the most up-to-date and accurate information from the source.
+
+### Time and Duration Handling
+
+When working with milliseconds (e.g., sleep, timeouts, delays), use the "ms" library to make code more readable:
+
+```typescript
+// ✅ Good - readable and self-documenting
+const delay = ms('3s')
+const timeout = ms('5m')
+const interval = ms('1h')
+
+// ❌ Avoid - magic numbers
+const delay = 3000
+const timeout = 300000
+const interval = 3600000
+```
+
 ### Server Components by Default
 
 All components are server components unless explicitly marked with `"use client"`. Data fetching happens directly in components using async/await.

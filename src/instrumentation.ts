@@ -1,7 +1,28 @@
 import logger from '@/lib/logger'
 
-export const register = (): void => {
+export const register = async (): Promise<void> => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    logger.info('Background workers initialized')
+    const { workerFactories } = await import('@/lib/queue')
+
+    // Create and start workers in the instrumentation thread
+    const workers = Object.entries(workerFactories).map(([name, factory]) => {
+      logger.info({ workerName: name }, 'Starting worker')
+      const worker = factory()
+      return { name, worker }
+    })
+
+    logger.info({ workerCount: workers.length }, 'Queue system initialized with workers')
+
+    // Graceful shutdown handling
+    const shutdownHandler = (): void => {
+      logger.info('Shutdown signal received, closing workers...')
+      void Promise.all(workers.map(({ worker }) => worker.close())).then(() => {
+        logger.info('All workers closed')
+        process.exit(0)
+      })
+    }
+
+    process.on('SIGTERM', shutdownHandler)
+    process.on('SIGINT', shutdownHandler)
   }
 }
