@@ -1,8 +1,11 @@
-import { createStashPerformerBulkImportWorker } from './stash'
+import { createPerformerSceneBulkImportWorker } from './performer-scene-bulk-import'
+import { createStashPerformerBulkImportWorker } from './stash-performer-bulk-import'
 
-export * from './stash'
+export * from './performer-scene-bulk-import'
+export * from './stash-performer-bulk-import'
 
 // Worker factory registry - workers are created on demand
 export const workerFactories = {
-  stashPerformerBulkImport: createStashPerformerBulkImportWorker
+  stashPerformerBulkImport: createStashPerformerBulkImportWorker,
+  performerSceneBulkImport: createPerformerSceneBulkImportWorker
 } as const

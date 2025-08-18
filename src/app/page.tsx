@@ -1,6 +1,6 @@
 import { ReactElement } from 'react'
 
-import { triggerStashPerformerBulkImport } from '@/lib/queue/jobs/stash'
+import { triggerStashPerformerBulkImport } from '@/lib/queue'
 
 const Home = async (): Promise<ReactElement> => {
   await triggerStashPerformerBulkImport()

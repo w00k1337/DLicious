@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const parseBreastType = (val: string): 'Fake' | 'Natural' | undefined => {
+const parseBreastType = (val: string | null | undefined): 'Fake' | 'Natural' | undefined => {
   if (!val) return undefined
   return val === 'Fake' || val === 'Natural' ? val : undefined
 }
@@ -37,7 +37,7 @@ export const performerSchema = z.object({
   country: z.string().optional(),
   birthdate: z.coerce.date().optional(),
   measurements: z.string(),
-  breastType: z.string().transform(parseBreastType).pipe(breastTypeSchema.optional()),
+  breastType: z.string().nullish().transform(parseBreastType).pipe(breastTypeSchema.optional()),
   isFavorite: z.boolean(),
   stashes: z.array(stashSchema).default([])
 })
