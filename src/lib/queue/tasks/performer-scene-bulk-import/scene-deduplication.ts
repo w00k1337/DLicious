@@ -1,8 +1,9 @@
+import { HashType } from './constants'
 import type { NormalizedScene } from './scene-normalizers'
 
 export interface HashGroup {
   hash: string
-  type: 'PHASH' | 'OSHASH' | 'MD5'
+  type: HashType
   scenes: NormalizedScene[]
 }
 
@@ -55,7 +56,7 @@ export const mergeScenes = (scenes: NormalizedScene[]): NormalizedScene => {
   }
 
   // Collect unique hashes from all scenes
-  const uniqueHashes = new Map<string, { type: 'PHASH' | 'OSHASH' | 'MD5'; value: string }>()
+  const uniqueHashes = new Map<string, { type: HashType; value: string }>()
   for (const scene of sortedScenes) {
     for (const hash of scene.hashes) {
       const key = `${hash.type}:${hash.value}`
@@ -74,22 +75,18 @@ export const getUniqueScenes = (
   scenes: NormalizedScene[]
 ): { uniqueScenes: NormalizedScene[]; duplicatesSkipped: number } => {
   const hashIndex = buildHashIndex(scenes)
-  const processedHashes = new Set<string>()
+  const processedScenes = new Set<NormalizedScene>()
   const uniqueScenes: NormalizedScene[] = []
-  let duplicatesSkipped = 0
 
   for (const scene of scenes) {
-    // Check if this scene has already been processed via its hashes
-    const sceneHashKeys = scene.hashes.map(h => `${h.type}:${h.value}`)
-    const alreadyProcessed = sceneHashKeys.some(key => processedHashes.has(key))
-
-    if (alreadyProcessed) {
-      duplicatesSkipped++
+    // Skip if this scene has already been processed
+    if (processedScenes.has(scene)) {
       continue
     }
 
     // Find all scenes with matching hashes
     const relatedScenes = new Set<NormalizedScene>([scene])
+    const sceneHashKeys = scene.hashes.map(h => `${h.type}:${h.value}`)
 
     for (const hashKey of sceneHashKeys) {
       const groups = hashIndex.get(hashKey) ?? []
@@ -98,19 +95,16 @@ export const getUniqueScenes = (
       }
     }
 
-    // Merge related scenes and mark their hashes as processed
+    // Merge related scenes
     const mergedScene = mergeScenes(Array.from(relatedScenes))
     uniqueScenes.push(mergedScene)
 
-    // Mark all hash keys from related scenes as processed
-    for (const relatedScene of relatedScenes) {
-      relatedScene.hashes.forEach(h => {
-        processedHashes.add(`${h.type}:${h.value}`)
-      })
-    }
-
-    duplicatesSkipped += relatedScenes.size - 1
+    // Mark all related scenes as processed
+    relatedScenes.forEach(s => processedScenes.add(s))
   }
+
+  // Calculate duplicates skipped as the difference between total scenes and unique scenes
+  const duplicatesSkipped = scenes.length - uniqueScenes.length
 
   return { uniqueScenes, duplicatesSkipped }
 }

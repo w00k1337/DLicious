@@ -1,21 +1,8 @@
 import { Job, Queue } from 'bullmq'
 
-import { createQueue } from '../core'
-
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface StashPerformerBulkImportJobData {
-  // Currently no input data, but structured for future options
-  // e.g., filters, skipExisting, etc.
-}
-
-export interface StashPerformerBulkImportJobResult {
-  performerCount: number
-  importedCount: number
-  failedCount: number
-  errors?: string[]
-}
-
-export const STASH_PERFORMER_BULK_IMPORT_QUEUE_NAME = 'stash-performer-bulk-import'
+import { createQueue } from '../../core'
+import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
+import { STASH_PERFORMER_BULK_IMPORT_QUEUE_NAME } from './types'
 
 export const getStashPerformerBulkImportQueue = (): Queue<
   StashPerformerBulkImportJobData,

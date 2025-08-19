@@ -10,7 +10,6 @@ CREATE TABLE "public"."Performer" (
     "stashId" INTEGER NOT NULL,
     "stashDbId" TEXT,
     "thePornDbId" TEXT,
-    "thePornDbNumericId" INTEGER,
     "name" TEXT NOT NULL,
     "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "imageUrl" TEXT,
@@ -36,6 +35,7 @@ CREATE TABLE "public"."Scene" (
     "releasedAt" TIMESTAMP(3) NOT NULL,
     "stashId" INTEGER,
     "stashDbId" TEXT,
+    "thePornDbId" TEXT,
     "studioId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -50,6 +50,7 @@ CREATE TABLE "public"."Studio" (
     "imageUrl" TEXT,
     "stashId" INTEGER,
     "stashDbId" TEXT,
+    "thePornDbId" INTEGER,
     "aliases" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -94,19 +95,31 @@ CREATE UNIQUE INDEX "Performer_stashDbId_key" ON "public"."Performer"("stashDbId
 CREATE UNIQUE INDEX "Performer_thePornDbId_key" ON "public"."Performer"("thePornDbId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Performer_thePornDbNumericId_key" ON "public"."Performer"("thePornDbNumericId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Scene_stashId_key" ON "public"."Scene"("stashId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Scene_stashDbId_key" ON "public"."Scene"("stashDbId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Scene_thePornDbId_key" ON "public"."Scene"("thePornDbId");
+
+-- CreateIndex
+CREATE INDEX "Scene_title_releasedAt_idx" ON "public"."Scene"("title", "releasedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Studio_stashId_key" ON "public"."Studio"("stashId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Studio_stashDbId_key" ON "public"."Studio"("stashDbId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Studio_thePornDbId_key" ON "public"."Studio"("thePornDbId");
+
+-- CreateIndex
+CREATE INDEX "Studio_name_idx" ON "public"."Studio"("name");
+
+-- CreateIndex
+CREATE INDEX "Hash_value_idx" ON "public"."Hash"("value");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Hash_type_value_key" ON "public"."Hash"("type", "value");

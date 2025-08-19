@@ -1,4 +1,5 @@
-import { Job, Worker } from 'bullmq'
+import { Job } from 'bullmq'
+import ms from 'ms'
 
 import {
   BreastType,
@@ -8,15 +9,12 @@ import {
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
-import { createWorker } from '../core'
-import {
-  STASH_PERFORMER_BULK_IMPORT_QUEUE_NAME,
-  type StashPerformerBulkImportJobData,
-  type StashPerformerBulkImportJobResult
-} from '../jobs'
-import { countryCodeSchema, measurementsSchema } from '../utils'
+import { countryCodeSchema } from './country'
+import { measurementsSchema } from './measurements'
+import { bulkUpsertPerformersInChunks } from './performer-bulk-operations'
+import type { PerformerBulkData, StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
 
-const BATCH_SIZE = 50
+const BATCH_SIZE = 200
 
 const performerTransformSchema = stashPerformerSchema.transform(performer => {
   const measurements = measurementsSchema.safeParse(performer.measurements)
@@ -48,12 +46,12 @@ const performerTransformSchema = stashPerformerSchema.transform(performer => {
   }
 
   return {
-    stashDbId: performer.stashes.find(s => s.endpoint.includes('stashdb'))?.id,
-    thePornDbId: performer.stashes.find(s => s.endpoint.includes('theporndb'))?.id,
+    stashDbId: performer.stashes.find(s => s.endpoint.includes('stashdb'))?.id ?? null,
+    thePornDbId: performer.stashes.find(s => s.endpoint.includes('theporndb'))?.id ?? null,
     name: performer.name,
     aliases: performer.aliases,
     imageUrl: performer.imageUrl ?? null,
-    country,
+    country: country ?? null,
     birthdate: performer.birthdate ?? null,
     cupSize,
     bandSize,
@@ -63,10 +61,10 @@ const performerTransformSchema = stashPerformerSchema.transform(performer => {
   }
 })
 
-const processStashPerformerBulkImport = async (
+export const processStashPerformerBulkImport = async (
   job: Job<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>
 ): Promise<StashPerformerBulkImportJobResult> => {
-  logger.debug({ jobId: job.id, jobName: job.name }, 'Processing stash performer bulk import')
+  logger.info({ jobId: job.id, jobName: job.name }, 'Bulk importing performers from Stash')
 
   let importedCount = 0
   let failedCount = 0
@@ -82,7 +80,6 @@ const processStashPerformerBulkImport = async (
 
     logger.debug({ totalPerformers: stashPerformers.length }, 'Starting performer import')
 
-    // Process in batches to avoid memory issues
     for (let i = 0; i < stashPerformers.length; i += BATCH_SIZE) {
       const batch = stashPerformers.slice(i, i + BATCH_SIZE)
       const batchNumber = Math.floor(i / BATCH_SIZE) + 1
@@ -90,39 +87,63 @@ const processStashPerformerBulkImport = async (
 
       logger.debug({ batchNumber, totalBatches, batchSize: batch.length }, 'Processing batch of performers')
 
-      // Update job progress
       await job.updateProgress((i / stashPerformers.length) * 100)
 
-      // Process each performer individually (no transaction needed for independent operations)
-      for (const performer of batch) {
-        try {
-          const parsed = performerTransformSchema.safeParse(performer)
+      try {
+        const transformedPerformers: PerformerBulkData[] = []
+        const batchErrors: string[] = []
 
-          if (!parsed.success) {
-            logger.debug(
-              { performerId: performer.id, errors: parsed.error.issues },
-              'Failed to transform performer data'
-            )
-            throw new Error(`Invalid performer data: ${parsed.error.message}`)
+        for (const performer of batch) {
+          try {
+            const parsed = performerTransformSchema.safeParse(performer)
+
+            if (!parsed.success) {
+              logger.debug(
+                { performerId: performer.id, errors: parsed.error.issues },
+                'Failed to transform performer data'
+              )
+              throw new Error(`Invalid performer data: ${parsed.error.message}`)
+            }
+
+            transformedPerformers.push({ stashId: performer.id, ...parsed.data })
+          } catch (error) {
+            const errorMsg = `Failed to transform performer ${performer.name} (ID: ${String(performer.id)}): ${error instanceof Error ? error.message : 'Unknown error'}`
+            batchErrors.push(errorMsg)
+            logger.error({ performerId: performer.id, error }, errorMsg)
           }
-
-          // Upsert performer with deduplicated data
-          await prisma.performer.upsert({
-            where: { stashId: performer.id },
-            create: {
-              stashId: performer.id,
-              ...parsed.data
-            },
-            update: parsed.data
-          })
-
-          importedCount++
-        } catch (error) {
-          failedCount++
-          const errorMsg = `Failed to import performer ${performer.name} (ID: ${String(performer.id)}): ${error instanceof Error ? error.message : 'Unknown error'}`
-          errors.push(errorMsg)
-          logger.error({ performerId: performer.id, error }, errorMsg)
         }
+
+        if (transformedPerformers.length > 0) {
+          await prisma.$transaction(
+            async tx => {
+              const result = await bulkUpsertPerformersInChunks(tx, transformedPerformers)
+
+              importedCount += result.createdCount + result.updatedCount
+              errors.push(...result.errors)
+
+              logger.debug(
+                {
+                  batchNumber,
+                  createdCount: result.createdCount,
+                  updatedCount: result.updatedCount,
+                  errorsInBatch: result.errors.length
+                },
+                'Completed batch processing'
+              )
+            },
+            {
+              timeout: ms('2m')
+            }
+          )
+        }
+
+        failedCount += batchErrors.length
+        errors.push(...batchErrors)
+      } catch (error) {
+        failedCount += batch.length
+        const errorMsg = `Failed to import batch ${String(batchNumber)}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors.push(errorMsg)
+        logger.error({ batchNumber, error }, errorMsg)
       }
     }
 
@@ -132,7 +153,7 @@ const processStashPerformerBulkImport = async (
       performerCount: stashPerformers.length,
       importedCount,
       failedCount,
-      errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Limit errors to first 10
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined
     }
   } catch (error) {
     const errorMsg = `Bulk import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -140,12 +161,3 @@ const processStashPerformerBulkImport = async (
     throw new Error(errorMsg)
   }
 }
-
-export const createStashPerformerBulkImportWorker = (): Worker<
-  StashPerformerBulkImportJobData,
-  StashPerformerBulkImportJobResult
-> =>
-  createWorker<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>(
-    STASH_PERFORMER_BULK_IMPORT_QUEUE_NAME,
-    processStashPerformerBulkImport
-  )

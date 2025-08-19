@@ -2,6 +2,10 @@ import type { Scene as StashScene } from '@/lib/api/stash/schema'
 import type { Scene as StashDbScene } from '@/lib/api/stashdb/schema'
 import type { Scene as ThePornDbScene } from '@/lib/api/theporndb/schema'
 
+import { HashType, SOURCE_PRIORITY } from './constants'
+
+export { SOURCE_PRIORITY }
+
 export interface NormalizedScene {
   title: string
   imageUrl?: string
@@ -17,14 +21,12 @@ export interface NormalizedScene {
     thePornDbId?: number
   }
   hashes: {
-    type: 'PHASH' | 'OSHASH' | 'MD5'
+    type: HashType
     value: string
   }[]
   source: 'stash' | 'stashdb' | 'theporndb'
   priority: number
 }
-
-export const SOURCE_PRIORITY = { stash: 1, stashdb: 2, theporndb: 3 }
 
 export const normalizeStashScene = (scene: StashScene): NormalizedScene => ({
   title: scene.title,
@@ -42,7 +44,7 @@ export const normalizeStashScene = (scene: StashScene): NormalizedScene => ({
     : undefined,
   hashes: scene.files.flatMap(file =>
     file.fingerprints.map(fp => ({
-      type: fp.type === 'oshash' ? ('OSHASH' as const) : ('PHASH' as const),
+      type: fp.type === 'oshash' ? HashType.OSHASH : HashType.PHASH,
       value: fp.value
     }))
   ),
@@ -63,7 +65,7 @@ export const normalizeStashDbScene = (scene: StashDbScene): NormalizedScene => (
       }
     : undefined,
   hashes: scene.fingerprints.map(fp => ({
-    type: fp.algorithm,
+    type: fp.algorithm as HashType,
     value: fp.hash
   })),
   source: 'stashdb',
@@ -83,7 +85,7 @@ export const normalizeThePornDbScene = (scene: ThePornDbScene): NormalizedScene 
       }
     : undefined,
   hashes: scene.hashes.map(hash => ({
-    type: hash.type,
+    type: hash.type as HashType,
     value: hash.hash
   })),
   source: 'theporndb',

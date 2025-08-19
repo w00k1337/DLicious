@@ -80,6 +80,8 @@ model Scene {
   performers  Performer[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([title, releasedAt])
 }
 
 model Studio {
@@ -93,6 +95,8 @@ model Studio {
   scenes      Scene[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([name])
 }
 
 model Hash {
@@ -104,4 +108,5 @@ model Hash {
   updatedAt DateTime @updatedAt
 
   @@unique([type, value])
+  @@index([value])
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import logger from '@/lib/logger'
-import { triggerPerformerSceneBulkImport } from '@/lib/queue/jobs/performer-scene-bulk-import'
+import { triggerPerformerSceneBulkImport } from '@/lib/queue'
 
 export const POST = async (
   request: Request,

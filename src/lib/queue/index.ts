@@ -2,8 +2,8 @@
 // Re-export core functionality for backward compatibility
 export * from './core'
 
-// Export job definitions and triggers
-export * from './jobs'
+// Export all tasks (includes types, queues, and workers)
+export * from './tasks'
 
-// Export worker factories
-export { workerFactories } from './workers'
+// Export worker factories for backward compatibility
+export { workerFactories } from './shared/worker-factories'

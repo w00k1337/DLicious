@@ -1,21 +1,8 @@
 import { Job, Queue } from 'bullmq'
 
-import { createQueue } from '../core'
-
-export interface PerformerSceneBulkImportJobData {
-  performerId: string
-}
-
-export interface PerformerSceneBulkImportJobResult {
-  performerId: string
-  sceneCount: number
-  importedCount: number
-  failedCount: number
-  duplicatesSkipped: number
-  errors?: string[]
-}
-
-export const PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME = 'performer-scene-bulk-import'
+import { createQueue } from '../../core'
+import type { PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult } from './types'
+import { PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME } from './types'
 
 export const getPerformerSceneBulkImportQueue = (): Queue<
   PerformerSceneBulkImportJobData,

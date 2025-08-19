@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { HashType } from './constants'
 import { buildHashIndex, getUniqueScenes, mergeScenes } from './scene-deduplication'
 import type { NormalizedScene } from './scene-normalizers'
 
@@ -9,7 +10,7 @@ const createMockScene = (overrides: Partial<NormalizedScene> = {}): NormalizedSc
   imageUrl: 'https://example.com/image.jpg',
   releasedAt: new Date('2023-01-01'),
   stashId: 123,
-  hashes: [{ type: 'PHASH', value: 'hash123' }],
+  hashes: [{ type: HashType.PHASH, value: 'hash123' }],
   source: 'stash',
   priority: 1,
   ...overrides
@@ -19,7 +20,7 @@ describe('buildHashIndex', () => {
   it('should create index for single scene with single hash', () => {
     const scenes = [
       createMockScene({
-        hashes: [{ type: 'PHASH', value: 'hash1' }]
+        hashes: [{ type: HashType.PHASH, value: 'hash1' }]
       })
     ]
 
@@ -40,11 +41,11 @@ describe('buildHashIndex', () => {
     const scenes = [
       createMockScene({
         title: 'Scene 1',
-        hashes: [{ type: 'PHASH', value: 'samehash' }]
+        hashes: [{ type: HashType.PHASH, value: 'samehash' }]
       }),
       createMockScene({
         title: 'Scene 2',
-        hashes: [{ type: 'PHASH', value: 'samehash' }]
+        hashes: [{ type: HashType.PHASH, value: 'samehash' }]
       })
     ]
 
@@ -62,8 +63,8 @@ describe('buildHashIndex', () => {
     const scenes = [
       createMockScene({
         hashes: [
-          { type: 'PHASH', value: 'hash1' },
-          { type: 'OSHASH', value: 'hash1' }
+          { type: HashType.PHASH, value: 'hash1' },
+          { type: HashType.OSHASH, value: 'hash1' }
         ]
       })
     ]
@@ -120,14 +121,14 @@ describe('mergeScenes', () => {
     const scenes = [
       createMockScene({
         hashes: [
-          { type: 'PHASH', value: 'hash1' },
-          { type: 'OSHASH', value: 'hash2' }
+          { type: HashType.PHASH, value: 'hash1' },
+          { type: HashType.OSHASH, value: 'hash2' }
         ]
       }),
       createMockScene({
         hashes: [
-          { type: 'PHASH', value: 'hash1' }, // Duplicate
-          { type: 'MD5', value: 'hash3' }
+          { type: HashType.PHASH, value: 'hash1' }, // Duplicate
+          { type: HashType.MD5, value: 'hash3' }
         ]
       })
     ]
@@ -137,9 +138,9 @@ describe('mergeScenes', () => {
     expect(merged.hashes).toHaveLength(3)
     expect(merged.hashes).toEqual(
       expect.arrayContaining([
-        { type: 'PHASH', value: 'hash1' },
-        { type: 'OSHASH', value: 'hash2' },
-        { type: 'MD5', value: 'hash3' }
+        { type: HashType.PHASH, value: 'hash1' },
+        { type: HashType.OSHASH, value: 'hash2' },
+        { type: HashType.MD5, value: 'hash3' }
       ])
     )
   })
@@ -187,7 +188,7 @@ describe('getUniqueScenes', () => {
     const scenes = [
       createMockScene({
         title: 'Unique Scene',
-        hashes: [{ type: 'PHASH', value: 'unique1' }]
+        hashes: [{ type: HashType.PHASH, value: 'unique1' }]
       })
     ]
 
@@ -204,24 +205,21 @@ describe('getUniqueScenes', () => {
         title: 'Scene A',
         source: 'stash',
         priority: 1,
-        hashes: [{ type: 'PHASH', value: 'samehash' }]
+        hashes: [{ type: HashType.PHASH, value: 'samehash' }]
       }),
       createMockScene({
         title: 'Scene B',
         source: 'stashdb',
         priority: 2,
-        hashes: [{ type: 'PHASH', value: 'samehash' }]
+        hashes: [{ type: HashType.PHASH, value: 'samehash' }]
       })
     ]
 
     const result = getUniqueScenes(scenes)
 
     expect(result.uniqueScenes).toHaveLength(1)
-    // The implementation counts total related scenes - 1, then adds skipped scenes
-    // First scene processes both scenes (2 related scenes - 1 = 1)
-    // Second scene is already processed and gets counted as duplicatesSkipped += 1
-    // Total: 1 + 1 = 2
-    expect(result.duplicatesSkipped).toBe(2)
+    // Simple counting: 2 input scenes - 1 unique scene = 1 duplicate skipped
+    expect(result.duplicatesSkipped).toBe(1)
 
     // Should keep the higher priority scene (lower number)
     expect(result.uniqueScenes[0].title).toBe('Scene A')
@@ -233,31 +231,29 @@ describe('getUniqueScenes', () => {
       createMockScene({
         title: 'Scene 1',
         hashes: [
-          { type: 'PHASH', value: 'hash1' },
-          { type: 'OSHASH', value: 'hash2' }
+          { type: HashType.PHASH, value: 'hash1' },
+          { type: HashType.OSHASH, value: 'hash2' }
         ]
       }),
       createMockScene({
         title: 'Scene 2',
-        hashes: [{ type: 'PHASH', value: 'hash1' }] // Same as Scene 1
+        hashes: [{ type: HashType.PHASH, value: 'hash1' }] // Same as Scene 1
       }),
       createMockScene({
         title: 'Scene 3',
-        hashes: [{ type: 'OSHASH', value: 'hash2' }] // Same as Scene 1
+        hashes: [{ type: HashType.OSHASH, value: 'hash2' }] // Same as Scene 1
       }),
       createMockScene({
         title: 'Scene 4',
-        hashes: [{ type: 'MD5', value: 'hash4' }] // Unique
+        hashes: [{ type: HashType.MD5, value: 'hash4' }] // Unique
       })
     ]
 
     const result = getUniqueScenes(scenes)
 
     expect(result.uniqueScenes).toHaveLength(2)
-    // Scene 1 processes all 3 related scenes (3-1=2), then Scene 2&3 are skipped (+2)
-    // Scene 4 processes alone (1-1=0), no additional skips
-    // Total: 2 + 2 + 0 = 4
-    expect(result.duplicatesSkipped).toBe(4)
+    // Simple counting: 4 input scenes - 2 unique scenes = 2 duplicates skipped
+    expect(result.duplicatesSkipped).toBe(2)
 
     // Should have merged Scene 1, 2, 3 into one, and kept Scene 4 separate
     const titles = result.uniqueScenes.map(s => s.title)
@@ -295,23 +291,22 @@ describe('getUniqueScenes', () => {
     const scenes = [
       createMockScene({
         title: 'A',
-        hashes: [{ type: 'PHASH', value: 'shared' }]
+        hashes: [{ type: HashType.PHASH, value: 'shared' }]
       }),
       createMockScene({
         title: 'B',
-        hashes: [{ type: 'PHASH', value: 'shared' }]
+        hashes: [{ type: HashType.PHASH, value: 'shared' }]
       }),
       createMockScene({
         title: 'C',
-        hashes: [{ type: 'PHASH', value: 'shared' }]
+        hashes: [{ type: HashType.PHASH, value: 'shared' }]
       })
     ]
 
     const result = getUniqueScenes(scenes)
 
     expect(result.uniqueScenes).toHaveLength(1)
-    // Scene A processes all 3 related scenes (3-1=2), then B&C are skipped (+2)
-    // Total: 2 + 2 = 4
-    expect(result.duplicatesSkipped).toBe(4)
+    // Simple counting: 3 input scenes - 1 unique scene = 2 duplicates skipped
+    expect(result.duplicatesSkipped).toBe(2)
   })
 })

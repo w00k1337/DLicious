@@ -159,6 +159,7 @@ Pre-commit hooks via Husky and lint-staged ensure:
 **Prefer functional programming concepts over imperative ones:**
 
 - **Use `map`, `filter`, `reduce`** instead of `for` loops and `while` loops
+- **Avoid `forEach`** - use `map` for transformations, `reduce` for side effects, or `for...of` if imperative logic is needed
 - **Favor immutable operations** and avoid mutating existing data
 - **Use array methods** like `find`, `some`, `every` for conditional logic
 - **Leverage method chaining** for cleaner, more readable code
@@ -188,6 +189,36 @@ activePerformers.sort((a, b) => b.sceneCount - a.sceneCount)
 ```
 
 This leads to more declarative, testable, and maintainable code.
+
+### Async/Await Best Practices
+
+**Avoid sequential awaits when possible - use Promise.all or Promise.allSettled:**
+
+- **Use `Promise.all`** when all promises must succeed
+- **Use `Promise.allSettled`** when you want to handle both successes and failures
+- **Avoid sequential awaits** that don't depend on each other
+- **Improve performance** by running independent operations in parallel
+
+Example:
+
+```typescript
+// ✅ Good - parallel execution
+const [performers, scenes, studios] = await Promise.all([fetchPerformers(), fetchScenes(), fetchStudios()])
+
+// ✅ Good - handling mixed results
+const results = await Promise.allSettled([updatePerformer(id1), updatePerformer(id2), updatePerformer(id3)])
+
+const successful = results
+  .filter((result): result is PromiseFulfilledResult<Performer> => result.status === 'fulfilled')
+  .map(result => result.value)
+
+// ❌ Avoid - sequential awaits
+const performers = await fetchPerformers()
+const scenes = await fetchScenes()
+const studios = await fetchStudios()
+```
+
+This improves performance and makes async operations more efficient.
 
 ## Important Patterns
 
@@ -238,6 +269,87 @@ All components are server components unless explicitly marked with `"use client"
 - Strict TypeScript configuration
 - Generated types for Prisma models and GraphQL queries
 - Zod validation for environment variables
+
+### Dedicated Types and Interfaces
+
+**Create dedicated interfaces and types instead of using inline types:**
+
+- **Define explicit interfaces** for function parameters, return types, and object structures
+- **Avoid inline object types** in function signatures and variable declarations
+- **Use descriptive names** that clearly indicate the purpose and structure
+- **Group related types** in dedicated type files or modules
+
+Example:
+
+```typescript
+// ✅ Good - dedicated interfaces
+interface PerformerData {
+  id: string
+  name: string
+  birthDate: Date
+  height?: number
+  isActive: boolean
+}
+
+interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
+const validatePerformer = (data: PerformerData): ValidationResult => {
+  // validation logic
+}
+
+// ❌ Avoid - inline types
+const validatePerformer = (data: {
+  id: string
+  name: string
+  birthDate: Date
+  height?: number
+  isActive: boolean
+}): { isValid: boolean; errors: string[] } => {
+  // validation logic
+}
+```
+
+This improves code readability, reusability, and maintainability.
+
+### Object Destructuring
+
+**Always destructure objects instead of accessing properties directly:**
+
+- **Destructure function parameters** to access specific properties
+- **Use destructuring in variable assignments** for cleaner code
+- **Leverage default values** and rest parameters when appropriate
+- **Improve readability** by making property access explicit
+
+Example:
+
+```typescript
+// ✅ Good - destructuring
+const processPerformer = ({ id, name, birthDate, height }: PerformerData) => {
+  return { performerId: id, displayName: name, age: calculateAge(birthDate) }
+}
+
+const { isValid, errors } = validatePerformer(performerData)
+const { name, ...otherProps } = performerData
+
+// ❌ Avoid - direct property access
+const processPerformer = (performer: PerformerData) => {
+  return {
+    performerId: performer.id,
+    displayName: performer.name,
+    age: calculateAge(performer.birthDate)
+  }
+}
+
+const result = validatePerformer(performerData)
+if (result.isValid) {
+  // handle success
+}
+```
+
+This makes code more concise and explicit about which properties are being used.
 
 ### Zod Schemas for Runtime Validation
 
