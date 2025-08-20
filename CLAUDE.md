@@ -222,6 +222,10 @@ This improves performance and makes async operations more efficient.
 
 ## Important Patterns
 
+### Golden Rule: Consult, Don't Assume
+
+**When unsure about implementation details or requirements, ALWAYS consult the developer rather than making assumptions.** This is the most important rule - it's better to ask for clarification than to implement something incorrectly.
+
 ### Early Development Phase
 
 **We are in early development - prioritize clean architecture over backward compatibility:**
@@ -259,6 +263,27 @@ const delay = 3000
 const timeout = 300000
 const interval = 3600000
 ```
+
+### Date Handling
+
+**Use dayjs for all date operations and arithmetic:**
+
+```typescript
+import dayjs from 'dayjs'
+
+// ✅ Good - using dayjs
+const today = dayjs()
+const nextWeek = dayjs().add(1, 'week')
+const age = dayjs().diff(dayjs(birthDate), 'year')
+const isExpired = dayjs(expiryDate).isBefore(dayjs())
+
+// ❌ Avoid - native Date or manual calculations
+const today = new Date()
+const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+```
+
+dayjs provides a clean, immutable API for date manipulation and is much more readable than native Date operations.
 
 ### Server Components by Default
 

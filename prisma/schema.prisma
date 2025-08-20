@@ -74,29 +74,12 @@ model Scene {
   stashId     Int?        @unique
   stashDbId   String?     @unique
   thePornDbId String?     @unique
-  studioId    String?
-  studio      Studio?     @relation(fields: [studioId], references: [id])
   hashes      Hash[]
   performers  Performer[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   @@index([title, releasedAt])
-}
-
-model Studio {
-  id          String   @id @default(cuid())
-  name        String
-  imageUrl    String?
-  stashId     Int?     @unique
-  stashDbId   String?  @unique
-  thePornDbId Int?     @unique
-  aliases     String[] @default([])
-  scenes      Scene[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([name])
 }
 
 model Hash {

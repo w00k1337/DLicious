@@ -46,27 +46,6 @@ const createExtendedPrismaClient = () =>
             }
           }
         }
-      },
-      studio: {
-        imageUrl: {
-          needs: { imageUrl: true },
-          compute: (studio: { imageUrl: string | null }) => {
-            if (!studio.imageUrl) return studio.imageUrl
-            try {
-              const originalUrl = new URL(studio.imageUrl)
-              const stashBase = new URL(env.STASH_BASE_URL)
-              // AIDEV-NOTE: Proxy only Stash-hosted images to avoid exposing the API key to clients
-              if (originalUrl.host === stashBase.host) {
-                const proxyUrl = new URL('/api/image', stashBase.origin)
-                proxyUrl.searchParams.set('url', studio.imageUrl)
-                return proxyUrl.pathname + '?' + proxyUrl.searchParams.toString()
-              }
-              return studio.imageUrl
-            } catch {
-              return studio.imageUrl
-            }
-          }
-        }
       }
     }
   })
