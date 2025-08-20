@@ -2,7 +2,7 @@ import ms from 'ms'
 
 import type { Prisma } from '@/generated/prisma'
 import logger from '@/lib/logger'
-import prisma from '@/lib/prisma/'
+import prisma from '@/lib/prisma'
 
 import type { NormalizedScene, SceneCache } from './types'
 
