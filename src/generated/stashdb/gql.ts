@@ -19,8 +19,8 @@ type Documents = {
   '\n  fragment SiteFields on Site {\n    id\n    name\n    url\n  }\n': typeof types.SiteFieldsFragmentDoc
   '\n  fragment UrlFields on URL {\n    url\n    site {\n      ...SiteFields\n    }\n  }\n': typeof types.UrlFieldsFragmentDoc
   '\n  fragment SceneFields on Scene {\n    id\n    title\n    details\n    director\n    code\n    releasedAt: release_date\n    duration\n    images {\n      ...ImageFields\n    }\n    fingerprints {\n      ...FingerprintFields\n    }\n    performers {\n      ...PerformerAppearanceFields\n    }\n    urls {\n      ...UrlFields\n    }\n    studio {\n      id\n      name\n      images {\n        ...ImageFields\n      }\n      aliases\n    }\n  }\n': typeof types.SceneFieldsFragmentDoc
-  '\n    query FindScene($id: ID!) {\n      findScene(id: $id) {\n        ...SceneFields\n      }\n    }\n  ': typeof types.FindSceneDocument
-  '\n    query QueryScenes($input: SceneQueryInput!) {\n      queryScenes(input: $input) {\n        count\n        scenes {\n          ...SceneFields\n        }\n      }\n    }\n  ': typeof types.QueryScenesDocument
+  '\n  query FindScene($id: ID!) {\n    findScene(id: $id) {\n      ...SceneFields\n    }\n  }\n': typeof types.FindSceneDocument
+  '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      count\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n': typeof types.QueryScenesDocument
 }
 const documents: Documents = {
   '\n  fragment ImageFields on Image {\n    id\n    url\n    width\n    height\n  }\n': types.ImageFieldsFragmentDoc,
@@ -32,9 +32,9 @@ const documents: Documents = {
   '\n  fragment UrlFields on URL {\n    url\n    site {\n      ...SiteFields\n    }\n  }\n': types.UrlFieldsFragmentDoc,
   '\n  fragment SceneFields on Scene {\n    id\n    title\n    details\n    director\n    code\n    releasedAt: release_date\n    duration\n    images {\n      ...ImageFields\n    }\n    fingerprints {\n      ...FingerprintFields\n    }\n    performers {\n      ...PerformerAppearanceFields\n    }\n    urls {\n      ...UrlFields\n    }\n    studio {\n      id\n      name\n      images {\n        ...ImageFields\n      }\n      aliases\n    }\n  }\n':
     types.SceneFieldsFragmentDoc,
-  '\n    query FindScene($id: ID!) {\n      findScene(id: $id) {\n        ...SceneFields\n      }\n    }\n  ':
+  '\n  query FindScene($id: ID!) {\n    findScene(id: $id) {\n      ...SceneFields\n    }\n  }\n':
     types.FindSceneDocument,
-  '\n    query QueryScenes($input: SceneQueryInput!) {\n      queryScenes(input: $input) {\n        count\n        scenes {\n          ...SceneFields\n        }\n      }\n    }\n  ':
+  '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      count\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n':
     types.QueryScenesDocument
 }
 
@@ -78,13 +78,13 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n    query FindScene($id: ID!) {\n      findScene(id: $id) {\n        ...SceneFields\n      }\n    }\n  '
+  source: '\n  query FindScene($id: ID!) {\n    findScene(id: $id) {\n      ...SceneFields\n    }\n  }\n'
 ): typeof import('./graphql').FindSceneDocument
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n    query QueryScenes($input: SceneQueryInput!) {\n      queryScenes(input: $input) {\n        count\n        scenes {\n          ...SceneFields\n        }\n      }\n    }\n  '
+  source: '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      count\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n'
 ): typeof import('./graphql').QueryScenesDocument
 
 export function graphql(source: string) {

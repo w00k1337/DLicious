@@ -1,11 +1,32 @@
 import { z } from 'zod'
 
-const parseBreastType = (val: string | null | undefined): 'Fake' | 'Natural' | undefined => {
-  if (!val) return undefined
-  return val === 'Fake' || val === 'Natural' ? val : undefined
+export interface Performer {
+  id: number
+  name: string
+  aliases: string[]
+  imageUrl?: string | null
+  country?: string | null
+  birthdate?: Date | null
+  measurements?: string | null
+  breastType?: BreastType | null
+  isFavorite: boolean
+  stashes: Stash[]
+  scenes: Scene[]
+}
+
+export interface Scene {
+  id: number
+  title?: string | null
+  paths: ScenePaths
+  files: SceneFile[]
+  stashes: Stash[]
+  studio?: Studio | null
+  performers: Performer[]
+  releasedAt?: Date | null
 }
 
 export const breastTypeSchema = z.enum(['Fake', 'Natural'])
+
 export const fingerprintTypeSchema = z.enum(['oshash', 'phash'])
 
 export const idSchema = z.coerce.number().int().positive()
@@ -16,7 +37,7 @@ export const stashSchema = z.object({
 })
 
 export const scenePathsSchema = z.object({
-  screenshot: z.url().optional()
+  screenshot: z.url().nullish()
 })
 
 export const fingerprintSchema = z.object({
@@ -26,52 +47,45 @@ export const fingerprintSchema = z.object({
 
 export const sceneFileSchema = z.object({
   basename: z.string(),
-  fingerprints: z.array(fingerprintSchema)
-})
-
-export const performerSchema = z.object({
-  id: idSchema,
-  name: z.string(),
-  aliases: z.array(z.string()),
-  imageUrl: z.url().optional(),
-  country: z.string().optional(),
-  birthdate: z.coerce.date().optional(),
-  measurements: z.string(),
-  breastType: z.string().nullish().transform(parseBreastType).pipe(breastTypeSchema.optional()),
-  isFavorite: z.boolean(),
-  stashes: z.array(stashSchema).default([])
+  fingerprints: z.array(fingerprintSchema).default([])
 })
 
 export const studioSchema = z.object({
   id: idSchema,
   name: z.string(),
-  imageUrl: z.url().nullable().optional(),
+  imageUrl: z.url().nullish(),
   aliases: z.array(z.string()).default([])
 })
 
-export const sceneSchema = z.object({
+export const performerSchema: z.ZodType<Performer> = z.object({
   id: idSchema,
-  title: z.string(),
+  name: z.string(),
+  aliases: z.array(z.string()).default([]),
+  imageUrl: z.url().nullish(),
+  country: z.string().nullish(),
+  birthdate: z.coerce.date().nullish(),
+  measurements: z.string().nullish(),
+  breastType: z.string().nullish().pipe(breastTypeSchema),
+  isFavorite: z.boolean(),
+  stashes: z.array(stashSchema).default([]),
+  scenes: z.lazy(() => z.array(sceneSchema)).default([])
+})
+
+export const sceneSchema: z.ZodType<Scene> = z.object({
+  id: idSchema,
+  title: z.string().nullish(),
   paths: scenePathsSchema,
-  files: z.array(sceneFileSchema),
-  stashes: z.array(stashSchema),
-  studio: studioSchema.nullable().optional(),
-  performers: z.array(performerSchema),
-  releasedAt: z.coerce.date().nullable().optional()
+  files: z.array(sceneFileSchema).default([]),
+  stashes: z.array(stashSchema).default([]),
+  studio: studioSchema.nullish(),
+  performers: z.lazy(() => z.array(performerSchema)).default([]),
+  releasedAt: z.coerce.date().nullish()
 })
 
-// AIDEV-NOTE: Scene schema with source discriminator for type-safe union types
-export const sceneWithSourceSchema = sceneSchema.extend({
-  source: z.literal('stash')
-})
-
-export type Scene = z.infer<typeof sceneSchema>
-export type SceneWithSource = z.infer<typeof sceneWithSourceSchema>
-export type Performer = z.infer<typeof performerSchema>
-export type Studio = z.infer<typeof studioSchema>
 export type Stash = z.infer<typeof stashSchema>
+export type BreastType = z.infer<typeof breastTypeSchema>
+export type FingerprintType = z.infer<typeof fingerprintTypeSchema>
 export type ScenePaths = z.infer<typeof scenePathsSchema>
 export type Fingerprint = z.infer<typeof fingerprintSchema>
 export type SceneFile = z.infer<typeof sceneFileSchema>
-export type BreastType = z.infer<typeof breastTypeSchema>
-export type FingerprintType = z.infer<typeof fingerprintTypeSchema>
+export type Studio = z.infer<typeof studioSchema>

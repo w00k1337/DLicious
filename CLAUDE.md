@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DLicious is a Next.js application for discovering and tracking adult content from performers. It integrates with Stash (self-hosted media server) and StashDB APIs to manage performer data and scene information.
+DLicious is a Next.js application for discovering and tracking adult content from performers. It integrates with Stash (self-hosted media server) and external APIs to manage performer data and scene information.
 
-## Tech Stack
+### Tech Stack
 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript 5.9
@@ -16,7 +16,33 @@ DLicious is a Next.js application for discovering and tracking adult content fro
 - **Package Manager**: pnpm (required: >=10.11.0)
 - **Node Version**: >=20
 
-## Development Commands
+## Development Philosophy
+
+### Golden Rule: Consult, Don't Assume
+
+**When unsure about implementation details or requirements, ALWAYS consult the developer rather than making assumptions.** This is the most important rule - it's better to ask for clarification than to implement something incorrectly.
+
+### Early Development Phase
+
+**We are in early development - prioritize clean architecture over backward compatibility:**
+
+- **Refactor freely** without worrying about breaking existing code or APIs
+- **No legacy code constraints** - we can rewrite and improve as needed
+- **Focus on getting the architecture right** rather than maintaining compatibility
+- **Don't hesitate to change interfaces, schemas, or patterns** if a better approach emerges
+- **Experiment and iterate** - we can always refactor later
+
+### Simplicity First
+
+**Always prefer the simplest solution that works.** Don't overengineer - we can build upon the foundation later. Less code is better. Start with the most straightforward approach and only add complexity when it's absolutely necessary.
+
+### File Size Guidelines
+
+**If a file has more than 300 lines of code, refactor it.** Large files are harder to maintain, understand, and test. Break them down into smaller, focused modules with clear responsibilities.
+
+## Project Setup
+
+### Development Commands
 
 ```bash
 # Install dependencies
@@ -55,6 +81,18 @@ pnpm prisma studio           # Open Prisma Studio GUI
 pnpm graphql-codegen         # Generate TypeScript types from GraphQL schemas
 ```
 
+### Environment Configuration
+
+Required environment variables (see `.env.example`):
+
+- `DATABASE_URL`: PostgreSQL connection string
+- `DIRECT_URL`: Direct database connection (for migrations)
+- `REDIS_HOST/PORT/PASSWORD`: Redis connection for BullMQ
+- `STASH_BASE_URL/API_KEY`: Stash server credentials
+- `STASHDB_API_KEY`: StashDB API key
+
+Environment validation is handled by `@t3-oss/env-nextjs` in `/src/env/server.ts`.
+
 ## Architecture
 
 ### Core Structure
@@ -76,17 +114,22 @@ The application uses Prisma with PostgreSQL. Key models:
 
 - **Performer**: Adult performers with Stash integration
 - **Scene**: Individual scenes/videos linked to performers
-- **Studio**: Production studios
 - **Hash**: File hashes for scene identification
 
 ### API Integration
 
-The app integrates with two external GraphQL APIs:
+The app integrates with these external APIs:
 
-1. **Stash API** (`STASH_BASE_URL`): Local media server
-2. **StashDB API**: Community database
+1. **Stash API** (`STASH_BASE_URL`): Local media server with GraphQL interface
+2. **StashDB API**: Community database with GraphQL interface
+3. **ThePornDB API**: External database with REST interface
 
-Both APIs use generated TypeScript types from GraphQL schemas located in `/src/generated/`.
+All APIs use generated TypeScript types located in `/src/generated/`:
+
+- **GraphQL APIs** (Stash, StashDB): Types generated from GraphQL schemas
+- **REST API** (ThePornDB): Types generated from OpenAPI specification
+
+API clients are organized in `/src/lib/api/` with dedicated modules for each service.
 
 ### Queue System (BullMQ)
 
@@ -120,18 +163,6 @@ const worker = new Worker<SceneImportJobData, SceneImportJobResult>(SCENE_IMPORT
 
 This ensures compile-time type checking and better developer experience when working with job data and results. **Always export queue names as constants** so they can be referenced consistently across workers, job creators, and other components that need to interact with the same queue.
 
-### Environment Configuration
-
-Required environment variables (see `.env.example`):
-
-- `DATABASE_URL`: PostgreSQL connection string
-- `DIRECT_URL`: Direct database connection (for migrations)
-- `REDIS_HOST/PORT/PASSWORD`: Redis connection for BullMQ
-- `STASH_BASE_URL/API_KEY`: Stash server credentials
-- `STASHDB_API_KEY`: StashDB API key
-
-Environment validation is handled by `@t3-oss/env-nextjs` in `/src/env/server.ts`.
-
 ### Code Generation
 
 The project uses automated code generation:
@@ -139,20 +170,11 @@ The project uses automated code generation:
 - **Prisma Client**: Generated to `/src/generated/prisma/`
 - **GraphQL Types**: Generated via `codegen.ts` configuration
 
-### Testing Strategy
+### Server Components by Default
 
-- **Framework**: Vitest with React Testing Library
-- **Configuration**: `vitest.config.ts`
-- Tests run automatically on pre-commit via Husky
+All components are server components unless explicitly marked with `"use client"`. Data fetching happens directly in components using async/await.
 
-### Code Quality
-
-Pre-commit hooks via Husky and lint-staged ensure:
-
-1. ESLint validation (max warnings: 0)
-2. Prettier formatting
-3. Test execution
-4. Commit message linting (conventional commits)
+## Coding Standards
 
 ### Functional Programming
 
@@ -219,75 +241,6 @@ const studios = await fetchStudios()
 ```
 
 This improves performance and makes async operations more efficient.
-
-## Important Patterns
-
-### Golden Rule: Consult, Don't Assume
-
-**When unsure about implementation details or requirements, ALWAYS consult the developer rather than making assumptions.** This is the most important rule - it's better to ask for clarification than to implement something incorrectly.
-
-### Early Development Phase
-
-**We are in early development - prioritize clean architecture over backward compatibility:**
-
-- **Refactor freely** without worrying about breaking existing code or APIs
-- **No legacy code constraints** - we can rewrite and improve as needed
-- **Focus on getting the architecture right** rather than maintaining compatibility
-- **Don't hesitate to change interfaces, schemas, or patterns** if a better approach emerges
-- **Experiment and iterate** - we can always refactor later
-
-### Simplicity First
-
-**Always prefer the simplest solution that works.** Don't overengineer - we can build upon the foundation later. Less code is better. Start with the most straightforward approach and only add complexity when it's absolutely necessary.
-
-### File Size Guidelines
-
-**If a file has more than 300 lines of code, refactor it.** Large files are harder to maintain, understand, and test. Break them down into smaller, focused modules with clear responsibilities.
-
-### Library Documentation
-
-**Always look up the official documentation when dealing with libraries or packages.** Use Context7 as an MCP server for the lookup to ensure you're using the most up-to-date and accurate information from the source.
-
-### Time and Duration Handling
-
-When working with milliseconds (e.g., sleep, timeouts, delays), use the "ms" library to make code more readable:
-
-```typescript
-// ✅ Good - readable and self-documenting
-const delay = ms('3s')
-const timeout = ms('5m')
-const interval = ms('1h')
-
-// ❌ Avoid - magic numbers
-const delay = 3000
-const timeout = 300000
-const interval = 3600000
-```
-
-### Date Handling
-
-**Use dayjs for all date operations and arithmetic:**
-
-```typescript
-import dayjs from 'dayjs'
-
-// ✅ Good - using dayjs
-const today = dayjs()
-const nextWeek = dayjs().add(1, 'week')
-const age = dayjs().diff(dayjs(birthDate), 'year')
-const isExpired = dayjs(expiryDate).isBefore(dayjs())
-
-// ❌ Avoid - native Date or manual calculations
-const today = new Date()
-const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-```
-
-dayjs provides a clean, immutable API for date manipulation and is much more readable than native Date operations.
-
-### Server Components by Default
-
-All components are server components unless explicitly marked with `"use client"`. Data fetching happens directly in components using async/await.
 
 ### Type Safety
 
@@ -376,6 +329,8 @@ if (result.isValid) {
 
 This makes code more concise and explicit about which properties are being used.
 
+## Best Practices
+
 ### Zod Schemas for Runtime Validation
 
 **Use Zod schemas for runtime validation and data transformation:**
@@ -415,6 +370,64 @@ const safeValidatePerformer = (data: unknown) => {
 
 This ensures data integrity and provides type safety at runtime.
 
+### Time and Duration Handling
+
+When working with milliseconds (e.g., sleep, timeouts, delays), use the "ms" library to make code more readable:
+
+```typescript
+// ✅ Good - readable and self-documenting
+const delay = ms('3s')
+const timeout = ms('5m')
+const interval = ms('1h')
+
+// ❌ Avoid - magic numbers
+const delay = 3000
+const timeout = 300000
+const interval = 3600000
+```
+
+### Date Handling
+
+**Use dayjs for all date operations and arithmetic:**
+
+```typescript
+import dayjs from 'dayjs'
+
+// ✅ Good - using dayjs
+const today = dayjs()
+const nextWeek = dayjs().add(1, 'week')
+const age = dayjs().diff(dayjs(birthDate), 'year')
+const isExpired = dayjs(expiryDate).isBefore(dayjs())
+
+// ❌ Avoid - native Date or manual calculations
+const today = new Date()
+const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+```
+
+dayjs provides a clean, immutable API for date manipulation and is much more readable than native Date operations.
+
+### Library Documentation
+
+**Always look up the official documentation when dealing with libraries or packages.** Use Context7 as an MCP server for the lookup to ensure you're using the most up-to-date and accurate information from the source.
+
 ### Logging
 
 Uses Pino logger configured in `/src/lib/logger.ts`. In development, logs are prettified with `pino-pretty`.
+
+## Development Workflow
+
+### Testing Strategy
+
+- **Framework**: Vitest with React Testing Library
+- **Configuration**: `vitest.config.ts`
+- Tests run automatically on pre-commit via Husky
+
+### Code Quality
+
+Pre-commit hooks via Husky and lint-staged ensure:
+
+1. ESLint validation (max warnings: 0)
+2. Prettier formatting
+3. Test execution
+4. Commit message linting (conventional commits)

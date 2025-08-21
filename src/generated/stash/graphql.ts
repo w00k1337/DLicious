@@ -5017,21 +5017,6 @@ export type SceneFieldsFragment = {
   >
 } & { ' $fragmentName'?: 'SceneFieldsFragment' }
 
-export type GetScenesQueryVariables = Exact<{
-  sceneFilter?: InputMaybe<SceneFilterType>
-  sceneIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>
-  ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>
-  filter?: InputMaybe<FindFilterType>
-}>
-
-export type GetScenesQuery = {
-  __typename?: 'Query'
-  findScenes: {
-    __typename?: 'FindScenesResultType'
-    scenes: Array<{ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }>
-  }
-}
-
 export type GetAllPerformerIdsQueryVariables = Exact<{ [key: string]: never }>
 
 export type GetAllPerformerIdsQuery = {
@@ -5059,15 +5044,6 @@ export type GetPerformerByIdQuery = {
     | null
 }
 
-export type GetPerformerSceneIdsQueryVariables = Exact<{
-  id: Scalars['ID']['input']
-}>
-
-export type GetPerformerSceneIdsQuery = {
-  __typename?: 'Query'
-  findPerformer?: { __typename?: 'Performer'; scenes: Array<{ __typename?: 'Scene'; id: string }> } | null
-}
-
 export type GetPerformersByIdsQueryVariables = Exact<{
   performerIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>
 }>
@@ -5079,6 +5055,21 @@ export type GetPerformersByIdsQuery = {
     performers: Array<
       { __typename?: 'Performer' } & { ' $fragmentRefs'?: { PerformerFieldsFragment: PerformerFieldsFragment } }
     >
+  }
+}
+
+export type GetScenesQueryVariables = Exact<{
+  sceneFilter?: InputMaybe<SceneFilterType>
+  sceneIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>
+  ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>
+  filter?: InputMaybe<FindFilterType>
+}>
+
+export type GetScenesQuery = {
+  __typename?: 'Query'
+  findScenes: {
+    __typename?: 'FindScenesResultType'
+    scenes: Array<{ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }>
   }
 }
 
@@ -5194,6 +5185,87 @@ fragment StudioFields on Studio {
 }`,
   { fragmentName: 'SceneFields' }
 ) as unknown as TypedDocumentString<SceneFieldsFragment, unknown>
+export const GetAllPerformerIdsDocument = new TypedDocumentString(`
+    query GetAllPerformerIds {
+  allPerformers {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<GetAllPerformerIdsQuery, GetAllPerformerIdsQueryVariables>
+export const GetAllPerformersDocument = new TypedDocumentString(`
+    query GetAllPerformers {
+  allPerformers {
+    ...PerformerFields
+  }
+}
+    fragment PerformerFields on Performer {
+  id
+  name
+  aliases: alias_list
+  imageUrl: image_path
+  country
+  birthdate
+  measurements
+  breastType: fake_tits
+  isFavorite: favorite
+  stashes: stash_ids {
+    ...StashFields
+  }
+}
+fragment StashFields on StashID {
+  id: stash_id
+  endpoint
+}`) as unknown as TypedDocumentString<GetAllPerformersQuery, GetAllPerformersQueryVariables>
+export const GetPerformerByIdDocument = new TypedDocumentString(`
+    query GetPerformerById($id: ID!) {
+  findPerformer(id: $id) {
+    ...PerformerFields
+  }
+}
+    fragment PerformerFields on Performer {
+  id
+  name
+  aliases: alias_list
+  imageUrl: image_path
+  country
+  birthdate
+  measurements
+  breastType: fake_tits
+  isFavorite: favorite
+  stashes: stash_ids {
+    ...StashFields
+  }
+}
+fragment StashFields on StashID {
+  id: stash_id
+  endpoint
+}`) as unknown as TypedDocumentString<GetPerformerByIdQuery, GetPerformerByIdQueryVariables>
+export const GetPerformersByIdsDocument = new TypedDocumentString(`
+    query GetPerformersByIds($performerIds: [Int!]) {
+  findPerformers(performer_ids: $performerIds, filter: {per_page: -1}) {
+    performers {
+      ...PerformerFields
+    }
+  }
+}
+    fragment PerformerFields on Performer {
+  id
+  name
+  aliases: alias_list
+  imageUrl: image_path
+  country
+  birthdate
+  measurements
+  breastType: fake_tits
+  isFavorite: favorite
+  stashes: stash_ids {
+    ...StashFields
+  }
+}
+fragment StashFields on StashID {
+  id: stash_id
+  endpoint
+}`) as unknown as TypedDocumentString<GetPerformersByIdsQuery, GetPerformersByIdsQueryVariables>
 export const GetScenesDocument = new TypedDocumentString(`
     query GetScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {
   findScenes(
@@ -5255,93 +5327,3 @@ fragment SceneFields on Scene {
   }
   releasedAt: date
 }`) as unknown as TypedDocumentString<GetScenesQuery, GetScenesQueryVariables>
-export const GetAllPerformerIdsDocument = new TypedDocumentString(`
-    query GetAllPerformerIds {
-  allPerformers {
-    id
-  }
-}
-    `) as unknown as TypedDocumentString<GetAllPerformerIdsQuery, GetAllPerformerIdsQueryVariables>
-export const GetAllPerformersDocument = new TypedDocumentString(`
-    query GetAllPerformers {
-  allPerformers {
-    ...PerformerFields
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<GetAllPerformersQuery, GetAllPerformersQueryVariables>
-export const GetPerformerByIdDocument = new TypedDocumentString(`
-    query GetPerformerById($id: ID!) {
-  findPerformer(id: $id) {
-    ...PerformerFields
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<GetPerformerByIdQuery, GetPerformerByIdQueryVariables>
-export const GetPerformerSceneIdsDocument = new TypedDocumentString(`
-    query GetPerformerSceneIds($id: ID!) {
-  findPerformer(id: $id) {
-    scenes {
-      id
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GetPerformerSceneIdsQuery, GetPerformerSceneIdsQueryVariables>
-export const GetPerformersByIdsDocument = new TypedDocumentString(`
-    query GetPerformersByIds($performerIds: [Int!]) {
-  findPerformers(performer_ids: $performerIds, filter: {per_page: -1}) {
-    performers {
-      ...PerformerFields
-    }
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<GetPerformersByIdsQuery, GetPerformersByIdsQueryVariables>

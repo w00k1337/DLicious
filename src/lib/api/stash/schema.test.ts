@@ -30,15 +30,13 @@ describe('performerSchema - breast type parsing', () => {
     expect(result.breastType).toBe('Fake')
   })
 
-  it('should handle empty breast type', () => {
+  it('should reject empty breast type', () => {
     const performer = { ...basePerformer, breastType: '' }
-    const result = performerSchema.parse(performer)
-    expect(result.breastType).toBeUndefined()
+    expect(() => performerSchema.parse(performer)).toThrow()
   })
 
-  it('should normalize invalid breast type values', () => {
+  it('should reject invalid breast type values', () => {
     const performer = { ...basePerformer, breastType: 'fake' }
-    const result = performerSchema.parse(performer)
-    expect(result.breastType).toBeUndefined()
+    expect(() => performerSchema.parse(performer)).toThrow()
   })
 })

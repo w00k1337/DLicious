@@ -2,29 +2,25 @@ import { describe, expect, it } from 'vitest'
 
 import { imageSchema, sceneSearchOptionsSchema } from './schema'
 
-describe('imageSchema - dimension normalization', () => {
-  it('should normalize negative dimensions to 0', () => {
+describe('imageSchema - dimension validation', () => {
+  it('should reject negative dimensions', () => {
     const image = {
       id: '123e4567-e89b-12d3-a456-426614174000',
       url: 'https://example.com/image.jpg',
       width: -100,
       height: -50
     }
-    const result = imageSchema.parse(image)
-    expect(result.width).toBe(0)
-    expect(result.height).toBe(0)
+    expect(() => imageSchema.parse(image)).toThrow()
   })
 
-  it('should handle null/undefined dimensions', () => {
+  it('should reject null/undefined dimensions', () => {
     const image = {
       id: '123e4567-e89b-12d3-a456-426614174000',
       url: 'https://example.com/image.jpg',
       width: null as unknown as number,
       height: undefined as unknown as number
     }
-    const result = imageSchema.parse(image)
-    expect(result.width).toBe(0)
-    expect(result.height).toBe(0)
+    expect(() => imageSchema.parse(image)).toThrow()
   })
 
   it('should preserve valid positive dimensions', () => {

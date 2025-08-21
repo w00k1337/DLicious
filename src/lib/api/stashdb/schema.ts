@@ -1,12 +1,10 @@
 import { z } from 'zod'
 
-const normalizeDimension = (val: number | null | undefined): number => Math.max(0, val ?? 0)
-
 export const imageSchema = z.object({
   id: z.uuid(),
   url: z.url(),
-  width: z.union([z.number(), z.null(), z.undefined()]).transform(normalizeDimension),
-  height: z.union([z.number(), z.null(), z.undefined()]).transform(normalizeDimension)
+  width: z.number().int().positive(),
+  height: z.number().int().positive()
 })
 
 export const hashAlgorithmSchema = z.enum(['OSHASH', 'PHASH', 'MD5'])
@@ -14,13 +12,13 @@ export const hashAlgorithmSchema = z.enum(['OSHASH', 'PHASH', 'MD5'])
 export const hashSchema = z.object({
   hash: z.string(),
   algorithm: hashAlgorithmSchema,
-  duration: z.number().optional()
+  duration: z.number().int().positive()
 })
 
 export const performerSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  disambiguation: z.string().nullable().optional()
+  disambiguation: z.string().nullish()
 })
 
 export const performerAppearanceSchema = z.object({
@@ -30,7 +28,7 @@ export const performerAppearanceSchema = z.object({
 export const siteSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  url: z.string().nullable().optional()
+  url: z.string().nullish()
 })
 
 export const urlSchema = z.object({
@@ -47,22 +45,14 @@ export const studioSchema = z.object({
 
 export const sceneSchema = z.object({
   id: z.uuid(),
-  title: z.string().nullable().optional(),
-  details: z.string().nullable().optional(),
-  director: z.string().nullable().optional(),
-  code: z.string().nullable().optional(),
-  releasedAt: z.coerce.date().nullable().optional(),
-  duration: z.number().nullable().optional(),
+  title: z.string().nullish(),
+  releasedAt: z.coerce.date().nullish(),
+  duration: z.number().nullish(),
   images: z.array(imageSchema).default([]),
   fingerprints: z.array(hashSchema).default([]),
   performers: z.array(performerAppearanceSchema).default([]),
   urls: z.array(urlSchema).default([]),
-  studio: studioSchema.nullable().optional()
-})
-
-// AIDEV-NOTE: Scene schema with source discriminator for type-safe union types
-export const sceneWithSourceSchema = sceneSchema.extend({
-  source: z.literal('stashdb')
+  studio: studioSchema.nullish()
 })
 
 export const sceneSearchOptionsSchema = z.object({
@@ -74,7 +64,6 @@ export const sceneSearchOptionsSchema = z.object({
 })
 
 export type Scene = z.infer<typeof sceneSchema>
-export type SceneWithSource = z.infer<typeof sceneWithSourceSchema>
 export type SceneSearchOptions = z.infer<typeof sceneSearchOptionsSchema>
 export type SceneSearchOptionsInput = Partial<SceneSearchOptions>
 export type HashAlgorithm = z.infer<typeof hashAlgorithmSchema>

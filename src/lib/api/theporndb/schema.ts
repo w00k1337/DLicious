@@ -15,7 +15,8 @@ export const siteSchema = z.object({
   url: z.url(),
   logo: z
     .string()
-    .transform(val => (val === '' ? undefined : val))
+    .optional()
+    .transform(val => (val === '' || val === undefined ? undefined : val))
     .pipe(z.url().optional())
 })
 
@@ -26,7 +27,8 @@ export const sceneSchema = z.object({
   image: z
     .string()
     .nullable()
-    .transform(val => (val === '' || val === null ? undefined : val))
+    .optional()
+    .transform(val => (val === '' || val === null || val === undefined ? undefined : val))
     .pipe(z.url().optional()),
   site: siteSchema.optional(),
   hashes: z.array(hashSchema).default([])

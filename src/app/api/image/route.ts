@@ -8,9 +8,7 @@ interface ImageApiErrorResponse {
   error: string
 }
 
-type ImageApiResponse = ImageApiErrorResponse | ArrayBuffer
-
-export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiResponse>> => {
+export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiErrorResponse | ArrayBuffer>> => {
   const urlParam = request.nextUrl.searchParams.get('url')
   if (!urlParam) return NextResponse.json<ImageApiErrorResponse>({ error: 'Missing url' }, { status: 400 })
 
@@ -19,7 +17,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiRe
     const stashBase = new URL(env.STASH_BASE_URL)
 
     if (originalUrl.host !== stashBase.host)
-      return NextResponse.redirect(originalUrl.toString(), 302) as NextResponse<ImageApiResponse>
+      return NextResponse.redirect(originalUrl.toString(), 302) as NextResponse<ImageApiErrorResponse | ArrayBuffer>
 
     const lowerPathname = originalUrl.pathname.toLowerCase()
 
@@ -45,8 +43,9 @@ export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiRe
     if (!contentType.toLowerCase().startsWith('image/'))
       return NextResponse.json<ImageApiErrorResponse>({ error: 'Upstream returned non-image content' }, { status: 502 })
 
-    const buf = await res.arrayBuffer()
-    return new NextResponse(buf, {
+    const buffer = await res.arrayBuffer()
+
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,

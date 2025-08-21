@@ -1,7 +1,5 @@
-import type { HashType } from '@/generated/prisma'
-
 export interface PerformerSceneBulkImportJobData {
-  performerId: string
+  performerId: number
 }
 
 export interface DataSourceResult {
@@ -13,7 +11,7 @@ export interface DataSourceResult {
 }
 
 export interface PerformerSceneBulkImportJobResult {
-  performerId: string
+  performerId: number
   summary: {
     fetchedCount: number
     importedCount: number
@@ -30,30 +28,6 @@ export interface PerformerSceneBulkImportJobResult {
     uniqueScenesProcessedCount: number
   }
   errors?: string[]
-}
-
-export interface Hash {
-  hash: string
-  type: HashType
-}
-
-export interface NormalizedScene {
-  title: string
-  imageUrl?: string | null
-  releasedAt: Date
-  stashId?: number | null
-  stashDbId?: string | null
-  thePornDbId?: string | null
-  hashes: Hash[]
-  source: 'stash' | 'stashdb' | 'theporndb'
-}
-
-export interface SceneCache {
-  byStashId: Map<number, string>
-  byStashDbId: Map<string, string>
-  byThePornDbId: Map<string, string>
-  byTitleDate: Map<string, string>
-  byHash: Map<string, string>
 }
 
 export const PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME = 'performer-scene-bulk-import'

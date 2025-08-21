@@ -6,9 +6,9 @@ import type { PerformerBulkData } from './types'
 type PrismaTransaction = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 interface PerformerCache {
-  byStashId: Map<number, string>
-  byStashDbId: Map<string, string>
-  byThePornDbId: Map<string, string>
+  byStashId: Map<number, number>
+  byStashDbId: Map<string, number>
+  byThePornDbId: Map<string, number>
 }
 
 interface BulkOperationResult {
@@ -59,7 +59,7 @@ const buildPerformerIdCache = async (
 /**
  * Find existing performer ID by checking all identifier types
  */
-const findExistingPerformerId = (performer: PerformerBulkData, cache: PerformerCache): string | undefined => {
+const findExistingPerformerId = (performer: PerformerBulkData, cache: PerformerCache): number | undefined => {
   if (cache.byStashId.has(performer.stashId)) return cache.byStashId.get(performer.stashId)
 
   if (performer.stashDbId && cache.byStashDbId.has(performer.stashDbId))
@@ -107,7 +107,7 @@ export const bulkUpsertPerformers = async (
     },
     {
       performersToCreate: [] as Prisma.PerformerCreateManyInput[],
-      performersToUpdate: [] as { id: string; data: Prisma.PerformerUpdateInput }[],
+      performersToUpdate: [] as { id: number; data: Prisma.PerformerUpdateInput }[],
       errors: [] as string[]
     }
   )

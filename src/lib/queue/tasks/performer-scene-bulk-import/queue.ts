@@ -13,10 +13,10 @@ export const getPerformerSceneBulkImportQueue = (): Queue<
   )
 
 export const triggerPerformerSceneBulkImport = async (
-  performerId: string
+  performerId: number
 ): Promise<Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>> =>
   getPerformerSceneBulkImportQueue().add(
-    `bulk-import-scenes-for-performer-${performerId}`,
+    `bulk-import-scenes-for-performer-${String(performerId)}`,
     { performerId },
-    { jobId: `bulk-import-scenes-for-performer-${performerId}` }
+    { jobId: `bulk-import-scenes-for-performer-${String(performerId)}` }
   )

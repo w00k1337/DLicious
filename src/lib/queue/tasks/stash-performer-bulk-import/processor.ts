@@ -80,20 +80,20 @@ export const processStashPerformerBulkImport = async (
 
     logger.debug({ totalPerformers: stashPerformers.length }, 'Starting performer import')
 
-    for (let i = 0; i < stashPerformers.length; i += BATCH_SIZE) {
-      const batch = stashPerformers.slice(i, i + BATCH_SIZE)
-      const batchNumber = Math.floor(i / BATCH_SIZE) + 1
-      const totalBatches = Math.ceil(stashPerformers.length / BATCH_SIZE)
+    const batches = Array.from({ length: Math.ceil(stashPerformers.length / BATCH_SIZE) }, (_, i) => ({
+      batch: stashPerformers.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE),
+      batchNumber: i + 1,
+      startIndex: i * BATCH_SIZE
+    }))
 
+    const totalBatches = batches.length
+
+    const processBatch = async ({ batch, batchNumber, startIndex }: (typeof batches)[0]): Promise<void> => {
       logger.debug({ batchNumber, totalBatches, batchSize: batch.length }, 'Processing batch of performers')
-
-      await job.updateProgress((i / stashPerformers.length) * 100)
+      await job.updateProgress((startIndex / stashPerformers.length) * 100)
 
       try {
-        const transformedPerformers: PerformerBulkData[] = []
-        const batchErrors: string[] = []
-
-        for (const performer of batch) {
+        const transformResults = batch.map(performer => {
           try {
             const parsed = performerTransformSchema.safeParse(performer)
 
@@ -105,13 +105,25 @@ export const processStashPerformerBulkImport = async (
               throw new Error(`Invalid performer data: ${parsed.error.message}`)
             }
 
-            transformedPerformers.push({ stashId: performer.id, ...parsed.data })
+            return {
+              success: true as const,
+              data: { stashId: performer.id, ...parsed.data } as PerformerBulkData
+            }
           } catch (error) {
             const errorMsg = `Failed to transform performer ${performer.name} (ID: ${String(performer.id)}): ${error instanceof Error ? error.message : 'Unknown error'}`
-            batchErrors.push(errorMsg)
             logger.error({ performerId: performer.id, error }, errorMsg)
+            return { success: false as const, error: errorMsg }
           }
-        }
+        })
+
+        const transformedPerformers = transformResults.reduce<PerformerBulkData[]>((acc, r) => {
+          if (r.success) acc.push(r.data)
+          return acc
+        }, [])
+
+        const batchErrors = transformResults
+          .filter((r): r is { success: false; error: string } => !r.success)
+          .map(r => r.error)
 
         if (transformedPerformers.length > 0) {
           await prisma.$transaction(
@@ -145,6 +157,11 @@ export const processStashPerformerBulkImport = async (
         errors.push(errorMsg)
         logger.error({ batchNumber, error }, errorMsg)
       }
+    }
+
+    // Process batches sequentially to avoid overwhelming the database
+    for (const batchData of batches) {
+      await processBatch(batchData)
     }
 
     await job.updateProgress(100)

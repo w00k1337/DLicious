@@ -1,3 +1,5 @@
+import ms from 'ms'
+
 import { env } from '@/env/server'
 import { PrismaClient } from '@/generated/prisma'
 
@@ -5,7 +7,11 @@ import { PrismaClient } from '@/generated/prisma'
 const createExtendedPrismaClient = () =>
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-    errorFormat: 'minimal'
+    errorFormat: 'minimal',
+    transactionOptions: {
+      maxWait: ms('30s'),
+      timeout: ms('5m')
+    }
   }).$extends({
     result: {
       performer: {

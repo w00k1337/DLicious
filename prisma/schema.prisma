@@ -46,7 +46,7 @@ enum HashType {
 }
 
 model Performer {
-  id                String    @id @default(cuid())
+  id                Int       @id @default(autoincrement())
   stashId           Int       @unique
   stashDbId         String?   @unique
   thePornDbId       String?   @unique
@@ -67,23 +67,21 @@ model Performer {
 }
 
 model Scene {
-  id          String      @id @default(cuid())
-  title       String
-  imageUrl    String?
-  releasedAt  DateTime
+  id          Int         @id @default(autoincrement())
   stashId     Int?        @unique
   stashDbId   String?     @unique
   thePornDbId String?     @unique
+  title       String
+  imageUrl    String?
   hashes      Hash[]
   performers  Performer[]
+  releasedAt  DateTime
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
-  @@index([title, releasedAt])
 }
 
 model Hash {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   type      HashType
   value     String
   scenes    Scene[]
@@ -91,5 +89,4 @@ model Hash {
   updatedAt DateTime @updatedAt
 
   @@unique([type, value])
-  @@index([value])
 }

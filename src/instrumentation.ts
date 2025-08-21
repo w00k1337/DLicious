@@ -4,7 +4,6 @@ export const register = async (): Promise<void> => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { workerFactories } = await import('@/lib/queue')
 
-    // Create and start workers in the instrumentation thread
     const workers = Object.entries(workerFactories).map(([name, factory]) => {
       logger.info({ workerName: name }, 'Starting worker')
       const worker = factory()
@@ -13,7 +12,6 @@ export const register = async (): Promise<void> => {
 
     logger.info({ workerCount: workers.length }, 'Queue system initialized with workers')
 
-    // Graceful shutdown handling
     const shutdownHandler = (): void => {
       logger.info('Shutdown signal received, closing workers...')
       void Promise.all(workers.map(({ worker }) => worker.close())).then(() => {
