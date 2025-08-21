@@ -23,6 +23,30 @@ describe('imageSchema - dimension validation', () => {
     expect(() => imageSchema.parse(image)).toThrow()
   })
 
+  it('should allow zero dimensions', () => {
+    const image = {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      url: 'https://example.com/image.jpg',
+      width: 0,
+      height: 0
+    }
+    const result = imageSchema.parse(image)
+    expect(result.width).toBe(0)
+    expect(result.height).toBe(0)
+  })
+
+  it('should transform -1 dimensions to null (as returned by StashDB API)', () => {
+    const image = {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      url: 'https://example.com/image.jpg',
+      width: -1,
+      height: -1
+    }
+    const result = imageSchema.parse(image)
+    expect(result.width).toBe(null)
+    expect(result.height).toBe(null)
+  })
+
   it('should preserve valid positive dimensions', () => {
     const image = {
       id: '123e4567-e89b-12d3-a456-426614174000',

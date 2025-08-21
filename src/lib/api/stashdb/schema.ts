@@ -3,8 +3,16 @@ import { z } from 'zod'
 export const imageSchema = z.object({
   id: z.uuid(),
   url: z.url(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive()
+  width: z
+    .number()
+    .int()
+    .transform(val => (val === -1 ? null : val))
+    .pipe(z.number().int().nonnegative().nullish()),
+  height: z
+    .number()
+    .int()
+    .transform(val => (val === -1 ? null : val))
+    .pipe(z.number().int().nonnegative().nullish())
 })
 
 export const hashAlgorithmSchema = z.enum(['OSHASH', 'PHASH', 'MD5'])

@@ -423,6 +423,47 @@ Uses Pino logger configured in `/src/lib/logger.ts`. In development, logs are pr
 - **Configuration**: `vitest.config.ts`
 - Tests run automatically on pre-commit via Husky
 
+### Error Handling and Testing
+
+**When you encounter an error and fix it, write a unit test that covers the error scenario:**
+
+- **Document the bug** by creating a test that reproduces the original error
+- **Ensure the fix works** by verifying the test passes after the fix
+- **Prevent regression** by keeping the test as part of the test suite
+- **Improve code coverage** by testing edge cases and error conditions
+
+Example:
+
+```typescript
+// Test that covers the original error scenario
+describe('validatePerformer', () => {
+  it('should handle malformed birth date strings', () => {
+    const malformedData = {
+      id: '123',
+      name: 'Test Performer',
+      birthDate: 'invalid-date-string', // This caused the original error
+      isActive: true
+    }
+
+    expect(() => validatePerformer(malformedData)).toThrow('Invalid date format')
+  })
+
+  it('should successfully validate correct data', () => {
+    const validData = {
+      id: '123',
+      name: 'Test Performer',
+      birthDate: '1990-01-01',
+      isActive: true
+    }
+
+    const result = validatePerformer(validData)
+    expect(result.birthDate).toBeInstanceOf(Date)
+  })
+})
+```
+
+This practice helps maintain code quality and prevents similar bugs from recurring.
+
 ### Code Quality
 
 Pre-commit hooks via Husky and lint-staged ensure:

@@ -30,13 +30,33 @@ describe('performerSchema - breast type parsing', () => {
     expect(result.breastType).toBe('Fake')
   })
 
-  it('should reject empty breast type', () => {
+  it('should handle empty breast type by converting to null', () => {
     const performer = { ...basePerformer, breastType: '' }
-    expect(() => performerSchema.parse(performer)).toThrow()
+    const result = performerSchema.parse(performer)
+    expect(result.breastType).toBe(null)
   })
 
-  it('should reject invalid breast type values', () => {
+  it('should normalize lowercase breast type values', () => {
     const performer = { ...basePerformer, breastType: 'fake' }
-    expect(() => performerSchema.parse(performer)).toThrow()
+    const result = performerSchema.parse(performer)
+    expect(result.breastType).toBe('Fake')
+  })
+
+  it('should normalize natural breast type values', () => {
+    const performer = { ...basePerformer, breastType: 'natural' }
+    const result = performerSchema.parse(performer)
+    expect(result.breastType).toBe('Natural')
+  })
+
+  it('should handle invalid breast type values by converting to null', () => {
+    const performer = { ...basePerformer, breastType: 'unknown' }
+    const result = performerSchema.parse(performer)
+    expect(result.breastType).toBe(null)
+  })
+
+  it('should handle whitespace-only breast type values by converting to null', () => {
+    const performer = { ...basePerformer, breastType: '   ' }
+    const result = performerSchema.parse(performer)
+    expect(result.breastType).toBe(null)
   })
 })

@@ -1,4 +1,5 @@
 import { CriterionModifier, type SceneQueryInput } from '@/generated/stashdb/graphql'
+import logger from '@/lib/logger'
 
 import { validateWith } from '../../utils'
 import {
@@ -47,11 +48,13 @@ const buildSceneQueryInput = (options: SceneSearchOptions): SceneQueryInput => {
 }
 
 export const getSceneById = async (id: string): Promise<Scene | undefined> => {
+  logger.debug({ id }, '[StashDB] Starting to fetch scene by id')
   const { findScene } = await client.query<{ findScene: unknown }>(FIND_SCENE_QUERY, { id })
   return findScene ? sceneSchema.parse(findScene) : undefined
 }
 
 export const searchScenes = async (options: SceneSearchOptionsInput = {}): Promise<PaginatedSceneResults> => {
+  logger.debug({ options }, '[StashDB] Starting to search scenes')
   const parsedOptions = sceneSearchOptionsSchema.parse(options)
   const input = buildSceneQueryInput(parsedOptions)
   const { queryScenes } = await client.query<{ queryScenes: { count: number; scenes: unknown[] } }>(QUERY_SCENES, {
@@ -60,6 +63,11 @@ export const searchScenes = async (options: SceneSearchOptionsInput = {}): Promi
 
   const scenes = queryScenes.scenes.map(validateWith(sceneSchema))
   const totalPages = Math.ceil(queryScenes.count / SCENES_PER_PAGE)
+
+  logger.debug(
+    { sceneCount: scenes.length, currentPage: parsedOptions.page, totalPages, totalScenes: queryScenes.count },
+    '[StashDB] Found scenes'
+  )
 
   return {
     scenes,
@@ -73,3 +81,21 @@ export const searchScenes = async (options: SceneSearchOptionsInput = {}): Promi
 
 export const getPerformerScenes = async (performerId: string, page = 1): Promise<PaginatedSceneResults> =>
   searchScenes({ performerIds: [performerId], page })
+
+export const getAllPerformerScenes = async (performerId: string): Promise<Scene[]> => {
+  logger.debug({ performerId }, '[StashDB] Starting to fetch all performer scenes')
+
+  const scenes: Scene[] = []
+
+  let page = 1
+  let hasNextPage = true
+
+  while (hasNextPage) {
+    const { scenes: pageScenes, hasNextPage: nextPageHasNextPage } = await getPerformerScenes(performerId, page)
+    scenes.push(...pageScenes)
+    page++
+    hasNextPage = nextPageHasNextPage
+  }
+
+  return scenes
+}

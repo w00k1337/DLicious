@@ -5,7 +5,7 @@ import { getPerformerScenesQuery } from './queries'
 
 export const getPerformerScenes = async (performerId: string): Promise<Scene[]> => {
   const pageSize = 100
-  logger.debug({ performerId, pageSize }, 'Starting to fetch performer scenes from ThePornDB')
+  logger.debug({ performerId, pageSize }, '[ThePornDB] Starting to fetch performer scenes')
 
   const scenes: Scene[] = []
   let currentPage = 1
@@ -19,7 +19,7 @@ export const getPerformerScenes = async (performerId: string): Promise<Scene[]> 
         totalPages,
         scenesCount: scenes.length
       },
-      'Fetching performer scenes page'
+      '[ThePornDB] Fetching performer scenes page'
     )
 
     const { data } = await getPerformerScenesQuery({
@@ -41,7 +41,7 @@ export const getPerformerScenes = async (performerId: string): Promise<Scene[]> 
         hasData: !!data?.data,
         totalFromMeta: data?.meta?.total
       },
-      'Received performer scenes page response'
+      '[ThePornDB] Received performer scenes page response'
     )
 
     if (currentPage === 1 && data?.meta?.total) {
@@ -52,7 +52,7 @@ export const getPerformerScenes = async (performerId: string): Promise<Scene[]> 
           totalScenes: data.meta.total,
           calculatedTotalPages: totalPages
         },
-        'Updated total pages from first response from ThePornDB'
+        '[ThePornDB] Updated total pages from first response'
       )
     }
 

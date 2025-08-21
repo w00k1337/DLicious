@@ -27,6 +27,17 @@ export interface Scene {
 
 export const breastTypeSchema = z.enum(['Fake', 'Natural'])
 
+const preprocessBreastType = z
+  .string()
+  .nullish()
+  .transform(val => {
+    if (!val || val.trim() === '') return null
+    const normalized = val.trim().toLowerCase()
+    if (normalized === 'fake') return 'Fake'
+    if (normalized === 'natural') return 'Natural'
+    return null
+  })
+
 export const fingerprintTypeSchema = z.enum(['oshash', 'phash'])
 
 export const idSchema = z.coerce.number().int().positive()
@@ -65,7 +76,7 @@ export const performerSchema: z.ZodType<Performer> = z.object({
   country: z.string().nullish(),
   birthdate: z.coerce.date().nullish(),
   measurements: z.string().nullish(),
-  breastType: z.string().nullish().pipe(breastTypeSchema),
+  breastType: preprocessBreastType.pipe(breastTypeSchema.nullish()),
   isFavorite: z.boolean(),
   stashes: z.array(stashSchema).default([]),
   scenes: z.lazy(() => z.array(sceneSchema)).default([])
