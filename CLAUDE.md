@@ -34,7 +34,7 @@ DLicious is a Next.js application for discovering and tracking adult content fro
 
 ### Simplicity First
 
-**Always prefer the simplest solution that works.** Don't overengineer - we can build upon the foundation later. Less code is better. Start with the most straightforward approach and only add complexity when it's absolutely necessary.
+**Always prefer the simplest solution that works.** Don't overengineer - we can build upon the foundation later. Less code is better than more code. If we can remove code to keep things simple, we should always do that. Start with the most straightforward approach and only add complexity when it's absolutely necessary.
 
 ### File Size Guidelines
 

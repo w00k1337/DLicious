@@ -10,10 +10,29 @@ interface StashIdMapping {
   thePornDbId: string | null
 }
 
-const extractStashIds = (stashes: Stash[]): StashIdMapping => ({
-  stashDbId: stashes.find(stash => stash.endpoint.includes('stashdb.org'))?.id ?? null,
-  thePornDbId: stashes.find(stash => stash.endpoint.includes('theporndb'))?.id ?? null
-})
+const extractStashIds = (stashes: Stash[]): StashIdMapping => {
+  const parseHost = (url: string): string | null => {
+    try {
+      return new URL(url).host.toLowerCase()
+    } catch {
+      return null
+    }
+  }
+
+  return stashes.reduce<StashIdMapping>(
+    (acc, stash) => {
+      const host = parseHost(stash.endpoint)
+      if (!host) return acc
+
+      if (!acc.stashDbId && (host === 'stashdb.org' || host.endsWith('.stashdb.org')))
+        return { ...acc, stashDbId: stash.id }
+      if (!acc.thePornDbId && host.includes('theporndb')) return { ...acc, thePornDbId: stash.id }
+
+      return acc
+    },
+    { stashDbId: null, thePornDbId: null }
+  )
+}
 
 interface BraSize {
   cupSize: CupSize | null
@@ -26,19 +45,17 @@ const transformMeasurements = (measurements: string | null): BraSize => {
   const result = measurementsSchema.safeParse(measurements)
 
   if (!result.success) {
-    logger.error({ measurements }, 'Invalid measurements')
+    logger.warn({ measurements }, 'Invalid measurements')
     return { cupSize: null, bandSize: null }
   }
 
   return result.data
 }
 
-const transformBreastType = (breastType: BreastType): boolean | null => {
-  if (breastType === null) return null
-  return breastType === 'Natural'
-}
+const transformBreastType = (breastType: BreastType): boolean | null =>
+  breastType === null ? null : breastType === 'Natural'
 
-export const transformStashPerformerToPrisma = (stashPerformer: Performer): PerformerBulkData => {
+export const transformStashPerformerToPrisma = (stashPerformer: Performer, syncedAt: Date): PerformerBulkData => {
   const { stashDbId, thePornDbId } = extractStashIds(stashPerformer.stashes)
   const { cupSize, bandSize } = transformMeasurements(stashPerformer.measurements)
 
@@ -55,6 +72,6 @@ export const transformStashPerformerToPrisma = (stashPerformer: Performer): Perf
     bandSize,
     hasNaturalBreasts: transformBreastType(stashPerformer.breastType),
     isFavorite: stashPerformer.isFavorite,
-    syncedAt: new Date()
+    syncedAt
   }
 }

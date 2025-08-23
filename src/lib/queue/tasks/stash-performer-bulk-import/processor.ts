@@ -4,9 +4,9 @@ import { getPerformers as getStashPerformers } from '@/lib/api/stash'
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
-import { generateBulkUpdateSql } from './bulk-update-sql'
+import { buildBulkUpdateSql } from './bulk-update-sql'
 import { transformStashPerformerToPrisma } from './transformer'
-import type { PerformerBulkData, StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
+import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
 
 export const processStashPerformerBulkImport = async (
   job: Job<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>
@@ -26,66 +26,62 @@ export const processStashPerformerBulkImport = async (
       }
     }
 
-    const transformedPerformers = stashPerformers.map(transformStashPerformerToPrisma)
-
-    const existingPerformers = await prisma.performer.findMany({
-      where: { stashId: { in: transformedPerformers.map(p => p.stashId) } },
-      select: { stashId: true, id: true }
-    })
-
-    const existingStashIds = new Set(existingPerformers.map(p => p.stashId))
-
-    const performersToCreate: PerformerBulkData[] = []
-    const performersToUpdate: PerformerBulkData[] = []
-
-    transformedPerformers.forEach(performer => {
-      if (existingStashIds.has(performer.stashId)) {
-        performersToUpdate.push(performer)
-      } else {
-        performersToCreate.push(performer)
-      }
-    })
-
-    logger.debug(
-      {
-        toCreate: performersToCreate.length,
-        toUpdate: performersToUpdate.length
-      },
-      'Separated performers for bulk operations'
-    )
+    const syncedAt = new Date()
+    const transformedPerformers = stashPerformers.map(p => transformStashPerformerToPrisma(p, syncedAt))
 
     let createdCount = 0
     let updatedCount = 0
 
+    const createdStashIds = new Set<number>()
+
     const errors: string[] = []
 
-    if (performersToCreate.length > 0) {
-      try {
-        const createdPerformers = await prisma.performer.createManyAndReturn({ data: performersToCreate })
-        createdCount = createdPerformers.length
-        logger.debug({ createdCount }, 'Created new performers')
-      } catch (error) {
-        const errorMessage = `Failed to create performers: ${error instanceof Error ? error.message : 'Unknown error'}`
-        logger.error({ error: errorMessage }, 'Bulk create failed')
-        errors.push(errorMessage)
-      }
+    const chunk = <T>(arr: T[], size: number): T[][] => {
+      const out: T[][] = []
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+      return out
     }
+
+    const CREATE_CHUNK = 1000
+    const UPDATE_CHUNK = 1000
+
+    try {
+      for (const batch of chunk(transformedPerformers, CREATE_CHUNK)) {
+        const result = await prisma.performer.createManyAndReturn({
+          data: batch,
+          skipDuplicates: true,
+          select: { stashId: true }
+        })
+        createdCount += result.length
+        result.forEach(performer => createdStashIds.add(performer.stashId))
+      }
+      logger.debug({ createdCount, uniqueCreatedIds: createdStashIds.size }, 'Created performers (skipDuplicates)')
+    } catch (error) {
+      const errorMessage = `Failed to create performers: ${error instanceof Error ? error.message : 'Unknown error'}`
+      logger.error({ error: errorMessage }, 'Bulk create failed')
+      errors.push(errorMessage)
+    }
+
+    const performersToUpdate = transformedPerformers.filter(p => !createdStashIds.has(p.stashId))
 
     if (performersToUpdate.length > 0) {
       try {
-        const { sql } = generateBulkUpdateSql(performersToUpdate)
-        logger.debug({ performerCount: performersToUpdate.length }, 'Executing bulk update with raw SQL')
+        let expectedToAffect = 0
+        for (const batch of chunk(performersToUpdate, UPDATE_CHUNK)) {
+          const sql = buildBulkUpdateSql(batch, syncedAt)
+          const result = await prisma.$executeRaw(sql)
+          const affected = typeof result === 'number' ? result : 0
+          updatedCount += affected
+          expectedToAffect += batch.length
+        }
+        logger.debug({ updatedCount, skippedNewlyCreated: createdStashIds.size }, 'Updated existing performers')
 
-        const result = await prisma.$executeRawUnsafe(sql)
-        updatedCount = typeof result === 'number' ? result : 0
-
-        logger.debug({ updatedCount, expectedCount: performersToUpdate.length }, 'Bulk updated performers with raw SQL')
-
-        if (updatedCount !== performersToUpdate.length) {
+        if (updatedCount !== expectedToAffect) {
           logger.warn(
             {
               updatedCount,
-              expectedCount: performersToUpdate.length
+              expectedCount: expectedToAffect,
+              sampleStashIds: performersToUpdate.slice(0, 10).map(p => p.stashId)
             },
             'Mismatch between expected and actual updated performer count'
           )
@@ -95,6 +91,8 @@ export const processStashPerformerBulkImport = async (
         logger.error({ error: errorMessage }, 'Bulk update failed')
         errors.push(errorMessage)
       }
+    } else {
+      logger.debug('No existing performers to update, all were newly created')
     }
 
     const totalProcessed = createdCount + updatedCount
@@ -109,7 +107,6 @@ export const processStashPerformerBulkImport = async (
     if (errors.length > 0) {
       result.errors = errors
     }
-
     return result
   } catch (error) {
     const errorMessage = `Bulk import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
