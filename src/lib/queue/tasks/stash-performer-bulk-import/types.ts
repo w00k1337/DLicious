@@ -11,6 +11,8 @@ export interface StashPerformerBulkImportJobData {
 export interface StashPerformerBulkImportJobResult {
   performerCount: number
   importedCount: number
+  createdCount: number
+  updatedCount: number
   failedCount: number
   errors?: string[]
 }

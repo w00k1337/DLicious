@@ -22,6 +22,8 @@ export const processStashPerformerBulkImport = async (
       return {
         performerCount: 0,
         importedCount: 0,
+        createdCount: 0,
+        updatedCount: 0,
         failedCount: 0
       }
     }
@@ -101,6 +103,8 @@ export const processStashPerformerBulkImport = async (
     const result: StashPerformerBulkImportJobResult = {
       performerCount: stashPerformers.length,
       importedCount: totalProcessed,
+      createdCount,
+      updatedCount,
       failedCount
     }
 
