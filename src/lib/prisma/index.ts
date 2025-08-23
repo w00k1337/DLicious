@@ -1,60 +1,112 @@
+import dayjs from 'dayjs'
 import ms from 'ms'
 
-import { env } from '@/env/server'
+import type { Prisma } from '@/generated/prisma'
 import { PrismaClient } from '@/generated/prisma'
+import logger from '@/lib/logger'
+import { createImageProxyUrl } from '@/lib/utils/image-proxy'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const createExtendedPrismaClient = () =>
-  new PrismaClient({
+interface QueryMetrics {
+  model?: string
+  action?: string
+  duration: number
+  params?: unknown
+  error?: Error
+}
+
+const logQuery = (metrics: QueryMetrics): void => {
+  const { model, action, duration, params } = metrics
+
+  if (duration > ms('1s')) {
+    logger.warn({
+      msg: 'Slow query detected',
+      model,
+      action,
+      duration: ms(duration),
+      params: process.env.NODE_ENV === 'development' ? params : undefined
+    })
+  } else if (process.env.NODE_ENV === 'development') {
+    logger.debug({
+      msg: 'Query executed',
+      model,
+      action,
+      duration: ms(duration)
+    })
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- We want to use the type inference for the return type
+const createExtendedPrismaClient = (options?: Prisma.PrismaClientOptions) => {
+  const defaults: Prisma.PrismaClientOptions = {
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-    errorFormat: 'minimal',
-    transactionOptions: {
-      maxWait: ms('30s'),
-      timeout: ms('5m')
-    }
-  }).$extends({
-    result: {
-      performer: {
-        imageUrl: {
-          needs: { imageUrl: true },
-          compute: (performer: { imageUrl: string }) => {
+    errorFormat: 'minimal'
+  }
+
+  const baseClient = new PrismaClient({ ...defaults, ...(options ?? {}) })
+
+  return baseClient
+    .$extends({
+      name: 'middleware',
+      query: {
+        $allModels: {
+          $allOperations: async ({ model, operation, args, query }) => {
+            const start = Date.now()
+
             try {
-              const originalUrl = new URL(performer.imageUrl)
-              const stashBase = new URL(env.STASH_BASE_URL)
-              // AIDEV-NOTE: Proxy only Stash-hosted images to avoid exposing the API key to clients
-              if (originalUrl.host === stashBase.host) {
-                const proxyUrl = new URL('/api/image', stashBase.origin)
-                proxyUrl.searchParams.set('url', performer.imageUrl)
-                return proxyUrl.pathname + '?' + proxyUrl.searchParams.toString()
-              }
-              return performer.imageUrl
-            } catch {
-              return performer.imageUrl
-            }
-          }
-        }
-      },
-      scene: {
-        imageUrl: {
-          needs: { imageUrl: true },
-          compute: (scene: { imageUrl: string }) => {
-            try {
-              const originalUrl = new URL(scene.imageUrl)
-              const stashBase = new URL(env.STASH_BASE_URL)
-              if (originalUrl.host === stashBase.host) {
-                const proxyUrl = new URL('/api/image', stashBase.origin)
-                proxyUrl.searchParams.set('url', scene.imageUrl)
-                return proxyUrl.pathname + '?' + proxyUrl.searchParams.toString()
-              }
-              return scene.imageUrl
-            } catch {
-              return scene.imageUrl
+              const result = await query(args)
+              const duration = Date.now() - start
+
+              logQuery({
+                model,
+                action: operation,
+                duration,
+                params: args
+              })
+
+              return result
+            } catch (error) {
+              const duration = Date.now() - start
+
+              logger.error({
+                msg: 'Query failed',
+                model,
+                action: operation,
+                duration: ms(duration),
+                error: error instanceof Error ? error.message : 'Unknown error',
+                params: process.env.NODE_ENV === 'development' ? args : undefined
+              })
+
+              throw error
             }
           }
         }
       }
-    }
-  })
+    })
+    .$extends({
+      name: 'computedFields',
+      result: {
+        performer: {
+          imageUrl: {
+            needs: { imageUrl: true },
+            compute: performer => createImageProxyUrl(performer.imageUrl)
+          },
+          age: {
+            needs: { birthdate: true },
+            compute: performer => {
+              if (!performer.birthdate) return null
+              return dayjs().diff(dayjs(performer.birthdate), 'year')
+            }
+          }
+        },
+        scene: {
+          imageUrl: {
+            needs: { imageUrl: true },
+            compute: scene => createImageProxyUrl(scene.imageUrl)
+          }
+        }
+      }
+    })
+}
 
 type ExtendedPrismaClient = ReturnType<typeof createExtendedPrismaClient>
 
@@ -62,12 +114,14 @@ const globalForPrisma = global as unknown as {
   prisma?: ExtendedPrismaClient
 }
 
-const createPrismaClient = (): ExtendedPrismaClient => createExtendedPrismaClient()
+const createClient = (): ExtendedPrismaClient => {
+  if (process.env.NODE_ENV === 'production') return createExtendedPrismaClient()
 
-const prisma = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
+  globalForPrisma.prisma ??= createExtendedPrismaClient()
+  return globalForPrisma.prisma
 }
 
+const prisma = createClient()
+
 export default prisma
+export type { ExtendedPrismaClient }

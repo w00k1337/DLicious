@@ -8,7 +8,7 @@ export const FIND_SCENE_QUERY = graphql(`
   }
 `)
 
-export const QUERY_SCENES = graphql(`
+export const QUERY_SCENES_QUERY = graphql(`
   query QueryScenes($input: SceneQueryInput!) {
     queryScenes(input: $input) {
       count

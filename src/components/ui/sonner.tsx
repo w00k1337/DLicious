@@ -9,7 +9,7 @@ const Toaster = ({ ...props }: ToasterProps): ReactElement => {
 
   return (
     <Sonner
-      theme={theme as ToasterProps['theme']}
+      theme={theme === 'system' || theme === 'dark' || theme === 'light' ? theme : 'system'}
       className="toaster group"
       style={
         {

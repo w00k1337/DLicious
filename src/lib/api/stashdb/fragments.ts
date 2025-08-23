@@ -44,6 +44,17 @@ export const UrlFieldsFragment = graphql(`
   }
 `)
 
+export const StudioFieldsFragment = graphql(`
+  fragment StudioFields on Studio {
+    id
+    name
+    images {
+      ...ImageFields
+    }
+    aliases
+  }
+`)
+
 export const SceneFieldsFragment = graphql(`
   fragment SceneFields on Scene {
     id
@@ -66,12 +77,7 @@ export const SceneFieldsFragment = graphql(`
       ...UrlFields
     }
     studio {
-      id
-      name
-      images {
-        ...ImageFields
-      }
-      aliases
+      ...StudioFields
     }
   }
 `)

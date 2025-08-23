@@ -2154,6 +2154,14 @@ export type UrlFieldsFragment = {
   site: { __typename?: 'Site' } & { ' $fragmentRefs'?: { SiteFieldsFragment: SiteFieldsFragment } }
 } & { ' $fragmentName'?: 'UrlFieldsFragment' }
 
+export type StudioFieldsFragment = {
+  __typename?: 'Studio'
+  id: string
+  name: string
+  aliases: Array<string>
+  images: Array<{ __typename?: 'Image' } & { ' $fragmentRefs'?: { ImageFieldsFragment: ImageFieldsFragment } }>
+} & { ' $fragmentName'?: 'StudioFieldsFragment' }
+
 export type SceneFieldsFragment = {
   __typename?: 'Scene'
   id: string
@@ -2173,13 +2181,7 @@ export type SceneFieldsFragment = {
     }
   >
   urls: Array<{ __typename?: 'URL' } & { ' $fragmentRefs'?: { UrlFieldsFragment: UrlFieldsFragment } }>
-  studio?: {
-    __typename?: 'Studio'
-    id: string
-    name: string
-    aliases: Array<string>
-    images: Array<{ __typename?: 'Image' } & { ' $fragmentRefs'?: { ImageFieldsFragment: ImageFieldsFragment } }>
-  } | null
+  studio?: ({ __typename?: 'Studio' } & { ' $fragmentRefs'?: { StudioFieldsFragment: StudioFieldsFragment } }) | null
 } & { ' $fragmentName'?: 'SceneFieldsFragment' }
 
 export type FindSceneQueryVariables = Exact<{
@@ -2280,6 +2282,24 @@ export const UrlFieldsFragmentDoc = new TypedDocumentString(
 }`,
   { fragmentName: 'UrlFields' }
 ) as unknown as TypedDocumentString<UrlFieldsFragment, unknown>
+export const StudioFieldsFragmentDoc = new TypedDocumentString(
+  `
+    fragment StudioFields on Studio {
+  id
+  name
+  images {
+    ...ImageFields
+  }
+  aliases
+}
+    fragment ImageFields on Image {
+  id
+  url
+  width
+  height
+}`,
+  { fragmentName: 'StudioFields' }
+) as unknown as TypedDocumentString<StudioFieldsFragment, unknown>
 export const SceneFieldsFragmentDoc = new TypedDocumentString(
   `
     fragment SceneFields on Scene {
@@ -2303,12 +2323,7 @@ export const SceneFieldsFragmentDoc = new TypedDocumentString(
     ...UrlFields
   }
   studio {
-    id
-    name
-    images {
-      ...ImageFields
-    }
-    aliases
+    ...StudioFields
   }
 }
     fragment ImageFields on Image {
@@ -2339,6 +2354,14 @@ fragment UrlFields on URL {
   site {
     ...SiteFields
   }
+}
+fragment StudioFields on Studio {
+  id
+  name
+  images {
+    ...ImageFields
+  }
+  aliases
 }`,
   { fragmentName: 'SceneFields' }
 ) as unknown as TypedDocumentString<SceneFieldsFragment, unknown>
@@ -2377,6 +2400,14 @@ fragment UrlFields on URL {
     ...SiteFields
   }
 }
+fragment StudioFields on Studio {
+  id
+  name
+  images {
+    ...ImageFields
+  }
+  aliases
+}
 fragment SceneFields on Scene {
   id
   title
@@ -2398,12 +2429,7 @@ fragment SceneFields on Scene {
     ...UrlFields
   }
   studio {
-    id
-    name
-    images {
-      ...ImageFields
-    }
-    aliases
+    ...StudioFields
   }
 }`) as unknown as TypedDocumentString<FindSceneQuery, FindSceneQueryVariables>
 export const QueryScenesDocument = new TypedDocumentString(`
@@ -2444,6 +2470,14 @@ fragment UrlFields on URL {
     ...SiteFields
   }
 }
+fragment StudioFields on Studio {
+  id
+  name
+  images {
+    ...ImageFields
+  }
+  aliases
+}
 fragment SceneFields on Scene {
   id
   title
@@ -2465,11 +2499,6 @@ fragment SceneFields on Scene {
     ...UrlFields
   }
   studio {
-    id
-    name
-    images {
-      ...ImageFields
-    }
-    aliases
+    ...StudioFields
   }
 }`) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>

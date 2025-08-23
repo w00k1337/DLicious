@@ -1,1 +1,1 @@
-export { getPerformer, getPerformerIds, getPerformers, getPerformersByIds } from './service'
+export { getPerformer, getPerformers } from './service'

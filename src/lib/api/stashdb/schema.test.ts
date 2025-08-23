@@ -65,7 +65,6 @@ describe('sceneSearchOptionsSchema - input validation', () => {
     const result = sceneSearchOptionsSchema.parse({})
     expect(result.performerIds).toEqual([])
     expect(result.studioIds).toEqual([])
-    expect(result.tagIds).toEqual([])
     expect(result.page).toBe(1)
   })
 

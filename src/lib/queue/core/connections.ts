@@ -1,5 +1,5 @@
-import { ConnectionOptions, FlowProducer } from 'bullmq'
-import IORedis, { Redis } from 'ioredis'
+import { FlowProducer } from 'bullmq'
+import IORedis, { Redis, RedisOptions } from 'ioredis'
 import ms from 'ms'
 
 import { env } from '@/env/server'
@@ -9,15 +9,12 @@ let queueRedisConnection: Redis | null = null
 let workerRedisConnection: Redis | null = null
 let flowProducer: FlowProducer | null = null
 
-const baseRedisConfig = {
+const baseRedisConfig: RedisOptions = {
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
   username: env.REDIS_USERNAME,
-  password: env.REDIS_PASSWORD,
-  connectTimeout: ms('5s'),
-  commandTimeout: ms('5s'),
+  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
   lazyConnect: true,
-  keepAlive: ms('30s'),
   enableReadyCheck: true,
   retryStrategy: (times: number): number => {
     const delay = Math.min(times * ms('1s'), ms('20s'))
@@ -26,12 +23,12 @@ const baseRedisConfig = {
   }
 }
 
-const queueConnectionConfig: ConnectionOptions = {
+const queueConnectionConfig: RedisOptions = {
   ...baseRedisConfig,
   maxRetriesPerRequest: 3
 }
 
-const workerConnectionConfig: ConnectionOptions = {
+const workerConnectionConfig: RedisOptions = {
   ...baseRedisConfig,
   commandTimeout: ms('30s'), // Workers need longer timeout for processing jobs
   maxRetriesPerRequest: null // Workers need to retry indefinitely

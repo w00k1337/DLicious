@@ -17,11 +17,9 @@ type Documents = {
   '\n  fragment StashFields on StashID {\n    id: stash_id\n    endpoint\n  }\n': typeof types.StashFieldsFragmentDoc
   '\n  fragment StudioFields on Studio {\n    id\n    name\n    imageUrl: image_path\n    aliases\n  }\n': typeof types.StudioFieldsFragmentDoc
   '\n  fragment SceneFields on Scene {\n    id\n    title\n    paths {\n      screenshot\n    }\n    stashes: stash_ids {\n      ...StashFields\n    }\n    studio {\n      ...StudioFields\n    }\n    files {\n      basename\n      fingerprints {\n        type\n        value\n      }\n    }\n    performers {\n      ...PerformerFields\n    }\n    releasedAt: date\n  }\n': typeof types.SceneFieldsFragmentDoc
-  '\n  query GetAllPerformerIds {\n    allPerformers {\n      id\n    }\n  }\n': typeof types.GetAllPerformerIdsDocument
-  '\n  query GetAllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n': typeof types.GetAllPerformersDocument
-  '\n  query GetPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n': typeof types.GetPerformerByIdDocument
-  '\n  query GetPerformersByIds($performerIds: [Int!]) {\n    findPerformers(performer_ids: $performerIds, filter: { per_page: -1 }) {\n      performers {\n        ...PerformerFields\n      }\n    }\n  }\n': typeof types.GetPerformersByIdsDocument
-  '\n  query GetScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n': typeof types.GetScenesDocument
+  '\n  query AllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n': typeof types.AllPerformersDocument
+  '\n  query FindPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n': typeof types.FindPerformerByIdDocument
+  '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n': typeof types.FindScenesDocument
 }
 const documents: Documents = {
   '\n  fragment PerformerFields on Performer {\n    id\n    name\n    aliases: alias_list\n    imageUrl: image_path\n    country\n    birthdate\n    measurements\n    breastType: fake_tits\n    isFavorite: favorite\n    stashes: stash_ids {\n      ...StashFields\n    }\n  }\n':
@@ -31,15 +29,11 @@ const documents: Documents = {
     types.StudioFieldsFragmentDoc,
   '\n  fragment SceneFields on Scene {\n    id\n    title\n    paths {\n      screenshot\n    }\n    stashes: stash_ids {\n      ...StashFields\n    }\n    studio {\n      ...StudioFields\n    }\n    files {\n      basename\n      fingerprints {\n        type\n        value\n      }\n    }\n    performers {\n      ...PerformerFields\n    }\n    releasedAt: date\n  }\n':
     types.SceneFieldsFragmentDoc,
-  '\n  query GetAllPerformerIds {\n    allPerformers {\n      id\n    }\n  }\n': types.GetAllPerformerIdsDocument,
-  '\n  query GetAllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n':
-    types.GetAllPerformersDocument,
-  '\n  query GetPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n':
-    types.GetPerformerByIdDocument,
-  '\n  query GetPerformersByIds($performerIds: [Int!]) {\n    findPerformers(performer_ids: $performerIds, filter: { per_page: -1 }) {\n      performers {\n        ...PerformerFields\n      }\n    }\n  }\n':
-    types.GetPerformersByIdsDocument,
-  '\n  query GetScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n':
-    types.GetScenesDocument
+  '\n  query AllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n': types.AllPerformersDocument,
+  '\n  query FindPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n':
+    types.FindPerformerByIdDocument,
+  '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n':
+    types.FindScenesDocument
 }
 
 /**
@@ -70,32 +64,20 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n  query GetAllPerformerIds {\n    allPerformers {\n      id\n    }\n  }\n'
-): typeof import('./graphql').GetAllPerformerIdsDocument
+  source: '\n  query AllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n'
+): typeof import('./graphql').AllPerformersDocument
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n  query GetAllPerformers {\n    allPerformers {\n      ...PerformerFields\n    }\n  }\n'
-): typeof import('./graphql').GetAllPerformersDocument
+  source: '\n  query FindPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n'
+): typeof import('./graphql').FindPerformerByIdDocument
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n  query GetPerformerById($id: ID!) {\n    findPerformer(id: $id) {\n      ...PerformerFields\n    }\n  }\n'
-): typeof import('./graphql').GetPerformerByIdDocument
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: '\n  query GetPerformersByIds($performerIds: [Int!]) {\n    findPerformers(performer_ids: $performerIds, filter: { per_page: -1 }) {\n      performers {\n        ...PerformerFields\n      }\n    }\n  }\n'
-): typeof import('./graphql').GetPerformersByIdsDocument
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: '\n  query GetScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n'
-): typeof import('./graphql').GetScenesDocument
+  source: '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      scenes {\n        ...SceneFields\n      }\n    }\n  }\n'
+): typeof import('./graphql').FindScenesDocument
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {}

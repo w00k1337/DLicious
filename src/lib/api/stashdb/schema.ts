@@ -7,12 +7,12 @@ export const imageSchema = z.object({
     .number()
     .int()
     .transform(val => (val === -1 ? null : val))
-    .pipe(z.number().int().nonnegative().nullish()),
+    .pipe(z.number().int().nonnegative().nullable()),
   height: z
     .number()
     .int()
     .transform(val => (val === -1 ? null : val))
-    .pipe(z.number().int().nonnegative().nullish())
+    .pipe(z.number().int().nonnegative().nullable())
 })
 
 export const hashAlgorithmSchema = z.enum(['OSHASH', 'PHASH', 'MD5'])
@@ -67,7 +67,6 @@ export const sceneSearchOptionsSchema = z.object({
   text: z.string().trim().min(1).optional(),
   performerIds: z.array(z.uuid()).optional().default([]),
   studioIds: z.array(z.uuid()).optional().default([]),
-  tagIds: z.array(z.uuid()).optional().default([]),
   page: z.coerce.number().int().min(1).optional().default(1)
 })
 

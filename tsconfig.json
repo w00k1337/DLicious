@@ -3,6 +3,8 @@
     "allowJs": true,
     "baseUrl": ".",
     "esModuleInterop": true,
+    // @see https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/null-and-undefined#exactoptionalpropertytypes
+    "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
     "isolatedModules": true,

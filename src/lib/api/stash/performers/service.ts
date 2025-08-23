@@ -1,29 +1,26 @@
-import { validateWith } from '../../utils'
+import { AllPerformersQuery, FindPerformerByIdQuery } from '@/generated/stash/graphql'
+import logger from '@/lib/logger'
+
 import { idSchema, type Performer, performerSchema } from '../schema'
 import { client } from '../shared/client'
-import { GET_ALL_PERFORMER_IDS, GET_ALL_PERFORMERS, GET_PERFORMER_BY_ID, GET_PERFORMERS_BY_IDS } from './queries'
-
-export const getPerformerIds = async (): Promise<number[]> => {
-  const { allPerformers } = await client.query<{ allPerformers: { id: unknown }[] }>(GET_ALL_PERFORMER_IDS)
-  return allPerformers.map(p => idSchema.parse(p.id))
-}
+import { ALL_PERFORMERS_QUERY, FIND_PERFORMER_BY_ID_QUERY } from './queries'
 
 export const getPerformers = async (): Promise<Performer[]> => {
-  const { allPerformers } = await client.query<{ allPerformers: unknown[] }>(GET_ALL_PERFORMERS)
-  return allPerformers.map(validateWith(performerSchema))
+  logger.debug('[Stash] Starting to fetch performers')
+  const { allPerformers } = await client.query<AllPerformersQuery>(ALL_PERFORMERS_QUERY)
+  const performers = allPerformers.map(performer => performerSchema.parse(performer))
+
+  logger.debug({ performerCount: performers.length }, '[Stash] Done fetching performers')
+  return performers
 }
 
 export const getPerformer = async (id: number): Promise<Performer | undefined> => {
-  const { findPerformer } = await client.query<{ findPerformer: unknown }>(GET_PERFORMER_BY_ID, {
+  logger.debug({ id }, '[Stash] Starting to fetch performer by ID')
+  const { findPerformer } = await client.query<FindPerformerByIdQuery>(FIND_PERFORMER_BY_ID_QUERY, {
     id: String(idSchema.parse(id))
   })
-  return findPerformer ? performerSchema.parse(findPerformer) : undefined
-}
+  const performer = findPerformer ? performerSchema.parse(findPerformer) : undefined
+  logger.debug({ id, performer }, '[Stash] Done fetching performer by ID')
 
-export const getPerformersByIds = async (ids: number[]): Promise<Performer[]> => {
-  if (ids.length === 0) return []
-  const { findPerformers } = await client.query<{ findPerformers: { performers: unknown[] } }>(GET_PERFORMERS_BY_IDS, {
-    performerIds: ids.map(id => idSchema.parse(id))
-  })
-  return findPerformers.performers.map(validateWith(performerSchema))
+  return performer
 }

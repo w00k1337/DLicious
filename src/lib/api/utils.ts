@@ -1,5 +1,4 @@
 import ms from 'ms'
-import { z } from 'zod'
 
 import logger from '@/lib/logger'
 
@@ -241,9 +240,3 @@ export const createGraphQLClient = (
     }
   }
 }
-
-export const validateWith =
-  <T>(schema: z.ZodType<T>) =>
-  (data: unknown): T => {
-    return schema.parse(data)
-  }

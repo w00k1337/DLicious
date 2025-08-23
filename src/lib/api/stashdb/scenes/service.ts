@@ -1,7 +1,6 @@
-import { CriterionModifier, type SceneQueryInput } from '@/generated/stashdb/graphql'
+import { CriterionModifier, FindSceneQuery, QueryScenesQuery, type SceneQueryInput } from '@/generated/stashdb/graphql'
 import logger from '@/lib/logger'
 
-import { validateWith } from '../../utils'
 import {
   type Scene,
   sceneSchema,
@@ -10,7 +9,7 @@ import {
   sceneSearchOptionsSchema
 } from '../schema'
 import { client } from '../shared/client'
-import { FIND_SCENE_QUERY, QUERY_SCENES } from './queries'
+import { FIND_SCENE_QUERY, QUERY_SCENES_QUERY } from './queries'
 
 export interface PaginatedSceneResults {
   scenes: Scene[]
@@ -24,7 +23,7 @@ export interface PaginatedSceneResults {
 const SCENES_PER_PAGE = 100
 
 const buildSceneQueryInput = (options: SceneSearchOptions): SceneQueryInput => {
-  const { page, text, performerIds, studioIds, tagIds } = options
+  const { page, text, performerIds, studioIds } = options
   const input: SceneQueryInput = {
     page,
     per_page: SCENES_PER_PAGE
@@ -40,33 +39,31 @@ const buildSceneQueryInput = (options: SceneSearchOptions): SceneQueryInput => {
   if (studioIds.length > 0) {
     input.studios = { value: studioIds, modifier: CriterionModifier.Includes }
   }
-  if (tagIds.length > 0) {
-    input.tags = { value: tagIds, modifier: CriterionModifier.Includes }
-  }
 
   return input
 }
 
 export const getSceneById = async (id: string): Promise<Scene | undefined> => {
-  logger.debug({ id }, '[StashDB] Starting to fetch scene by id')
-  const { findScene } = await client.query<{ findScene: unknown }>(FIND_SCENE_QUERY, { id })
-  return findScene ? sceneSchema.parse(findScene) : undefined
+  logger.debug({ id }, '[StashDB] Starting to fetch scene by ID')
+  const { findScene } = await client.query<FindSceneQuery>(FIND_SCENE_QUERY, { id })
+  const scene = findScene ? sceneSchema.parse(findScene) : undefined
+  logger.debug({ id, scene }, '[StashDB] Done fetching scene by ID')
+
+  return scene
 }
 
 export const searchScenes = async (options: SceneSearchOptionsInput = {}): Promise<PaginatedSceneResults> => {
   logger.debug({ options }, '[StashDB] Starting to search scenes')
   const parsedOptions = sceneSearchOptionsSchema.parse(options)
   const input = buildSceneQueryInput(parsedOptions)
-  const { queryScenes } = await client.query<{ queryScenes: { count: number; scenes: unknown[] } }>(QUERY_SCENES, {
-    input
-  })
+  const { queryScenes } = await client.query<QueryScenesQuery>(QUERY_SCENES_QUERY, { input })
 
-  const scenes = queryScenes.scenes.map(validateWith(sceneSchema))
+  const scenes = queryScenes.scenes.map(scene => sceneSchema.parse(scene))
   const totalPages = Math.ceil(queryScenes.count / SCENES_PER_PAGE)
 
   logger.debug(
     { sceneCount: scenes.length, currentPage: parsedOptions.page, totalPages, totalScenes: queryScenes.count },
-    '[StashDB] Found scenes'
+    '[StashDB] Done searching scenes'
   )
 
   return {
@@ -96,6 +93,8 @@ export const getAllPerformerScenes = async (performerId: string): Promise<Scene[
     page++
     hasNextPage = nextPageHasNextPage
   }
+
+  logger.debug({ performerId, sceneCount: scenes.length }, '[StashDB] Done fetching all performer scenes')
 
   return scenes
 }
