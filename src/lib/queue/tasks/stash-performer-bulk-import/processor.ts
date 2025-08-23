@@ -4,6 +4,7 @@ import { getPerformers as getStashPerformers } from '@/lib/api/stash'
 import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
+import { chunk } from '../../shared/utils'
 import { buildBulkUpdateSql } from './bulk-update-sql'
 import { transformStashPerformerToPrisma } from './transformer'
 import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
@@ -37,12 +38,6 @@ export const processStashPerformerBulkImport = async (
     const createdStashIds = new Set<number>()
 
     const errors: string[] = []
-
-    const chunk = <T>(arr: T[], size: number): T[][] => {
-      const out: T[][] = []
-      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
-      return out
-    }
 
     const CREATE_CHUNK = 1000
     const UPDATE_CHUNK = 1000

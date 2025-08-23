@@ -1,2 +1,2 @@
 export type { PaginatedSceneResults } from './service'
-export { getPerformerScenes, getSceneById, searchScenes } from './service'
+export { getAllPerformerScenes, getPerformerScenes, getSceneById, searchScenes } from './service'
