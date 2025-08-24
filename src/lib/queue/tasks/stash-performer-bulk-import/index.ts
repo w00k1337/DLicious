@@ -17,9 +17,13 @@ const stashPerformerBulkImportTask: TaskModule<StashPerformerBulkImportJobData, 
       processStashPerformerBulkImport
     ),
   trigger: async (data: StashPerformerBulkImportJobData, options?: Partial<JobsOptions>) => {
+    const jobId = 'bulk-import-stash-performers'
     const queue = stashPerformerBulkImportTask.createQueue()
-    return queue.add('bulk-import-stash-performers', data, {
-      jobId: 'bulk-import-stash-performers',
+    // We don't allow multiple jobs. Therefore, we set the jobId.
+    const job = await queue.getJob(jobId)
+    if (job) return job
+    return queue.add(jobId, data, {
+      jobId,
       ...options
     })
   }

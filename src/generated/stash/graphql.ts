@@ -4977,7 +4977,19 @@ export type AllPerformersQueryVariables = Exact<{ [key: string]: never }>
 
 export type AllPerformersQuery = {
   __typename?: 'Query'
-  allPerformers: Array<{ __typename?: 'Performer'; id: string; name: string }>
+  allPerformers: Array<{
+    __typename?: 'Performer'
+    id: string
+    name: string
+    country?: string | null
+    birthdate?: string | null
+    measurements?: string | null
+    aliases: Array<string>
+    imageUrl?: string | null
+    breastType?: string | null
+    isFavorite: boolean
+    stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
+  }>
 }
 
 export const AllPerformersDocument = {
@@ -4997,7 +5009,46 @@ export const AllPerformersDocument = {
               kind: 'SelectionSet',
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                {
+                  kind: 'Field',
+                  alias: { kind: 'Name', value: 'aliases' },
+                  name: { kind: 'Name', value: 'alias_list' }
+                },
+                {
+                  kind: 'Field',
+                  alias: { kind: 'Name', value: 'imageUrl' },
+                  name: { kind: 'Name', value: 'image_path' }
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'country' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'birthdate' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'measurements' } },
+                {
+                  kind: 'Field',
+                  alias: { kind: 'Name', value: 'breastType' },
+                  name: { kind: 'Name', value: 'fake_tits' }
+                },
+                {
+                  kind: 'Field',
+                  alias: { kind: 'Name', value: 'isFavorite' },
+                  name: { kind: 'Name', value: 'favorite' }
+                },
+                {
+                  kind: 'Field',
+                  alias: { kind: 'Name', value: 'stashes' },
+                  name: { kind: 'Name', value: 'stash_ids' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'id' },
+                        name: { kind: 'Name', value: 'stash_id' }
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                    ]
+                  }
+                }
               ]
             }
           }
