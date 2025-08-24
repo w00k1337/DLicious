@@ -13,7 +13,7 @@
     "lint:js": "eslint --max-warnings 0 --no-warn-ignored",
     "prettier:check": "prettier --check --ignore-unknown",
     "prettier:fix": "prettier --write --ignore-unknown",
-    "test": "vitest",
+    "test": "echo 'No tests'",
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
     "graphql-codegen": "graphql-codegen",

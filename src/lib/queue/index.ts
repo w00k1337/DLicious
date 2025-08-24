@@ -1,9 +1,5 @@
-// Main queue module exports
-// Re-export core functionality for backward compatibility
 export * from './core'
-
-// Export all tasks (includes types, queues, and workers)
+export { taskRegistry } from './shared/registry'
+export type { TaskConfig, TaskModule, TaskRegistryEntry } from './shared/types'
+export { getTask, initializeQueueSystem, triggerTask } from './shared/utils'
 export * from './tasks'
-
-// Export worker factories for backward compatibility
-export { workerFactories } from './shared/worker-factories'

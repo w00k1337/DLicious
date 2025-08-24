@@ -19,7 +19,6 @@ export const processPerformerSceneBulkImport = async (
       failedCount: 0,
       duplicatesCount: 0
     },
-    dataSources: {},
-    deduplication: {}
+    dataSources: {}
   })
 }

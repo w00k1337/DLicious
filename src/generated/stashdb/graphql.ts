@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core'
 export type Maybe<T> = T | null
 export type InputMaybe<T> = Maybe<T>
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
@@ -2127,21 +2128,52 @@ export enum VoteTypeEnum {
   Reject = 'REJECT'
 }
 
-export class TypedDocumentString<TResult, TVariables>
-  extends String
-  implements DocumentTypeDecoration<TResult, TVariables>
-{
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>
-  private value: string
-  public __meta__?: Record<string, any> | undefined
+export type FindPerformerQueryVariables = Exact<{
+  id: Scalars['ID']['input']
+}>
 
-  constructor(value: string, __meta__?: Record<string, any> | undefined) {
-    super(value)
-    this.value = value
-    this.__meta__ = __meta__
-  }
-
-  override toString(): string & DocumentTypeDecoration<TResult, TVariables> {
-    return this.value
-  }
+export type FindPerformerQuery = {
+  __typename?: 'Query'
+  findPerformer?: { __typename?: 'Performer'; id: string; name: string } | null
 }
+
+export const FindPerformerDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'FindPerformer' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } }
+        }
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'findPerformer' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } }
+              }
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+} as unknown as DocumentNode<FindPerformerQuery, FindPerformerQueryVariables>

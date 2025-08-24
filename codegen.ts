@@ -3,25 +3,34 @@ import 'dotenv/config'
 import type { CodegenConfig } from '@graphql-codegen/cli'
 
 const config: CodegenConfig = {
-  ignoreNoDocuments: true,
   generates: {
     'src/generated/stash/': {
-      // @ts-expect-error - Apollo Engine schema options
-      schema: [{ [`${process.env.STASH_BASE_URL ?? ''}/graphql`]: { headers: { ApiKey: process.env.STASH_API_KEY } } }],
-      documents: ['src/lib/api/stash/**/*.ts'],
-      preset: 'client',
-      config: { documentMode: 'string' }
+      schema: {
+        [`${process.env.STASH_BASE_URL ?? ''}/graphql`]: {
+          headers: {
+            ApiKey: process.env.STASH_API_KEY ?? ''
+          }
+        }
+      },
+      documents: ['src/**/*.stash.graphql.ts', 'src/lib/api/stash/**/*.ts'],
+      preset: 'client'
     },
     'src/generated/stashdb/': {
-      schema: [{ ['https://stashdb.org/graphql']: { headers: { ApiKey: process.env.STASHDB_API_KEY ?? '' } } }],
-      documents: ['src/lib/api/stashdb/**/*.ts'],
-      preset: 'client',
-      config: { documentMode: 'string' }
+      schema: {
+        'https://stashdb.org/graphql': {
+          headers: {
+            ApiKey: process.env.STASHDB_API_KEY ?? ''
+          }
+        }
+      },
+      documents: ['src/**/*.stashdb.graphql.ts', 'src/lib/api/stashdb/**/*.ts'],
+      preset: 'client'
     }
   },
   hooks: {
     afterAllFileWrite: ['eslint --fix', 'prettier --write']
-  }
+  },
+  ignoreNoDocuments: true
 }
 
 export default config

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import type { CupSize } from '@/generated/prisma'
 
-const usToeEuCupSizeMap: Record<string, CupSize> = {
+const usToEuCupSizeMap: Record<string, CupSize> = {
   A: 'A',
   B: 'B',
   C: 'C',
@@ -84,16 +84,16 @@ const isValidEuBandSize = (band: number): boolean => band >= 60 && band <= 105 &
 export const measurementsSchema = z.string().transform((measurements, ctx) => {
   const match = /^(\d+)([A-Z]+)(?:-|$)/.exec(measurements)
 
-  if (!match) {
-    return { cupSize: null, bandSize: null }
-  }
+  if (!match) return { cupSize: null, bandSize: null }
 
-  const inputBandSize = parseInt(match[1], 10)
+  const bandSizeString = match[1]
   const usCupSize = match[2]
 
-  if (isNaN(inputBandSize)) {
-    return { cupSize: null, bandSize: null }
-  }
+  if (!bandSizeString || !usCupSize) return { cupSize: null, bandSize: null }
+
+  const inputBandSize = parseInt(bandSizeString, 10)
+
+  if (isNaN(inputBandSize)) return { cupSize: null, bandSize: null }
 
   let finalBandSize: number | null = null
 
@@ -109,7 +109,7 @@ export const measurementsSchema = z.string().transform((measurements, ctx) => {
     finalBandSize = null
   }
 
-  const euCupSize = usCupSize in usToeEuCupSizeMap ? usToeEuCupSizeMap[usCupSize] : null
+  const euCupSize: CupSize | null = usToEuCupSizeMap[usCupSize] ?? null
 
   if (euCupSize === null) {
     ctx.addIssue({

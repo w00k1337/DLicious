@@ -20,5 +20,3 @@ export interface PerformerSceneBulkImportJobResult {
   }
   errors?: string[]
 }
-
-export const PERFORMER_SCENE_BULK_IMPORT_QUEUE_NAME = 'performer-scene-bulk-import'

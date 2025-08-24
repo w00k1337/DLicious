@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core'
 export type Maybe<T> = T | null
 export type InputMaybe<T> = Maybe<T>
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
@@ -4972,21 +4973,36 @@ export type VideoFileFingerprintArgs = {
 
 export type VisualFile = ImageFile | VideoFile
 
-export class TypedDocumentString<TResult, TVariables>
-  extends String
-  implements DocumentTypeDecoration<TResult, TVariables>
-{
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>
-  private value: string
-  public __meta__?: Record<string, any> | undefined
+export type AllPerformersQueryVariables = Exact<{ [key: string]: never }>
 
-  constructor(value: string, __meta__?: Record<string, any> | undefined) {
-    super(value)
-    this.value = value
-    this.__meta__ = __meta__
-  }
-
-  override toString(): string & DocumentTypeDecoration<TResult, TVariables> {
-    return this.value
-  }
+export type AllPerformersQuery = {
+  __typename?: 'Query'
+  allPerformers: Array<{ __typename?: 'Performer'; id: string; name: string }>
 }
+
+export const AllPerformersDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'AllPerformers' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'allPerformers' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+} as unknown as DocumentNode<AllPerformersQuery, AllPerformersQueryVariables>
