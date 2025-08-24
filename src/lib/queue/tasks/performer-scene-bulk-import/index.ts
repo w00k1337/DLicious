@@ -7,19 +7,26 @@ import type { PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult
 
 const queueName = 'performer-scene-bulk-import'
 
+let queueInstance: Queue<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> | null = null
+
+const getOrCreateQueue = (): Queue<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> => {
+  queueInstance ??= createQueue<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>(queueName)
+  return queueInstance
+}
+
 const performerSceneBulkImportTask: TaskModule<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> = {
   queueName,
-  createQueue: (): Queue<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> =>
-    createQueue<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>(queueName),
+  createQueue: getOrCreateQueue,
   createWorker: (): Worker<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> =>
     createWorker<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>(
       queueName,
       processPerformerSceneBulkImport
     ),
   trigger: async (data: PerformerSceneBulkImportJobData, options?: Partial<JobsOptions>) => {
-    const queue = performerSceneBulkImportTask.createQueue()
-    return queue.add(`performer-scene-bulk-import-${String(data.performerId)}`, data, {
-      jobId: `performer-scene-bulk-import-${String(data.performerId)}`,
+    const queue = getOrCreateQueue()
+    const jobId = `performer-scene-bulk-import-${String(data.performerId)}`
+    return queue.add(jobId, data, {
+      jobId,
       ...options
     })
   }

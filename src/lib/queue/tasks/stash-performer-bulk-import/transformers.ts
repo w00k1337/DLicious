@@ -1,10 +1,12 @@
 import * as countryCodes from 'country-codes-list'
+import dayjs from 'dayjs'
 
 import type { CupSize } from '@/generated/prisma'
 import logger from '@/lib/logger'
 
 import { measurementsSchema } from './measurements'
 import type { StashPerformer } from './types'
+import { performerUpsertDataSchema, type ValidatedPerformerUpsertData } from './validation'
 
 const isoCountryCodes = Object.keys(countryCodes.customList('countryCode', '{countryCode}')).sort() as readonly string[]
 
@@ -101,4 +103,45 @@ export const parseMeasurements = (
 export const parseBreastType = (breastType: string | null | undefined): boolean | null => {
   if (!breastType) return null
   return breastType.toLowerCase() === 'natural'
+}
+
+export const transformStashPerformer = (performer: StashPerformer): ValidatedPerformerUpsertData => {
+  const { id, name, aliases, imageUrl, country, birthdate, measurements, breastType, stashes, isFavorite } = performer
+
+  const stashId = parseInt(id, 10)
+
+  if (isNaN(stashId)) throw new Error(`Invalid stash ID: ${id}`)
+
+  const { cupSize, bandSize } = parseMeasurements(measurements, id)
+
+  const transformedData = {
+    stashId,
+    stashDbId: parseStashDbId(stashes),
+    thePornDbId: parseThePornDbId(stashes),
+    name,
+    aliases,
+    imageUrl: imageUrl ?? null,
+    country: parseCountry(country),
+    birthdate: birthdate ? (dayjs(birthdate).isValid() ? dayjs(birthdate).toDate() : null) : null,
+    cupSize,
+    bandSize,
+    hasNaturalBreasts: parseBreastType(breastType),
+    isFavorite
+  }
+
+  const validation = performerUpsertDataSchema.safeParse(transformedData)
+  if (!validation.success) {
+    logger.warn(
+      {
+        performerId: id,
+        errors: validation.error.issues
+      },
+      'Performer data validation failed'
+    )
+    throw new Error(
+      `Validation failed for performer ${id}: ${validation.error.issues.map(issue => issue.message).join(', ')}`
+    )
+  }
+
+  return validation.data
 }

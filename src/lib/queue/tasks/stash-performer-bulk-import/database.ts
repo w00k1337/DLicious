@@ -5,16 +5,13 @@ import logger from '@/lib/logger'
 import prisma from '@/lib/prisma'
 
 import { chunk } from '../../shared/utils'
-
-export type PerformerUpsertData = Omit<Performer, 'isMonitored' | 'createdAt' | 'updatedAt' | 'id' | 'syncedAt'>
+import { DEFAULT_CHUNK_SIZE, DEFAULT_UPDATE_CONCURRENCY } from './constants'
+import type { ValidatedPerformerUpsertData } from './validation'
 
 export interface DatabaseOperationOptions {
   updateConcurrency?: number
   chunkSize?: number
 }
-
-const DEFAULT_CHUNK_SIZE = 1000
-const DEFAULT_UPDATE_CONCURRENCY = 10
 
 export const getExistingPerformers = async (
   stashIds: number[],
@@ -38,25 +35,7 @@ export const getExistingPerformers = async (
   return existingPerformersMap
 }
 
-export const categorizePerformers = (
-  transformedPerformers: PerformerUpsertData[],
-  existingPerformers: Map<number, Performer>
-): { toCreate: PerformerUpsertData[]; toUpdate: PerformerUpsertData[] } => {
-  const toCreate: PerformerUpsertData[] = []
-  const toUpdate: PerformerUpsertData[] = []
-
-  transformedPerformers.forEach(performer => {
-    if (existingPerformers.has(performer.stashId)) {
-      toUpdate.push(performer)
-    } else {
-      toCreate.push(performer)
-    }
-  })
-
-  return { toCreate, toUpdate }
-}
-
-export const bulkCreatePerformers = async (performers: PerformerUpsertData[]): Promise<number> => {
+export const bulkCreatePerformers = async (performers: ValidatedPerformerUpsertData[]): Promise<number> => {
   if (performers.length === 0) return 0
 
   const syncedAt = new Date()
@@ -72,7 +51,7 @@ export const bulkCreatePerformers = async (performers: PerformerUpsertData[]): P
 }
 
 export const bulkUpdatePerformers = async (
-  performers: PerformerUpsertData[],
+  performers: ValidatedPerformerUpsertData[],
   options: DatabaseOperationOptions = {}
 ): Promise<number> => {
   if (performers.length === 0) return 0

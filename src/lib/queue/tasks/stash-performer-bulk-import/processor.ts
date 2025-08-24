@@ -3,13 +3,10 @@ import { Job } from 'bullmq'
 import logger from '@/lib/logger'
 
 import { fetchPerformersPage } from './api'
-import { processPerformersPage } from './helpers'
+import { DEFAULT_CHUNK_SIZE, DEFAULT_PERFORMERS_PER_PAGE, DEFAULT_UPDATE_CONCURRENCY } from './constants'
+import { processPerformersPage } from './processing'
 import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
 import { computeProgress } from './utils'
-
-const DEFAULT_PERFORMERS_PER_PAGE = 100
-const DEFAULT_UPDATE_CONCURRENCY = 10
-const DEFAULT_CHUNK_SIZE = 1000
 
 export const processStashPerformerBulkImport = async (
   job: Job<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>

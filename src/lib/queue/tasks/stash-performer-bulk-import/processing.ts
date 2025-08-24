@@ -1,59 +1,29 @@
-import { Job } from 'bullmq'
-import dayjs from 'dayjs'
+import type { Job } from 'bullmq'
 
 import logger from '@/lib/logger'
 
-import {
-  bulkCreatePerformers,
-  bulkUpdatePerformers,
-  categorizePerformers,
-  getExistingPerformers,
-  type PerformerUpsertData
-} from './database'
-import { parseBreastType, parseCountry, parseMeasurements, parseStashDbId, parseThePornDbId } from './transformers'
+import { bulkCreatePerformers, bulkUpdatePerformers, getExistingPerformers } from './database'
+import { transformStashPerformer } from './transformers'
 import type { StashPerformer } from './types'
 import { computeProgress } from './utils'
-import { performerUpsertDataSchema } from './validation'
+import type { ValidatedPerformerUpsertData } from './validation'
 
-export const transformStashPerformer = (performer: StashPerformer): PerformerUpsertData => {
-  const { id, name, aliases, imageUrl, country, birthdate, measurements, breastType, stashes, isFavorite } = performer
+export const categorizePerformers = (
+  transformedPerformers: ValidatedPerformerUpsertData[],
+  existingPerformers: Map<number, { stashId: number }>
+): { toCreate: ValidatedPerformerUpsertData[]; toUpdate: ValidatedPerformerUpsertData[] } => {
+  const toCreate: ValidatedPerformerUpsertData[] = []
+  const toUpdate: ValidatedPerformerUpsertData[] = []
 
-  const stashId = parseInt(id, 10)
+  transformedPerformers.forEach(performer => {
+    if (existingPerformers.has(performer.stashId)) {
+      toUpdate.push(performer)
+    } else {
+      toCreate.push(performer)
+    }
+  })
 
-  if (isNaN(stashId)) throw new Error(`Invalid stash ID: ${id}`)
-
-  const { cupSize, bandSize } = parseMeasurements(measurements, id)
-
-  const transformedData = {
-    stashId,
-    stashDbId: parseStashDbId(stashes),
-    thePornDbId: parseThePornDbId(stashes),
-    name,
-    aliases,
-    imageUrl: imageUrl ?? null,
-    country: parseCountry(country),
-    birthdate: birthdate ? (dayjs(birthdate).isValid() ? dayjs(birthdate).toDate() : null) : null,
-    cupSize,
-    bandSize,
-    hasNaturalBreasts: parseBreastType(breastType),
-    isFavorite
-  }
-
-  const validation = performerUpsertDataSchema.safeParse(transformedData)
-  if (!validation.success) {
-    logger.warn(
-      {
-        performerId: id,
-        errors: validation.error.issues
-      },
-      'Performer data validation failed'
-    )
-    throw new Error(
-      `Validation failed for performer ${id}: ${validation.error.issues.map(issue => issue.message).join(', ')}`
-    )
-  }
-
-  return validation.data
+  return { toCreate, toUpdate }
 }
 
 export const processPerformersPage = async (
@@ -66,7 +36,7 @@ export const processPerformersPage = async (
     skipExisting?: boolean
   } = {}
 ): Promise<{ createdCount: number; updatedCount: number; failedCount: number }> => {
-  const transformedPerformers: PerformerUpsertData[] = []
+  const transformedPerformers: ValidatedPerformerUpsertData[] = []
   const failed: { performer: StashPerformer; error: string }[] = []
 
   performers.forEach(performer => {
