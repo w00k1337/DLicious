@@ -18,11 +18,7 @@
     "prepare": "husky",
     "graphql-codegen": "graphql-codegen",
     "openapi-ts": "openapi-ts",
-    "codegen": "graphql-codegen && openapi-ts",
-    "smoke:stash": "tsx --conditions=react-server -r dotenv/config scripts/smoke/stash.ts | pino-pretty",
-    "smoke:stashdb": "tsx --conditions=react-server -r dotenv/config scripts/smoke/stashdb.ts | pino-pretty",
-    "smoke:theporndb": "tsx --conditions=react-server -r dotenv/config scripts/smoke/theporndb.ts | pino-pretty",
-    "smoke:all": "pnpm smoke:stash && pnpm smoke:stashdb && pnpm smoke:theporndb"
+    "codegen": "graphql-codegen && openapi-ts"
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "3.2.0",
