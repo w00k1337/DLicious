@@ -1,14 +1,20 @@
 import type { Performer } from '@/generated/prisma'
-import type { AllPerformersQuery } from '@/generated/stash/graphql'
+import type { FindPerformersQuery } from '@/generated/stash/graphql'
 
-export type StashPerformer = AllPerformersQuery['allPerformers'][0]
+export type StashPerformer = FindPerformersQuery['findPerformers']['performers'][0]
 
 export type BasicPerformer = Omit<Performer, 'isMonitored' | 'createdAt' | 'updatedAt'>
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface StashPerformerBulkImportJobData {
-  // Currently no input data, but structured for future options
-  // e.g., filters, skipExisting, etc.
+  performersPerPage?: number
+  updateConcurrency?: number
+  chunkSize?: number
+  skipExisting?: boolean
+  filters?: {
+    isFavorite?: boolean
+    hasStashDbId?: boolean
+    hasThePornDbId?: boolean
+  }
 }
 
 export interface StashPerformerBulkImportJobResult {

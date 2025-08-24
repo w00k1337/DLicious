@@ -7,19 +7,26 @@ import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult
 
 const queueName = 'stash-performer-bulk-import'
 
+let queueInstance: Queue<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> | null = null
+
+const getOrCreateQueue = (): Queue<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> => {
+  queueInstance ??= createQueue<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>(queueName)
+
+  return queueInstance
+}
+
 const stashPerformerBulkImportTask: TaskModule<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> = {
   queueName,
-  createQueue: (): Queue<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> =>
-    createQueue<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>(queueName),
+  createQueue: getOrCreateQueue,
   createWorker: (): Worker<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> =>
     createWorker<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>(
       queueName,
-      processStashPerformerBulkImport
+      processStashPerformerBulkImport,
+      { concurrency: 1 }
     ),
   trigger: async (data: StashPerformerBulkImportJobData, options?: Partial<JobsOptions>) => {
     const jobId = 'bulk-import-stash-performers'
-    const queue = stashPerformerBulkImportTask.createQueue()
-    // We don't allow multiple jobs. Therefore, we set the jobId.
+    const queue = getOrCreateQueue()
     const job = await queue.getJob(jobId)
     if (job) return job
     return queue.add(jobId, data, {

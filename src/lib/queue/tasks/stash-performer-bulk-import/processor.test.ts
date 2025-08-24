@@ -1,10 +1,11 @@
+import type { Job } from 'bullmq'
 import dayjs from 'dayjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Performer } from '@/generated/prisma'
 
-import type { PerformerUpsertData } from './processor'
-import type { StashPerformer } from './types'
+import { PerformerUpsertData } from './database'
+import type { StashPerformer, StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
 
 interface MockPrismaClient {
   performer: {
@@ -55,37 +56,35 @@ vi.mock('@/lib/api/stash', () => ({
 }))
 
 // Import after mocking
-const {
-  fetchPerformersFromStash,
-  transformStashPerformer,
-  parseMeasurements,
-  parseStashDbId,
-  parseBreastType,
-  getExistingPerformers,
-  categorizePerformers,
-  bulkCreatePerformers,
-  bulkUpdatePerformers,
-  processPerformers
-} = await import('./processor')
+const { fetchPerformersPage } = await import('./api')
+const { getExistingPerformers, categorizePerformers, bulkCreatePerformers, bulkUpdatePerformers } = await import(
+  './database'
+)
+const { parseMeasurements, parseStashDbId, parseCountry, parseBreastType, COUNTRY_ALIASES } = await import(
+  './transformers'
+)
+const { transformStashPerformer, processPerformersPage } = await import('./helpers')
 
 describe('processor functions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('fetchPerformersFromStash', () => {
-    it('should fetch performers successfully', async () => {
+  describe('fetchPerformersPage', () => {
+    it('should fetch performers page successfully', async () => {
       const mockPerformers = [{ id: '1', name: 'Test Performer' }]
 
       mockStashGraphQL.mockResolvedValue({
-        data: { allPerformers: mockPerformers },
+        data: { findPerformers: { performers: mockPerformers, count: 1 } },
         errors: null
       })
 
-      const result = await fetchPerformersFromStash()
+      const result = await fetchPerformersPage({ page: 1, perPage: 100 })
 
-      expect(result).toEqual(mockPerformers)
-      expect(mockStashGraphQL).toHaveBeenCalledOnce()
+      expect(result).toEqual({ performers: mockPerformers, count: 1 })
+      expect(mockStashGraphQL).toHaveBeenCalledWith(expect.anything(), {
+        filter: { page: 1, per_page: 100 }
+      })
     })
 
     it('should throw error when GraphQL returns errors', async () => {
@@ -94,16 +93,18 @@ describe('processor functions', () => {
         errors: [{ message: 'Test error' }]
       })
 
-      await expect(fetchPerformersFromStash()).rejects.toThrow('Stash GraphQL errors: Test error')
+      await expect(fetchPerformersPage({ page: 1, perPage: 100 })).rejects.toThrow('Stash GraphQL errors: Test error')
     })
 
     it('should throw error when no data received', async () => {
       mockStashGraphQL.mockResolvedValue({
-        data: { allPerformers: null },
+        data: { findPerformers: null },
         errors: null
       })
 
-      await expect(fetchPerformersFromStash()).rejects.toThrow('No performer data received from Stash')
+      await expect(fetchPerformersPage({ page: 1, perPage: 100 })).rejects.toThrow(
+        'No performer data received from Stash'
+      )
     })
   })
 
@@ -154,6 +155,66 @@ describe('processor functions', () => {
 
       expect(result.cupSize).toBeDefined()
       expect(result.bandSize).toBeDefined()
+    })
+  })
+
+  describe('parseCountry', () => {
+    it('should return null for null input', () => {
+      const result = parseCountry(null)
+      expect(result).toBeNull()
+    })
+
+    it('should return null for undefined input', () => {
+      const result = parseCountry(undefined)
+      expect(result).toBeNull()
+    })
+
+    it('should return valid ISO-2 codes unchanged', () => {
+      expect(parseCountry('US')).toBe('US')
+      expect(parseCountry('us')).toBe('US')
+      expect(parseCountry('CA')).toBe('CA')
+      expect(parseCountry('GB')).toBe('GB')
+    })
+
+    it('should normalize exact country names to ISO-2 codes', () => {
+      expect(parseCountry('United States of America')).toBe('US')
+      expect(parseCountry('united states of america')).toBe('US')
+      expect(parseCountry('Canada')).toBe('CA')
+      expect(parseCountry('United Kingdom')).toBe('GB')
+    })
+
+    it('should use alias map for common variations', () => {
+      expect(parseCountry('USA')).toBe('US')
+      expect(parseCountry('america')).toBe('US')
+      expect(parseCountry('United States')).toBe('US')
+      expect(parseCountry('Great Britain')).toBe('GB')
+      expect(parseCountry('UK')).toBe('GB')
+      expect(parseCountry('england')).toBe('GB')
+    })
+
+    it('should have expected aliases in COUNTRY_ALIASES', () => {
+      expect(COUNTRY_ALIASES.usa).toBe('US')
+      expect(COUNTRY_ALIASES.america).toBe('US')
+      expect(COUNTRY_ALIASES['great britain']).toBe('GB')
+      expect(COUNTRY_ALIASES.uk).toBe('GB')
+    })
+
+    it('should handle names with extra whitespace', () => {
+      expect(parseCountry('  United States of America  ')).toBe('US')
+      expect(parseCountry('  Canada  ')).toBe('CA')
+    })
+
+    it('should return null for unrecognized country names', () => {
+      expect(parseCountry('Fictional Country')).toBeNull()
+      expect(parseCountry('Britain')).toBeNull() // Too short for startsWith matching
+      expect(parseCountry('XYZ')).toBeNull()
+      expect(parseCountry('123')).toBeNull()
+    })
+
+    it('should handle startsWith matching for longer names', () => {
+      expect(parseCountry('United Kingdom')).toBe('GB')
+      expect(parseCountry('United')).toBeNull() // Too short (< 6 chars)
+      expect(parseCountry('United States')).toBe('US') // Via alias map, not startsWith
     })
   })
 
@@ -276,11 +337,10 @@ describe('processor functions', () => {
     })
 
     it('should handle empty input', async () => {
-      mockPrismaClient.performer.findMany.mockResolvedValue([])
-
       const result = await getExistingPerformers([])
 
       expect(result.size).toBe(0)
+      expect(mockPrismaClient.performer.findMany).not.toHaveBeenCalled()
     })
   })
 
@@ -363,7 +423,11 @@ describe('processor functions', () => {
     })
   })
 
-  describe('processPerformers', () => {
+  describe('processPerformersPage', () => {
+    const mockJob = {
+      updateProgress: vi.fn()
+    } as unknown as Job<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>
+
     const mockStashPerformers: StashPerformer[] = [
       {
         id: '123',
@@ -378,7 +442,7 @@ describe('processor functions', () => {
         stashes: []
       },
       {
-        id: 'invalid-id', // This will cause parseInt to return NaN
+        id: 'invalid-id',
         name: 'Invalid Performer',
         aliases: [],
         imageUrl: null,
@@ -391,57 +455,50 @@ describe('processor functions', () => {
       }
     ]
 
-    it('should process performers and handle failures', async () => {
+    it('should process page and handle failures', async () => {
       mockPrismaClient.performer.findMany.mockResolvedValue([])
+      mockPrismaClient.performer.createMany.mockResolvedValue({ count: 1 })
+      mockPrismaClient.$transaction.mockImplementation((fn: () => number) => fn())
 
-      const result = await processPerformers(mockStashPerformers)
+      const result = await processPerformersPage(mockStashPerformers, mockJob, { current: 1, total: 1 })
 
-      expect(result.created).toHaveLength(1)
-      expect(result.created[0]?.name).toBe('Valid Performer')
-      expect(result.updated).toHaveLength(0)
-      expect(result.failed).toHaveLength(1)
-      expect(result.failed[0]?.performer.name).toBe('Invalid Performer')
-      expect(result.failed[0]?.error).toContain('Invalid stash ID')
+      expect(result.createdCount).toBe(1)
+      expect(result.updatedCount).toBe(0)
+      expect(result.failedCount).toBe(1)
+      expect(mockJob.updateProgress).toHaveBeenCalled()
     })
 
-    it('should categorize existing vs new performers correctly', async () => {
-      const existingPerformer = { id: 1, stashId: 123 } as Performer
-      mockPrismaClient.performer.findMany.mockResolvedValue([existingPerformer])
+    it('should handle empty page', async () => {
+      const result = await processPerformersPage([], mockJob, { current: 1, total: 1 })
 
-      const validPerformers: StashPerformer[] = [
-        {
-          id: '123',
-          name: 'Existing Performer',
-          aliases: [],
-          imageUrl: null,
-          country: null,
-          birthdate: null,
-          measurements: null,
-          breastType: null,
-          isFavorite: false,
-          stashes: []
-        },
-        {
-          id: '456',
-          name: 'New Performer',
-          aliases: [],
-          imageUrl: null,
-          country: null,
-          birthdate: null,
-          measurements: null,
-          breastType: null,
-          isFavorite: false,
-          stashes: []
-        }
-      ]
+      expect(result.createdCount).toBe(0)
+      expect(result.updatedCount).toBe(0)
+      expect(result.failedCount).toBe(0)
+    })
+  })
 
-      const result = await processPerformers(validPerformers)
+  describe('Pagination Logic', () => {
+    it('should handle multi-page fetching correctly', async () => {
+      // Mock first page
+      mockStashGraphQL.mockResolvedValueOnce({
+        data: { findPerformers: { performers: [{ id: '1', name: 'Performer 1' }], count: 150 } },
+        errors: null
+      })
 
-      expect(result.created).toHaveLength(1)
-      expect(result.created[0]?.stashId).toBe(456)
-      expect(result.updated).toHaveLength(1)
-      expect(result.updated[0]?.stashId).toBe(123)
-      expect(result.failed).toHaveLength(0)
+      // Mock second page
+      mockStashGraphQL.mockResolvedValueOnce({
+        data: { findPerformers: { performers: [{ id: '2', name: 'Performer 2' }], count: 150 } },
+        errors: null
+      })
+
+      const page1 = await fetchPerformersPage({ page: 1, perPage: 100 })
+      const page2 = await fetchPerformersPage({ page: 2, perPage: 100 })
+
+      expect(page1.count).toBe(150)
+      expect(page1.performers).toHaveLength(1)
+      expect(page2.count).toBe(150)
+      expect(page2.performers).toHaveLength(1)
+      expect(mockStashGraphQL).toHaveBeenCalledTimes(2)
     })
   })
 

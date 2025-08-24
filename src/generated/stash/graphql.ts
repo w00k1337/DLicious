@@ -4973,79 +4973,109 @@ export type VideoFileFingerprintArgs = {
 
 export type VisualFile = ImageFile | VideoFile
 
-export type AllPerformersQueryVariables = Exact<{ [key: string]: never }>
+export type FindPerformersQueryVariables = Exact<{
+  filter?: InputMaybe<FindFilterType>
+}>
 
-export type AllPerformersQuery = {
+export type FindPerformersQuery = {
   __typename?: 'Query'
-  allPerformers: Array<{
-    __typename?: 'Performer'
-    id: string
-    name: string
-    country?: string | null
-    birthdate?: string | null
-    measurements?: string | null
-    aliases: Array<string>
-    imageUrl?: string | null
-    breastType?: string | null
-    isFavorite: boolean
-    stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
-  }>
+  findPerformers: {
+    __typename?: 'FindPerformersResultType'
+    count: number
+    performers: Array<{
+      __typename?: 'Performer'
+      id: string
+      name: string
+      country?: string | null
+      birthdate?: string | null
+      measurements?: string | null
+      aliases: Array<string>
+      imageUrl?: string | null
+      breastType?: string | null
+      isFavorite: boolean
+      stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
+    }>
+  }
 }
 
-export const AllPerformersDocument = {
+export const FindPerformersDocument = {
   kind: 'Document',
   definitions: [
     {
       kind: 'OperationDefinition',
       operation: 'query',
-      name: { kind: 'Name', value: 'AllPerformers' },
+      name: { kind: 'Name', value: 'FindPerformers' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'FindFilterType' } }
+        }
+      ],
       selectionSet: {
         kind: 'SelectionSet',
         selections: [
           {
             kind: 'Field',
-            name: { kind: 'Name', value: 'allPerformers' },
+            name: { kind: 'Name', value: 'findPerformers' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } }
+              }
+            ],
             selectionSet: {
               kind: 'SelectionSet',
               selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'count' } },
                 {
                   kind: 'Field',
-                  alias: { kind: 'Name', value: 'aliases' },
-                  name: { kind: 'Name', value: 'alias_list' }
-                },
-                {
-                  kind: 'Field',
-                  alias: { kind: 'Name', value: 'imageUrl' },
-                  name: { kind: 'Name', value: 'image_path' }
-                },
-                { kind: 'Field', name: { kind: 'Name', value: 'country' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'birthdate' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'measurements' } },
-                {
-                  kind: 'Field',
-                  alias: { kind: 'Name', value: 'breastType' },
-                  name: { kind: 'Name', value: 'fake_tits' }
-                },
-                {
-                  kind: 'Field',
-                  alias: { kind: 'Name', value: 'isFavorite' },
-                  name: { kind: 'Name', value: 'favorite' }
-                },
-                {
-                  kind: 'Field',
-                  alias: { kind: 'Name', value: 'stashes' },
-                  name: { kind: 'Name', value: 'stash_ids' },
+                  name: { kind: 'Name', value: 'performers' },
                   selectionSet: {
                     kind: 'SelectionSet',
                     selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       {
                         kind: 'Field',
-                        alias: { kind: 'Name', value: 'id' },
-                        name: { kind: 'Name', value: 'stash_id' }
+                        alias: { kind: 'Name', value: 'aliases' },
+                        name: { kind: 'Name', value: 'alias_list' }
                       },
-                      { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'imageUrl' },
+                        name: { kind: 'Name', value: 'image_path' }
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'birthdate' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'measurements' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'breastType' },
+                        name: { kind: 'Name', value: 'fake_tits' }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'isFavorite' },
+                        name: { kind: 'Name', value: 'favorite' }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'stashes' },
+                        name: { kind: 'Name', value: 'stash_ids' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'id' },
+                              name: { kind: 'Name', value: 'stash_id' }
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                          ]
+                        }
+                      }
                     ]
                   }
                 }
@@ -5056,4 +5086,4 @@ export const AllPerformersDocument = {
       }
     }
   ]
-} as unknown as DocumentNode<AllPerformersQuery, AllPerformersQueryVariables>
+} as unknown as DocumentNode<FindPerformersQuery, FindPerformersQueryVariables>
