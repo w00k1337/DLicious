@@ -3,9 +3,9 @@ import type { Job } from 'bullmq'
 import logger from '@/lib/logger'
 
 import { bulkCreatePerformers, bulkUpdatePerformers, getExistingPerformers } from './database'
+import { computeProgress } from './processor'
 import { transformStashPerformer } from './transformers'
 import type { StashPerformer } from './types'
-import { computeProgress } from './utils'
 import type { ValidatedPerformerUpsertData } from './validation'
 
 export const categorizePerformers = (
