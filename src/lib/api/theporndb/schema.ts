@@ -20,6 +20,11 @@ export const siteSchema = z.object({
     .pipe(z.url().optional())
 })
 
+export const performerSchema = z.object({
+  id: z.uuid(),
+  name: z.string().optional()
+})
+
 export const sceneSchema = z.object({
   id: z.uuid(),
   title: z.string(),
@@ -31,9 +36,11 @@ export const sceneSchema = z.object({
     .transform(val => (val === '' || val === null || val === undefined ? undefined : val))
     .pipe(z.url().optional()),
   site: siteSchema.optional(),
-  hashes: z.array(hashSchema).default([])
+  hashes: z.array(hashSchema).default([]),
+  performers: z.array(performerSchema).default([])
 })
 
 export type Scene = z.infer<typeof sceneSchema>
 export type Site = z.infer<typeof siteSchema>
 export type Hash = z.infer<typeof hashSchema>
+export type Performer = z.infer<typeof performerSchema>

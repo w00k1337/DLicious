@@ -1,10 +1,18 @@
 import { HashType } from '@/generated/prisma'
-import type { Fingerprint as StashFingerprint, Scene as StashScene } from '@/lib/api/stash/schema'
+import type {
+  Fingerprint as StashFingerprint,
+  Performer as StashPerformer,
+  Scene as StashScene
+} from '@/lib/api/stash/schema'
 import type { Hash as StashDbHash, Scene as StashDbScene } from '@/lib/api/stashdb/schema'
-import type { Hash as ThePornDbHash, Scene as ThePornDbScene } from '@/lib/api/theporndb/schema'
+import type {
+  Hash as ThePornDbHash,
+  Performer as ThePornDbPerformer,
+  Scene as ThePornDbScene
+} from '@/lib/api/theporndb/schema'
 import logger from '@/lib/logger'
 
-import type { UnifiedHash, UnifiedScene } from './types'
+import type { UnifiedHash, UnifiedPerformer, UnifiedScene } from './types'
 
 const normalizeStashFingerprint = (fingerprint: StashFingerprint): UnifiedHash => {
   const type = fingerprint.type === 'oshash' ? HashType.OSHASH : HashType.PHASH
@@ -44,6 +52,47 @@ const normalizeThePornDbHash = (hash: ThePornDbHash): UnifiedHash => {
   }
 }
 
+const transformStashPerformer = (performer: StashPerformer): UnifiedPerformer => {
+  const stashDbStash = performer.stashes.find(stash => {
+    try {
+      const host = new URL(stash.endpoint).host.toLowerCase()
+      return host === 'stashdb.org' || host.endsWith('.stashdb.org')
+    } catch {
+      return false
+    }
+  })
+
+  const thePornDbStash = performer.stashes.find(stash => {
+    try {
+      const host = new URL(stash.endpoint).host.toLowerCase()
+      return host.includes('theporndb')
+    } catch {
+      return false
+    }
+  })
+
+  return {
+    stashId: performer.id,
+    ...(stashDbStash?.id && { stashDbId: stashDbStash.id }),
+    ...(thePornDbStash?.id && { thePornDbId: thePornDbStash.id }),
+    name: performer.name
+  }
+}
+
+const transformStashDbPerformer = (performer: StashDbScene['performers'][0]['performer']): UnifiedPerformer => {
+  return {
+    stashDbId: performer.id,
+    name: performer.name
+  }
+}
+
+const transformThePornDbPerformer = (performer: ThePornDbPerformer): UnifiedPerformer => {
+  return {
+    thePornDbId: performer.id,
+    name: performer.name ?? 'Unknown'
+  }
+}
+
 const extractStashIds = (stashScene: StashScene): { stashDbId?: string; thePornDbId?: string } => {
   const parseHost = (url: string): string | null => {
     try {
@@ -73,6 +122,7 @@ const transformStashScene = (scene: StashScene): UnifiedScene => {
 
   const allFingerprints: StashFingerprint[] = scene.files.flatMap(file => file.fingerprints)
   const hashes = allFingerprints.map(normalizeStashFingerprint)
+  const performers = scene.performers.map(transformStashPerformer)
 
   const fallbackDate = new Date('1900-01-01')
   const releasedAt = scene.releasedAt ?? fallbackDate
@@ -85,12 +135,14 @@ const transformStashScene = (scene: StashScene): UnifiedScene => {
     releasedAt,
     imageUrl: scene.paths.screenshot ?? null,
     hashes,
+    performers,
     source: 'stash'
   }
 }
 
 const transformStashDbScene = (scene: StashDbScene): UnifiedScene => {
   const hashes = scene.fingerprints.map(normalizeStashDbHash)
+  const performers = scene.performers.map(({ performer }) => transformStashDbPerformer(performer))
 
   const fallbackDate = new Date('1900-01-01')
   const releasedAt = scene.releasedAt ?? fallbackDate
@@ -105,12 +157,14 @@ const transformStashDbScene = (scene: StashDbScene): UnifiedScene => {
     releasedAt,
     imageUrl,
     hashes,
+    performers,
     source: 'stashDb'
   }
 }
 
 const transformThePornDbScene = (scene: ThePornDbScene): UnifiedScene => {
   const hashes = scene.hashes.map(normalizeThePornDbHash)
+  const performers = scene.performers.map(transformThePornDbPerformer)
 
   return {
     stashId: null,
@@ -120,6 +174,7 @@ const transformThePornDbScene = (scene: ThePornDbScene): UnifiedScene => {
     releasedAt: scene.date,
     imageUrl: scene.image ?? null,
     hashes,
+    performers,
     source: 'thePornDb'
   }
 }

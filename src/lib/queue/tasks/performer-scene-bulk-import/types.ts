@@ -31,10 +31,20 @@ export type SceneSource = 'stash' | 'stashDb' | 'thePornDb'
 
 export type UnifiedHash = Pick<Hash, 'type' | 'value'>
 
+export interface UnifiedPerformer {
+  stashId?: number
+  stashDbId?: string
+  thePornDbId?: string
+  name: string
+}
+
 export interface UnifiedScene
   extends Pick<Scene, 'stashId' | 'stashDbId' | 'thePornDbId' | 'title' | 'imageUrl' | 'releasedAt'> {
   // Hashes for deduplication
   hashes: UnifiedHash[]
+
+  // Performers in this scene from source APIs
+  performers: UnifiedPerformer[]
 
   // Source tracking
   source: SceneSource
