@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 
 import { chunk } from '../../shared/utils'
 import { DEFAULT_CHUNK_SIZE, DEFAULT_UPDATE_CONCURRENCY } from './constants'
-import type { ValidatedPerformerUpsertData } from './validation'
+import type { ValidatedPerformerUpsertData } from './transformers'
 
 export interface DatabaseOperationOptions {
   updateConcurrency?: number
@@ -40,10 +40,7 @@ export const bulkCreatePerformers = async (performers: ValidatedPerformerUpsertD
 
   const syncedAt = new Date()
   const { count } = await prisma.performer.createMany({
-    data: performers.map(p => ({
-      ...p,
-      syncedAt
-    })),
+    data: performers.map(p => ({ ...p, syncedAt })),
     skipDuplicates: true
   })
 
@@ -64,14 +61,10 @@ export const bulkUpdatePerformers = async (
     limit(() =>
       prisma.performer.update({
         where: { stashId: performer.stashId },
-        data: {
-          ...performer,
-          syncedAt
-        }
+        data: { ...performer, syncedAt }
       })
     )
   )
 
-  const updatedCount = await Promise.all(updatePromises)
-  return updatedCount.length
+  return (await Promise.all(updatePromises)).length
 }

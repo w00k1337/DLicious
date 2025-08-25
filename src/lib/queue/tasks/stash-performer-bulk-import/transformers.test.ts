@@ -5,8 +5,9 @@ import type { StashPerformer } from './types'
 
 vi.mock('@/lib/logger', () => ({ default: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } }))
 
-const { parseMeasurements, parseStashDbId, parseCountry, parseBreastType, COUNTRY_ALIASES, transformStashPerformer } =
-  await import('./transformers')
+const { parseMeasurements, parseStashDbId, parseCountry, parseBreastType, transformStashPerformer } = await import(
+  './transformers'
+)
 
 describe('transformers', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -15,9 +16,9 @@ describe('transformers', () => {
     it('extracts StashDB ID', () => {
       const stashes = [
         { id: 'local-id', endpoint: 'http://localhost:9999/graphql' },
-        { id: 'stashdb-id', endpoint: 'https://stashdb.org/graphql' }
+        { id: '550e8400-e29b-41d4-a716-446655440002', endpoint: 'https://stashdb.org/graphql' }
       ]
-      expect(parseStashDbId(stashes)).toBe('stashdb-id')
+      expect(parseStashDbId(stashes)).toBe('550e8400-e29b-41d4-a716-446655440002')
     })
 
     it('returns null when missing', () => {
@@ -45,26 +46,21 @@ describe('transformers', () => {
       expect(parseCountry(null)).toBeNull()
       expect(parseCountry(undefined)).toBeNull()
     })
-    it('passes through ISO-2', () => {
+    it('passes through valid ISO-2', () => {
       expect(parseCountry('US')).toBe('US')
       expect(parseCountry('us')).toBe('US')
+      expect(parseCountry('CA')).toBe('CA')
+      expect(parseCountry('ca')).toBe('CA')
     })
-    it('normalizes common names', () => {
-      expect(parseCountry('United States of America')).toBe('US')
-      expect(parseCountry('Canada')).toBe('CA')
-      expect(parseCountry('United Kingdom')).toBe('GB')
+    it('trims whitespace and normalizes case', () => {
+      expect(parseCountry('  us  ')).toBe('US')
+      expect(parseCountry('  CA  ')).toBe('CA')
     })
-    it('uses alias map', () => {
-      expect(parseCountry('USA')).toBe('US')
-      expect(parseCountry('america')).toBe('US')
-      expect(parseCountry('UK')).toBe('GB')
-      expect(parseCountry('england')).toBe('GB')
-      expect(COUNTRY_ALIASES.usa).toBe('US')
-    })
-    it('trims whitespace and rejects unknowns', () => {
-      expect(parseCountry('  Canada  ')).toBe('CA')
-      expect(parseCountry('Fictional Country')).toBeNull()
+    it('rejects invalid codes', () => {
+      expect(parseCountry('USA')).toBeNull()
+      expect(parseCountry('United States')).toBeNull()
       expect(parseCountry('XYZ')).toBeNull()
+      expect(parseCountry('Fictional Country')).toBeNull()
     })
   })
 
@@ -90,11 +86,11 @@ describe('transformers', () => {
         measurements: '34DD',
         breastType: 'fake',
         isFavorite: true,
-        stashes: [{ id: 'stashdb-123', endpoint: 'https://stashdb.org/graphql' }]
+        stashes: [{ id: '550e8400-e29b-41d4-a716-446655440001', endpoint: 'https://stashdb.org/graphql' }]
       }
       expect(transformStashPerformer(p)).toEqual({
         stashId: 123,
-        stashDbId: 'stashdb-123',
+        stashDbId: '550e8400-e29b-41d4-a716-446655440001',
         thePornDbId: null,
         name: 'Test Performer',
         aliases: ['Alias 1', 'Alias 2'],

@@ -5,35 +5,58 @@ import logger from '@/lib/logger'
 import { fetchPerformersPage } from './api'
 import { DEFAULT_CHUNK_SIZE, DEFAULT_PERFORMERS_PER_PAGE, DEFAULT_UPDATE_CONCURRENCY } from './constants'
 import { processPerformersPage } from './processing'
+import { computeProgress } from './progress'
 import type { StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult } from './types'
 
-interface ProgressStage {
-  name: string
-  percentage: number
+interface ProcessingOptions {
+  updateConcurrency: number
+  chunkSize: number
+  skipExisting: boolean
 }
 
-const PROGRESS_STAGES: ProgressStage[] = [
-  { name: 'initialization', percentage: 10 },
-  { name: 'fetching', percentage: 25 },
-  { name: 'processing', percentage: 90 },
-  { name: 'completion', percentage: 100 }
-]
+interface ResultAccumulator {
+  createdCount: number
+  updatedCount: number
+  failedCount: number
+}
 
-export const computeProgress = (
-  stage: 'initialization' | 'fetching' | 'processing' | 'completion',
-  pageProgress?: { current: number; total: number }
-): number => {
-  const stageInfo = PROGRESS_STAGES.find(s => s.name === stage)
-  if (!stageInfo) return 0
+const createEmptyResult = (): StashPerformerBulkImportJobResult => ({
+  performerCount: 0,
+  importedCount: 0,
+  createdCount: 0,
+  updatedCount: 0,
+  failedCount: 0
+})
 
-  if (stage === 'processing' && pageProgress) {
-    const baseProgress = PROGRESS_STAGES.find(s => s.name === 'fetching')?.percentage ?? 25
-    const processingRange = stageInfo.percentage - baseProgress
-    const pageProgressPercentage = (pageProgress.current / pageProgress.total) * processingRange
-    return Math.round(baseProgress + pageProgressPercentage)
-  }
+const logPageProcessing = (page: number, totalPages: number, fetchedCount: number): void => {
+  logger.debug({ page, totalPages, fetchedCount }, 'Processing performer page')
+}
 
-  return stageInfo.percentage
+const processAllPages = async (
+  job: Job<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult>,
+  totalPages: number,
+  performersPerPage: number,
+  options: ProcessingOptions
+): Promise<ResultAccumulator> => {
+  const results = await Promise.all(
+    Array.from({ length: totalPages }, async (_, index) => {
+      const page = index + 1
+      const { performers } = await fetchPerformersPage({ page, perPage: performersPerPage })
+
+      logPageProcessing(page, totalPages, performers.length)
+
+      return processPerformersPage(performers, job, { current: page, total: totalPages }, options)
+    })
+  )
+
+  return results.reduce<ResultAccumulator>(
+    (acc, result) => ({
+      createdCount: acc.createdCount + result.createdCount,
+      updatedCount: acc.updatedCount + result.updatedCount,
+      failedCount: acc.failedCount + result.failedCount
+    }),
+    { createdCount: 0, updatedCount: 0, failedCount: 0 }
+  )
 }
 
 export const processStashPerformerBulkImport = async (
@@ -45,6 +68,8 @@ export const processStashPerformerBulkImport = async (
     chunkSize = DEFAULT_CHUNK_SIZE,
     skipExisting = false
   } = job.data
+
+  const options: ProcessingOptions = { updateConcurrency, chunkSize, skipExisting }
 
   logger.info(
     {
@@ -58,45 +83,35 @@ export const processStashPerformerBulkImport = async (
   try {
     await job.updateProgress(computeProgress('initialization'))
 
-    const { count: totalCount } = await fetchPerformersPage({ page: 1, perPage: performersPerPage })
+    const { count: totalCount } = await fetchPerformersPage({
+      page: 1,
+      perPage: performersPerPage
+    })
     const totalPages = Math.ceil(totalCount / performersPerPage)
 
     logger.debug({ totalCount, totalPages }, 'Starting page-by-page processing')
     await job.updateProgress(computeProgress('fetching'))
 
-    let totalCreated = 0
-    let totalUpdated = 0
-    let totalFailed = 0
-
-    for (let page = 1; page <= totalPages; page++) {
-      const { performers } = await fetchPerformersPage({ page, perPage: performersPerPage })
-
-      logger.debug({ page, totalPages, fetchedCount: performers.length }, 'Processing performer page')
-
-      const result = await processPerformersPage(
-        performers,
-        job,
-        { current: page, total: totalPages },
-        {
-          updateConcurrency,
-          chunkSize,
-          skipExisting
-        }
-      )
-
-      totalCreated += result.createdCount
-      totalUpdated += result.updatedCount
-      totalFailed += result.failedCount
+    if (totalPages === 0) {
+      await job.updateProgress(computeProgress('completion'))
+      return createEmptyResult()
     }
+
+    const { createdCount, updatedCount, failedCount } = await processAllPages(
+      job,
+      totalPages,
+      performersPerPage,
+      options
+    )
 
     await job.updateProgress(computeProgress('completion'))
 
     return {
       performerCount: totalCount,
-      importedCount: totalCreated + totalUpdated,
-      createdCount: totalCreated,
-      updatedCount: totalUpdated,
-      failedCount: totalFailed
+      importedCount: createdCount + updatedCount,
+      createdCount,
+      updatedCount,
+      failedCount
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

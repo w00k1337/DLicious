@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Performer } from '@/generated/prisma'
 
-import type { ValidatedPerformerUpsertData } from './validation'
+import type { ValidatedPerformerUpsertData } from './transformers'
 
 vi.mock('@/lib/logger', () => ({ default: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } }))
 

@@ -8,10 +8,15 @@ export interface FetchPerformersPageOptions {
   perPage: number
 }
 
+interface FetchPerformersPageResult {
+  performers: StashPerformer[]
+  count: number
+}
+
 export const fetchPerformersPage = async ({
   page,
   perPage
-}: FetchPerformersPageOptions): Promise<{ performers: StashPerformer[]; count: number }> => {
+}: FetchPerformersPageOptions): Promise<FetchPerformersPageResult> => {
   const { data, errors } = await stashGraphQL(FindPerformersQuery, {
     filter: {
       page,
