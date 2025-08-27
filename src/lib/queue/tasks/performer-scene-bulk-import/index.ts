@@ -14,7 +14,10 @@ const getOrCreateQueue = (): Queue<PerformerSceneBulkImportJobData, PerformerSce
   return queueInstance
 }
 
-const performerSceneBulkImportTask: TaskModule<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> = {
+export const performerSceneBulkImportTask: TaskModule<
+  PerformerSceneBulkImportJobData,
+  PerformerSceneBulkImportJobResult
+> = {
   queueName,
   createQueue: getOrCreateQueue,
   createWorker: (): Worker<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> =>
@@ -31,5 +34,3 @@ const performerSceneBulkImportTask: TaskModule<PerformerSceneBulkImportJobData, 
     })
   }
 }
-
-export default performerSceneBulkImportTask

@@ -2128,27 +2128,39 @@ export enum VoteTypeEnum {
   Reject = 'REJECT'
 }
 
-export type FindPerformerQueryVariables = Exact<{
-  id: Scalars['ID']['input']
+export type QueryScenesQueryVariables = Exact<{
+  input: SceneQueryInput
 }>
 
-export type FindPerformerQuery = {
+export type QueryScenesQuery = {
   __typename?: 'Query'
-  findPerformer?: { __typename?: 'Performer'; id: string; name: string } | null
+  queryScenes: {
+    __typename?: 'QueryScenesResultType'
+    scenes: Array<{
+      __typename?: 'Scene'
+      id: string
+      title?: string | null
+      releasedAt?: string | null
+      images: Array<{ __typename?: 'Image'; url: string; width: number; height: number }>
+      urls: Array<{ __typename?: 'URL'; url: string; site: { __typename?: 'Site'; id: string; name: string } }>
+      performers: Array<{ __typename?: 'PerformerAppearance'; performer: { __typename?: 'Performer'; id: string } }>
+      hashes: Array<{ __typename?: 'Fingerprint'; type: FingerprintAlgorithm; value: string }>
+    }>
+  }
 }
 
-export const FindPerformerDocument = {
+export const QueryScenesDocument = {
   kind: 'Document',
   definitions: [
     {
       kind: 'OperationDefinition',
       operation: 'query',
-      name: { kind: 'Name', value: 'FindPerformer' },
+      name: { kind: 'Name', value: 'QueryScenes' },
       variableDefinitions: [
         {
           kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } }
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SceneQueryInput' } } }
         }
       ],
       selectionSet: {
@@ -2156,19 +2168,103 @@ export const FindPerformerDocument = {
         selections: [
           {
             kind: 'Field',
-            name: { kind: 'Name', value: 'findPerformer' },
+            name: { kind: 'Name', value: 'queryScenes' },
             arguments: [
               {
                 kind: 'Argument',
-                name: { kind: 'Name', value: 'id' },
-                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } }
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } }
               }
             ],
             selectionSet: {
               kind: 'SelectionSet',
               selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'scenes' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'releasedAt' },
+                        name: { kind: 'Name', value: 'release_date' }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'images' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'width' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'height' } }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'urls' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'site' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'performers' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'performer' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'hashes' },
+                        name: { kind: 'Name', value: 'fingerprints' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'type' },
+                              name: { kind: 'Name', value: 'algorithm' }
+                            },
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'value' },
+                              name: { kind: 'Name', value: 'hash' }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
               ]
             }
           }
@@ -2176,4 +2272,4 @@ export const FindPerformerDocument = {
       }
     }
   ]
-} as unknown as DocumentNode<FindPerformerQuery, FindPerformerQueryVariables>
+} as unknown as DocumentNode<QueryScenesQuery, QueryScenesQueryVariables>

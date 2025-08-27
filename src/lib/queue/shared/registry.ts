@@ -3,8 +3,8 @@ import { Worker } from 'bullmq'
 import logger from '@/lib/logger'
 
 // Import all task modules directly for better bundling
-import performerSceneBulkImportTask from '../tasks/performer-scene-bulk-import'
-import stashPerformerBulkImportTask from '../tasks/stash-performer-bulk-import'
+import { performerSceneBulkImportTask } from '../tasks/performer-scene-bulk-import'
+import { stashPerformerBulkImportTask } from '../tasks/stash-performer-bulk-import'
 import type { TaskRegistryEntry } from './types'
 
 class TaskRegistry {

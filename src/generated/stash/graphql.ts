@@ -4973,6 +4973,34 @@ export type VideoFileFingerprintArgs = {
 
 export type VisualFile = ImageFile | VideoFile
 
+export type FindScenesQueryVariables = Exact<{
+  sceneFilter?: InputMaybe<SceneFilterType>
+  sceneIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>
+  ids?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>
+  filter?: InputMaybe<FindFilterType>
+}>
+
+export type FindScenesQuery = {
+  __typename?: 'Query'
+  findScenes: {
+    __typename?: 'FindScenesResultType'
+    count: number
+    scenes: Array<{
+      __typename?: 'Scene'
+      id: string
+      title?: string | null
+      releasedAt?: string | null
+      paths: { __typename?: 'ScenePathsType'; screenshot?: string | null }
+      performers: Array<{ __typename?: 'Performer'; id: string }>
+      stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
+      files: Array<{
+        __typename?: 'VideoFile'
+        hashes: Array<{ __typename?: 'Fingerprint'; type: string; value: string }>
+      }>
+    }>
+  }
+}
+
 export type FindPerformersQueryVariables = Exact<{
   filter?: InputMaybe<FindFilterType>
 }>
@@ -4998,6 +5026,150 @@ export type FindPerformersQuery = {
   }
 }
 
+export const FindScenesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'FindScenes' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sceneFilter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'SceneFilterType' } }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sceneIds' } },
+          type: {
+            kind: 'ListType',
+            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } }
+          }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } }
+          }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'FindFilterType' } }
+        }
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'findScenes' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scene_filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sceneFilter' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scene_ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sceneIds' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } }
+              }
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'count' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'scenes' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'releasedAt' },
+                        name: { kind: 'Name', value: 'date' }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'paths' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'screenshot' } }]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'performers' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'stashes' },
+                        name: { kind: 'Name', value: 'stash_ids' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'id' },
+                              name: { kind: 'Name', value: 'stash_id' }
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'hashes' },
+                              name: { kind: 'Name', value: 'fingerprints' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'value' } }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+} as unknown as DocumentNode<FindScenesQuery, FindScenesQueryVariables>
 export const FindPerformersDocument = {
   kind: 'Document',
   definitions: [

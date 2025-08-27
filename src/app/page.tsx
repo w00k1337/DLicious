@@ -1,6 +1,6 @@
 import { ReactElement } from 'react'
 
-import stashPerformerBulkImportTask from '@/lib/queue/tasks/stash-performer-bulk-import'
+import { stashPerformerBulkImportTask } from '@/lib/queue/tasks/stash-performer-bulk-import'
 
 const Home = async (): Promise<ReactElement> => {
   await stashPerformerBulkImportTask.trigger({})

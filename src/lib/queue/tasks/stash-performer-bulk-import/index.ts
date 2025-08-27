@@ -15,7 +15,10 @@ const getOrCreateQueue = (): Queue<StashPerformerBulkImportJobData, StashPerform
   return queueInstance
 }
 
-const stashPerformerBulkImportTask: TaskModule<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> = {
+export const stashPerformerBulkImportTask: TaskModule<
+  StashPerformerBulkImportJobData,
+  StashPerformerBulkImportJobResult
+> = {
   queueName,
   createQueue: getOrCreateQueue,
   createWorker: (): Worker<StashPerformerBulkImportJobData, StashPerformerBulkImportJobResult> =>
@@ -35,5 +38,3 @@ const stashPerformerBulkImportTask: TaskModule<StashPerformerBulkImportJobData, 
     })
   }
 }
-
-export default stashPerformerBulkImportTask

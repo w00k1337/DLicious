@@ -14,11 +14,11 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-  '\n  query FindPerformer($id: ID!) {\n    findPerformer(id: $id) {\n      id\n      name\n    }\n  }\n': typeof types.FindPerformerDocument
+  '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      scenes {\n        id\n        title\n        releasedAt: release_date\n        images {\n          url\n          width\n          height\n        }\n        urls {\n          url\n          site {\n            id\n            name\n          }\n        }\n        performers {\n          performer {\n            id\n          }\n        }\n        hashes: fingerprints {\n          type: algorithm\n          value: hash\n        }\n      }\n    }\n  }\n': typeof types.QueryScenesDocument
 }
 const documents: Documents = {
-  '\n  query FindPerformer($id: ID!) {\n    findPerformer(id: $id) {\n      id\n      name\n    }\n  }\n':
-    types.FindPerformerDocument
+  '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      scenes {\n        id\n        title\n        releasedAt: release_date\n        images {\n          url\n          width\n          height\n        }\n        urls {\n          url\n          site {\n            id\n            name\n          }\n        }\n        performers {\n          performer {\n            id\n          }\n        }\n        hashes: fingerprints {\n          type: algorithm\n          value: hash\n        }\n      }\n    }\n  }\n':
+    types.QueryScenesDocument
 }
 
 /**
@@ -39,8 +39,8 @@ export function graphql(source: string): unknown
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: '\n  query FindPerformer($id: ID!) {\n    findPerformer(id: $id) {\n      id\n      name\n    }\n  }\n'
-): (typeof documents)['\n  query FindPerformer($id: ID!) {\n    findPerformer(id: $id) {\n      id\n      name\n    }\n  }\n']
+  source: '\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      scenes {\n        id\n        title\n        releasedAt: release_date\n        images {\n          url\n          width\n          height\n        }\n        urls {\n          url\n          site {\n            id\n            name\n          }\n        }\n        performers {\n          performer {\n            id\n          }\n        }\n        hashes: fingerprints {\n          type: algorithm\n          value: hash\n        }\n      }\n    }\n  }\n'
+): (typeof documents)['\n  query QueryScenes($input: SceneQueryInput!) {\n    queryScenes(input: $input) {\n      scenes {\n        id\n        title\n        releasedAt: release_date\n        images {\n          url\n          width\n          height\n        }\n        urls {\n          url\n          site {\n            id\n            name\n          }\n        }\n        performers {\n          performer {\n            id\n          }\n        }\n        hashes: fingerprints {\n          type: algorithm\n          value: hash\n        }\n      }\n    }\n  }\n']
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {}

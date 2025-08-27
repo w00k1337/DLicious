@@ -14,9 +14,12 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+  '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      count\n      scenes {\n        id\n        title\n        releasedAt: date\n        paths {\n          screenshot\n        }\n        performers {\n          id\n        }\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n        files {\n          hashes: fingerprints {\n            type\n            value\n          }\n        }\n      }\n    }\n  }\n': typeof types.FindScenesDocument
   '\n  query FindPerformers($filter: FindFilterType) {\n    findPerformers(filter: $filter) {\n      count\n      performers {\n        id\n        name\n        aliases: alias_list\n        imageUrl: image_path\n        country\n        birthdate\n        measurements\n        breastType: fake_tits\n        isFavorite: favorite\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n      }\n    }\n  }\n': typeof types.FindPerformersDocument
 }
 const documents: Documents = {
+  '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      count\n      scenes {\n        id\n        title\n        releasedAt: date\n        paths {\n          screenshot\n        }\n        performers {\n          id\n        }\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n        files {\n          hashes: fingerprints {\n            type\n            value\n          }\n        }\n      }\n    }\n  }\n':
+    types.FindScenesDocument,
   '\n  query FindPerformers($filter: FindFilterType) {\n    findPerformers(filter: $filter) {\n      count\n      performers {\n        id\n        name\n        aliases: alias_list\n        imageUrl: image_path\n        country\n        birthdate\n        measurements\n        breastType: fake_tits\n        isFavorite: favorite\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n      }\n    }\n  }\n':
     types.FindPerformersDocument
 }
@@ -35,6 +38,12 @@ const documents: Documents = {
  */
 export function graphql(source: string): unknown
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: '\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      count\n      scenes {\n        id\n        title\n        releasedAt: date\n        paths {\n          screenshot\n        }\n        performers {\n          id\n        }\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n        files {\n          hashes: fingerprints {\n            type\n            value\n          }\n        }\n      }\n    }\n  }\n'
+): (typeof documents)['\n  query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {\n    findScenes(scene_filter: $sceneFilter, scene_ids: $sceneIds, ids: $ids, filter: $filter) {\n      count\n      scenes {\n        id\n        title\n        releasedAt: date\n        paths {\n          screenshot\n        }\n        performers {\n          id\n        }\n        stashes: stash_ids {\n          id: stash_id\n          endpoint\n        }\n        files {\n          hashes: fingerprints {\n            type\n            value\n          }\n        }\n      }\n    }\n  }\n']
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
