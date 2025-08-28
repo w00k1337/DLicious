@@ -1,178 +1,226 @@
-import type { Hash, Performer, Scene } from '@/generated/prisma'
-import logger from '@/lib/logger'
+import type { HashType } from '@/generated/prisma'
+import { Prisma } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
 
-import type { NormalizedScene, SimpleHash } from './types'
+import { DataSource } from './types'
 
-export interface SaveSceneResult {
-  scene: Scene
-  created: boolean
-  linkedPerformers: Performer[]
-  unlinkedPerformerIds: Set<string>
+export interface ExternalSceneIds {
+  stashIds: number[]
+  stashDbIds: string[]
+  thePornDbIds: string[]
 }
 
-export const findOrCreateHash = async (hash: SimpleHash): Promise<Hash> => {
-  const existingHash = await prisma.hash.findFirst({
-    where: { type: hash.type, value: hash.value }
+export interface SceneTopLevelData {
+  stashId: number | null
+  stashDbId: string | null
+  thePornDbId: string | null
+  title: string | null
+  imageUrl: string | null
+  releasedAt: Date | null
+}
+
+export interface SimpleHashPair {
+  type: HashType
+  value: string
+}
+
+const keyForHash = (hash: SimpleHashPair): string => `${hash.type}:${hash.value}`
+const keyForExt = (kind: DataSource, value: string | number): string => `${kind}:${String(value)}`
+
+export const ensureHashes = async (hashes: SimpleHashPair[]): Promise<Map<string, number>> => {
+  if (hashes.length === 0) return new Map()
+
+  const unique = Array.from(new Map(hashes.map(h => [keyForHash(h), h])).values())
+  const map = new Map<string, number>()
+
+  // Insert and fetch IDs in one roundtrip using a CTE per chunk.
+  const CHUNK_SIZE = 4000
+  for (let i = 0; i < unique.length; i += CHUNK_SIZE) {
+    const slice = unique.slice(i, i + CHUNK_SIZE)
+    const values = slice.map(h => Prisma.sql`(CAST(${h.type} AS "public"."HashType"), ${h.value})`)
+    const rows = await prisma.$queryRaw<{ id: number; type: HashType; value: string }[]>`
+      WITH new_rows (type, value) AS (
+        VALUES ${Prisma.join(values)}
+      ),
+      ins AS (
+        INSERT INTO "public"."Hash" ("type", "value", "updatedAt")
+        SELECT type, value, now() FROM new_rows
+        ON CONFLICT ("type", "value") DO NOTHING
+        RETURNING id, type, value
+      )
+      SELECT id, type, value FROM ins
+      UNION
+      SELECT h.id, h.type, h.value
+      FROM "public"."Hash" h
+      JOIN new_rows nr ON nr.type = h.type AND nr.value = h.value
+    `
+    for (const r of rows) map.set(keyForHash({ type: r.type, value: r.value }), r.id)
+  }
+
+  return map
+}
+
+// Read-only variant: returns existing hash ids for given pairs without inserting
+export const findExistingHashes = async (hashes: SimpleHashPair[]): Promise<Map<string, number>> => {
+  if (hashes.length === 0) return new Map()
+  const unique = Array.from(new Map(hashes.map(h => [keyForHash(h), h])).values())
+  const or: Prisma.HashWhereInput[] = unique.map(h => ({ type: h.type, value: h.value }))
+  const found = await prisma.hash.findMany({ where: { OR: or }, select: { id: true, type: true, value: true } })
+  const map = new Map<string, number>()
+  for (const h of found) map.set(keyForHash({ type: h.type, value: h.value }), h.id)
+  return map
+}
+
+export const findScenesByExt = async (ext: ExternalSceneIds): Promise<Map<string, number>> => {
+  const or: Prisma.SceneWhereInput[] = []
+  if (ext.stashIds.length) or.push({ stashId: { in: ext.stashIds } })
+  if (ext.stashDbIds.length) or.push({ stashDbId: { in: ext.stashDbIds } })
+  if (ext.thePornDbIds.length) or.push({ thePornDbId: { in: ext.thePornDbIds } })
+
+  if (!or.length) return new Map()
+
+  const scenes = await prisma.scene.findMany({
+    where: { OR: or },
+    select: { id: true, stashId: true, stashDbId: true, thePornDbId: true }
   })
 
-  if (existingHash) return existingHash
-
-  return await prisma.hash.create({ data: hash })
+  const map = new Map<string, number>()
+  for (const s of scenes) {
+    if (s.stashId != null) map.set(keyForExt('stash', s.stashId), s.id)
+    if (s.stashDbId) map.set(keyForExt('stashDb', s.stashDbId), s.id)
+    if (s.thePornDbId) map.set(keyForExt('thePornDb', s.thePornDbId), s.id)
+  }
+  return map
 }
 
-const findExistingScene = async (scene: NormalizedScene): Promise<Scene | null> => {
-  const conditions = [
-    scene.stashId ? { stashId: scene.stashId } : null,
-    scene.stashDbId ? { stashDbId: scene.stashDbId } : null,
-    scene.thePornDbId ? { thePornDbId: scene.thePornDbId } : null
-  ].filter(Boolean)
-
-  if (conditions.length === 0) return null
-
-  return await prisma.scene.findFirst({ where: { OR: conditions } })
+export const createScenes = async (rows: SceneTopLevelData[]): Promise<number> => {
+  if (rows.length === 0) return 0
+  const data: Prisma.SceneCreateManyInput[] = rows.map(r => {
+    const row: Prisma.SceneCreateManyInput = {}
+    if (r.stashId != null) row.stashId = r.stashId
+    if (r.stashDbId != null) row.stashDbId = r.stashDbId
+    if (r.thePornDbId != null) row.thePornDbId = r.thePornDbId
+    if (r.title != null) row.title = r.title
+    if (r.imageUrl != null) row.imageUrl = r.imageUrl
+    if (r.releasedAt != null) row.releasedAt = r.releasedAt
+    return row
+  })
+  const result = await prisma.scene.createMany({ data, skipDuplicates: true })
+  return result.count
 }
 
-interface FindExistingPerformersResult {
-  found: Performer[]
-  missing: Set<string>
+export const findSceneIdsByHashIds = async (hashIds: number[]): Promise<Map<number, Set<number>>> => {
+  if (hashIds.length === 0) return new Map()
+  const links = await prisma.sceneHash.findMany({
+    where: { hashId: { in: hashIds } },
+    select: { sceneId: true, hashId: true }
+  })
+  const map = new Map<number, Set<number>>()
+  for (const l of links) {
+    const set = map.get(l.hashId) ?? new Set<number>()
+    set.add(l.sceneId)
+    map.set(l.hashId, set)
+  }
+  return map
 }
 
-const findExistingPerformers = async (performerIds: Set<string>): Promise<FindExistingPerformersResult> => {
-  if (performerIds.size === 0) return { found: [], missing: new Set() }
+export const createSceneHashLinks = async (pairs: { sceneId: number; hashId: number }[]): Promise<number> => {
+  if (pairs.length === 0) return 0
+  // Deduplicate to avoid unique constraint conflicts (we also use skipDuplicates)
+  const unique = Array.from(new Map(pairs.map(p => [`${String(p.sceneId)}:${String(p.hashId)}`, p])).values())
+  const result = await prisma.sceneHash.createMany({ data: unique, skipDuplicates: true })
+  return result.count
+}
 
-  const performerIdArray = Array.from(performerIds)
+export interface ExternalPerformerIds {
+  stashIds: number[]
+  stashDbIds: string[]
+  thePornDbIds: string[]
+}
+
+export const resolvePerformerIds = async (
+  ids: ExternalPerformerIds
+): Promise<{ stash: Map<number, number>; stashDb: Map<string, number>; thePornDb: Map<string, number> }> => {
+  const or: Prisma.PerformerWhereInput[] = []
+  if (ids.stashIds.length) or.push({ stashId: { in: ids.stashIds } })
+  if (ids.stashDbIds.length) or.push({ stashDbId: { in: ids.stashDbIds } })
+  if (ids.thePornDbIds.length) or.push({ thePornDbId: { in: ids.thePornDbIds } })
+
+  const mapStash = new Map<number, number>()
+  const mapStashDb = new Map<string, number>()
+  const mapTpdb = new Map<string, number>()
+
+  if (!or.length) return { stash: mapStash, stashDb: mapStashDb, thePornDb: mapTpdb }
 
   const performers = await prisma.performer.findMany({
-    where: {
-      OR: [
-        { stashId: { in: performerIdArray.map(id => parseInt(id, 10)).filter(id => !isNaN(id)) } },
-        { stashDbId: { in: performerIdArray } },
-        { thePornDbId: { in: performerIdArray } }
-      ]
-    }
+    where: { OR: or },
+    select: { id: true, stashId: true, stashDbId: true, thePornDbId: true }
   })
 
-  const foundIds = new Set([
-    ...performers
-      .map(p => p.stashId)
-      .filter(Boolean)
-      .map(String),
-    ...performers.map(p => p.stashDbId).filter(Boolean),
-    ...performers.map(p => p.thePornDbId).filter(Boolean)
-  ])
+  for (const p of performers) {
+    mapStash.set(p.stashId, p.id)
+    if (p.stashDbId != null) mapStashDb.set(p.stashDbId, p.id)
+    if (p.thePornDbId != null) mapTpdb.set(p.thePornDbId, p.id)
+  }
 
-  const missing = performerIds.difference(foundIds)
-
-  return { found: performers, missing }
+  return { stash: mapStash, stashDb: mapStashDb, thePornDb: mapTpdb }
 }
 
-const upsertSceneHashes = async (sceneId: number, hashes: Set<SimpleHash>): Promise<void> => {
-  if (hashes.size === 0) return
+export const connectPerformers = async (batch: { sceneId: number; performerIds: number[] }[]): Promise<number> => {
+  if (batch.length === 0) return 0
 
-  const hashRecords = await Promise.all(Array.from(hashes).map(hash => findOrCreateHash(hash)))
-
-  await prisma.scene.update({
-    where: { id: sceneId },
-    data: {
-      sceneHashes: {
-        deleteMany: {},
-        create: hashRecords.map(hash => ({
-          hashId: hash.id
-        }))
-      }
+  // Flatten to unique (performerId, sceneId) pairs to avoid duplicates
+  const pairMap = new Map<string, { performerId: number; sceneId: number }>()
+  for (const item of batch) {
+    for (const pid of item.performerIds) {
+      const key = `${String(pid)}:${String(item.sceneId)}`
+      if (!pairMap.has(key)) pairMap.set(key, { performerId: pid, sceneId: item.sceneId })
     }
-  })
+  }
+
+  const pairs = Array.from(pairMap.values())
+  if (pairs.length === 0) return 0
+
+  // Insert in chunks using a single raw INSERT per chunk with ON CONFLICT DO NOTHING
+  // This directly targets the implicit m2m join table `_PerformerToScene` (A=Performer.id, B=Scene.id)
+  const CHUNK_SIZE = 1000
+  let insertedTotal = 0
+
+  for (let i = 0; i < pairs.length; i += CHUNK_SIZE) {
+    const slice = pairs.slice(i, i + CHUNK_SIZE)
+    // Use parameterized SQL to avoid SQL injection and benefit from query caching
+    const values = slice.map(p => Prisma.sql`(${p.performerId}, ${p.sceneId})`)
+
+    const result = await prisma.$executeRaw`
+      INSERT INTO "public"."_PerformerToScene" ("A", "B")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT DO NOTHING
+    `
+    // $executeRaw returns the number of rows affected for supported providers (including PostgreSQL)
+    insertedTotal += result
+  }
+
+  return insertedTotal
 }
 
-const linkSceneToPerformers = async (sceneId: number, performers: Performer[]): Promise<void> => {
-  if (performers.length === 0) return
-
-  await prisma.scene.update({
-    where: { id: sceneId },
-    data: {
-      performers: {
-        connect: performers.map(p => ({ id: p.id }))
-      }
-    }
-  })
-}
-
-export const saveNormalizedScene = async (scene: NormalizedScene): Promise<SaveSceneResult> => {
-  return await prisma.$transaction(async tx => {
-    const existingScene = await findExistingScene(scene)
-    const { found: linkedPerformers, missing: unlinkedPerformerIds } = await findExistingPerformers(scene.performerIds)
-
-    if (existingScene) {
-      const updatedScene = await tx.scene.update({
-        where: { id: existingScene.id },
-        data: {
-          stashId: scene.stashId,
-          stashDbId: scene.stashDbId,
-          thePornDbId: scene.thePornDbId,
-          title: scene.title,
-          imageUrl: scene.imageUrl,
-          releasedAt: scene.releasedAt
-        }
-      })
-
-      // Update hashes
-      await upsertSceneHashes(updatedScene.id, scene.hashes)
-
-      // Link performers
-      await linkSceneToPerformers(updatedScene.id, linkedPerformers)
-
-      logger.debug(
-        {
-          sceneId: updatedScene.id,
-          source: scene.source,
-          linkedPerformers: linkedPerformers.length,
-          unlinkedPerformerIds: Array.from(unlinkedPerformerIds)
-        },
-        'Updated existing scene'
-      )
-
-      return {
-        scene: updatedScene,
-        created: false,
-        linkedPerformers,
-        unlinkedPerformerIds
-      }
-    } else {
-      // Create new scene
-      const newScene = await tx.scene.create({
-        data: {
-          stashId: scene.stashId,
-          stashDbId: scene.stashDbId,
-          thePornDbId: scene.thePornDbId,
-          title: scene.title,
-          imageUrl: scene.imageUrl,
-          releasedAt: scene.releasedAt
-        }
-      })
-
-      // Create hashes
-      await upsertSceneHashes(newScene.id, scene.hashes)
-
-      // Link performers
-      await linkSceneToPerformers(newScene.id, linkedPerformers)
-
-      logger.debug(
-        {
-          sceneId: newScene.id,
-          source: scene.source,
-          linkedPerformers: linkedPerformers.length,
-          unlinkedPerformerIds: unlinkedPerformerIds.size
-        },
-        'Created new scene'
-      )
-
-      return {
-        scene: newScene,
-        created: true,
-        linkedPerformers,
-        unlinkedPerformerIds
-      }
-    }
-  })
+export const updateScenesIfMissing = async (
+  updates: { id: number; title?: string | null; imageUrl?: string | null; releasedAt?: Date | null }[],
+  concurrency = 10
+): Promise<number> => {
+  if (updates.length === 0) return 0
+  const chunkSize = Math.max(1, concurrency)
+  let total = 0
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const slice = updates.slice(i, i + chunkSize)
+    const ops = slice.map(u => {
+      const data: Prisma.SceneUpdateInput = {}
+      if (u.title != null) data.title = u.title
+      if (u.imageUrl != null) data.imageUrl = u.imageUrl
+      if (u.releasedAt != null) data.releasedAt = u.releasedAt
+      return prisma.scene.update({ where: { id: u.id }, data })
+    })
+    await prisma.$transaction(ops)
+    total += ops.length
+  }
+  return total
 }

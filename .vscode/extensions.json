@@ -4,6 +4,7 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "mikestead.dotenv",
+    "openai.chatgpt",
     "prisma.prisma",
     "stylelint.vscode-stylelint",
     "vivaxy.vscode-conventional-commits"

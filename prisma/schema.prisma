@@ -73,11 +73,11 @@ model Scene {
   stashId     Int?        @unique
   stashDbId   String?     @unique
   thePornDbId String?     @unique
-  title       String
+  title       String?     @default("Untitled")
   imageUrl    String?
   sceneHashes SceneHash[]
   performers  Performer[]
-  releasedAt  DateTime
+  releasedAt  DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -103,4 +103,5 @@ model SceneHash {
   updatedAt DateTime @updatedAt
 
   @@unique([sceneId, hashId])
+  @@index([hashId])
 }

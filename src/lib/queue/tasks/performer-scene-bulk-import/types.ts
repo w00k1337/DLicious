@@ -2,6 +2,12 @@ import type { Hash, Scene } from '@/generated/prisma'
 
 export interface PerformerSceneBulkImportJobData {
   performerId: number
+  // Processing configuration options
+  scenesPerPage?: number
+  chunkSize?: number
+  updateConcurrency?: number
+  hashBatchSize?: number
+  maxPages?: number
 }
 
 export interface DataSourceResult {

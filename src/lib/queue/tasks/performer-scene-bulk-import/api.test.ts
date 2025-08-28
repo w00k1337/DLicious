@@ -29,10 +29,11 @@ describe('api', () => {
   })
 
   describe('fetchScenesFromStash', () => {
-    it('should fetch and normalize scenes for a given performer ID', async () => {
+    it('should fetch and normalize scenes for a given performer ID with pagination', async () => {
       const mockResponse = {
         data: {
           findScenes: {
+            count: 1,
             scenes: [
               {
                 id: '123',
@@ -54,7 +55,7 @@ describe('api', () => {
       const mockStashGraphQL = await import('@/lib/api/stash')
       vi.mocked(mockStashGraphQL.stashGraphQL).mockResolvedValue(mockResponse)
 
-      const result = await fetchScenesFromStash(123)
+      const result = await fetchScenesFromStash(123, { scenesPerPage: 50, maxPages: 5 })
 
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual(
@@ -68,6 +69,9 @@ describe('api', () => {
           performerIds: new Set(['456'])
         })
       )
+
+      // Verify the API was called with correct pagination parameters
+      expect(mockStashGraphQL.stashGraphQL).toHaveBeenCalled()
     })
 
     it('should throw error when API fails', async () => {

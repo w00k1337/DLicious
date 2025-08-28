@@ -13,12 +13,21 @@ vi.mock('./api', () => ({
 }))
 
 vi.mock('./normalizers', () => ({
-  deduplicateScenes: vi.fn(),
+  // Default to identity for these unit tests
+  deduplicateScenes: vi.fn((scenes: unknown) => scenes),
   prioritizeScenes: vi.fn()
 }))
 
 vi.mock('./database', () => ({
-  saveNormalizedScene: vi.fn()
+  // These functions are used by the processor to compute duplicates and links.
+  // For unit tests here, they can safely return empty maps.
+  findScenesByExt: vi.fn().mockResolvedValue(new Map()),
+  findExistingHashes: vi.fn().mockResolvedValue(new Map()),
+  findSceneIdsByHashIds: vi.fn().mockResolvedValue(new Map())
+}))
+
+vi.mock('./chunked-processor', () => ({
+  processSceneBulkInChunks: vi.fn()
 }))
 
 vi.mock('@/lib/prisma', () => ({
@@ -47,8 +56,9 @@ describe('processor', () => {
     it('should process scenes from all sources and save them', async () => {
       const job = {
         id: 'test-job-1',
-        data: { performerId: 1 }
-      } as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
+        data: { performerId: 1 },
+        updateProgress: vi.fn().mockResolvedValue(undefined)
+      } as unknown as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
 
       const stashScenes: NormalizedScene[] = [
         {
@@ -124,30 +134,20 @@ describe('processor', () => {
 
       const mockPrisma = await import('@/lib/prisma')
       const mockApi = await import('./api')
-      const mockNormalizers = await import('./normalizers')
-      const mockDatabase = await import('./database')
+      const mockChunkedProcessor = await import('./chunked-processor')
 
       vi.mocked(mockPrisma.default.performer.findUnique).mockResolvedValue(performer)
       vi.mocked(mockApi.fetchScenesFromStash).mockResolvedValue(stashScenes)
       vi.mocked(mockApi.fetchScenesFromStashDb).mockResolvedValue(stashDbScenes)
       vi.mocked(mockApi.fetchScenesFromThePornDb).mockResolvedValue(thePornDbScenes)
-      vi.mocked(mockNormalizers.deduplicateScenes).mockReturnValue(deduplicatedScenes)
-      vi.mocked(mockNormalizers.prioritizeScenes).mockReturnValue(deduplicatedScenes)
-      vi.mocked(mockDatabase.saveNormalizedScene).mockResolvedValue({
-        scene: {
-          id: 1,
-          title: 'Scene 1',
-          stashId: 1,
-          stashDbId: null,
-          thePornDbId: null,
-          imageUrl: null,
-          releasedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        created: true,
-        linkedPerformers: [],
-        unlinkedPerformerIds: new Set()
+      vi.mocked(mockChunkedProcessor.processSceneBulkInChunks).mockResolvedValue({
+        totalFetched: 3,
+        totalProcessed: 3,
+        totalCreated: 3,
+        totalUpdated: 0,
+        totalLinkedPerformers: 3,
+        totalUnlinkedPerformerIds: new Set(),
+        duplicatesRemoved: 0
       })
 
       const result = await processPerformerSceneBulkImport(job)
@@ -156,12 +156,14 @@ describe('processor', () => {
         where: { id: 1 },
         select: { id: true, stashId: true, stashDbId: true, thePornDbId: true, name: true }
       })
-      expect(mockApi.fetchScenesFromStash).toHaveBeenCalledWith(123)
-      expect(mockApi.fetchScenesFromStashDb).toHaveBeenCalledWith('stashdb-456')
-      expect(mockApi.fetchScenesFromThePornDb).toHaveBeenCalledWith('tpdb-789')
-      expect(mockNormalizers.deduplicateScenes).toHaveBeenCalled()
-      expect(mockNormalizers.prioritizeScenes).toHaveBeenCalled()
-      expect(mockDatabase.saveNormalizedScene).toHaveBeenCalledTimes(3)
+      expect(mockApi.fetchScenesFromStash).toHaveBeenCalledWith(123, expect.any(Object))
+      expect(mockApi.fetchScenesFromStashDb).toHaveBeenCalledWith('stashdb-456', expect.any(Object))
+      expect(mockApi.fetchScenesFromThePornDb).toHaveBeenCalledWith('tpdb-789', expect.any(Object))
+      expect(mockChunkedProcessor.processSceneBulkInChunks).toHaveBeenCalledWith(
+        job,
+        deduplicatedScenes,
+        expect.any(Object)
+      )
 
       expect(result.summary.fetchedCount).toBe(3)
       expect(result.summary.importedCount).toBe(3)
@@ -171,8 +173,9 @@ describe('processor', () => {
     it('should handle partial failures gracefully', async () => {
       const job = {
         id: 'test-job-2',
-        data: { performerId: 2 }
-      } as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
+        data: { performerId: 2 },
+        updateProgress: vi.fn().mockResolvedValue(undefined)
+      } as unknown as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
 
       const stashScenes: NormalizedScene[] = [
         {
@@ -218,30 +221,20 @@ describe('processor', () => {
 
       const mockPrisma = await import('@/lib/prisma')
       const mockApi = await import('./api')
-      const mockNormalizers = await import('./normalizers')
-      const mockDatabase = await import('./database')
+      const mockChunkedProcessor = await import('./chunked-processor')
 
       vi.mocked(mockPrisma.default.performer.findUnique).mockResolvedValue(performer)
       vi.mocked(mockApi.fetchScenesFromStash).mockResolvedValue(stashScenes)
       vi.mocked(mockApi.fetchScenesFromStashDb).mockResolvedValue([])
       vi.mocked(mockApi.fetchScenesFromThePornDb).mockRejectedValue(new Error('API Error'))
-      vi.mocked(mockNormalizers.deduplicateScenes).mockReturnValue(stashScenes)
-      vi.mocked(mockNormalizers.prioritizeScenes).mockReturnValue(stashScenes)
-      vi.mocked(mockDatabase.saveNormalizedScene).mockResolvedValue({
-        scene: {
-          id: 1,
-          title: 'Scene 1',
-          stashId: 1,
-          stashDbId: null,
-          thePornDbId: null,
-          imageUrl: null,
-          releasedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        created: false,
-        linkedPerformers: [],
-        unlinkedPerformerIds: new Set()
+      vi.mocked(mockChunkedProcessor.processSceneBulkInChunks).mockResolvedValue({
+        totalFetched: 1,
+        totalProcessed: 1,
+        totalCreated: 0,
+        totalUpdated: 1,
+        totalLinkedPerformers: 1,
+        totalUnlinkedPerformerIds: new Set(),
+        duplicatesRemoved: 0
       })
 
       const result = await processPerformerSceneBulkImport(job)
@@ -255,8 +248,9 @@ describe('processor', () => {
     it('should return error when performer not found', async () => {
       const job = {
         id: 'test-job-3',
-        data: { performerId: 999 }
-      } as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
+        data: { performerId: 999 },
+        updateProgress: vi.fn().mockResolvedValue(undefined)
+      } as unknown as Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>
 
       const mockPrisma = await import('@/lib/prisma')
       vi.mocked(mockPrisma.default.performer.findUnique).mockResolvedValue(null)
