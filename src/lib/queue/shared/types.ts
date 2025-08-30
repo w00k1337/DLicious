@@ -21,7 +21,12 @@ export interface TaskRegistryEntry<TJobData = unknown, TJobResult = unknown> {
   config?: TaskConfig
 }
 
+export interface TaskDiscoveryError {
+  path: string
+  error: Error
+}
+
 export interface TaskDiscoveryResult {
   tasks: Map<string, TaskRegistryEntry>
-  errors: { path: string; error: Error }[]
+  errors: TaskDiscoveryError[]
 }

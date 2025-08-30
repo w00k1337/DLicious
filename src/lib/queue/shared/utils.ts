@@ -3,17 +3,18 @@ import type { JobsOptions, Worker } from 'bullmq'
 import { taskRegistry } from './registry'
 import type { TaskRegistryEntry } from './types'
 
+interface InitializeQueueSystemResult {
+  taskCount: number
+  workers: Worker[]
+}
+
 /**
  * Initialize the task registry and start all workers
  * Call this once during application startup
  */
-export const initializeQueueSystem = (): {
-  taskCount: number
-  workers: Worker[]
-} => {
+export const initializeQueueSystem = (): InitializeQueueSystemResult => {
   taskRegistry.initialize()
 
-  // Start all workers
   const workers = taskRegistry.getWorkers()
 
   return {
@@ -52,6 +53,9 @@ export const triggerTask = async <TJobData = unknown, TJobResult = unknown>(
   return task.module.trigger(data, options)
 }
 
+/**
+ * Chunk an array into smaller arrays
+ */
 export const chunk = <T>(arr: T[], size: number): T[][] => {
   const chunks: T[][] = []
   for (let i = 0; i < arr.length; i += size) {

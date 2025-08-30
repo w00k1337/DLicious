@@ -27,6 +27,9 @@ export interface SimpleHashPair {
 const keyForHash = (hash: SimpleHashPair): string => `${hash.type}:${hash.value}`
 const keyForExt = (kind: DataSource, value: string | number): string => `${kind}:${String(value)}`
 
+// Safe batch size for PostgreSQL bind variables limit (32,767)
+const HASH_QUERY_BATCH_SIZE = 10000
+
 export const ensureHashes = async (hashes: SimpleHashPair[]): Promise<Map<string, number>> => {
   if (hashes.length === 0) return new Map()
 
@@ -64,10 +67,16 @@ export const ensureHashes = async (hashes: SimpleHashPair[]): Promise<Map<string
 export const findExistingHashes = async (hashes: SimpleHashPair[]): Promise<Map<string, number>> => {
   if (hashes.length === 0) return new Map()
   const unique = Array.from(new Map(hashes.map(h => [keyForHash(h), h])).values())
-  const or: Prisma.HashWhereInput[] = unique.map(h => ({ type: h.type, value: h.value }))
-  const found = await prisma.hash.findMany({ where: { OR: or }, select: { id: true, type: true, value: true } })
   const map = new Map<string, number>()
-  for (const h of found) map.set(keyForHash({ type: h.type, value: h.value }), h.id)
+
+  // Process in chunks to avoid bind variable limits
+  for (let i = 0; i < unique.length; i += HASH_QUERY_BATCH_SIZE) {
+    const chunk = unique.slice(i, i + HASH_QUERY_BATCH_SIZE)
+    const or: Prisma.HashWhereInput[] = chunk.map(h => ({ type: h.type, value: h.value }))
+    const found = await prisma.hash.findMany({ where: { OR: or }, select: { id: true, type: true, value: true } })
+    for (const h of found) map.set(keyForHash({ type: h.type, value: h.value }), h.id)
+  }
+
   return map
 }
 
@@ -111,16 +120,22 @@ export const createScenes = async (rows: SceneTopLevelData[]): Promise<number> =
 
 export const findSceneIdsByHashIds = async (hashIds: number[]): Promise<Map<number, Set<number>>> => {
   if (hashIds.length === 0) return new Map()
-  const links = await prisma.sceneHash.findMany({
-    where: { hashId: { in: hashIds } },
-    select: { sceneId: true, hashId: true }
-  })
   const map = new Map<number, Set<number>>()
-  for (const l of links) {
-    const set = map.get(l.hashId) ?? new Set<number>()
-    set.add(l.sceneId)
-    map.set(l.hashId, set)
+
+  // Process in chunks to avoid bind variable limits
+  for (let i = 0; i < hashIds.length; i += HASH_QUERY_BATCH_SIZE) {
+    const chunk = hashIds.slice(i, i + HASH_QUERY_BATCH_SIZE)
+    const links = await prisma.sceneHash.findMany({
+      where: { hashId: { in: chunk } },
+      select: { sceneId: true, hashId: true }
+    })
+    for (const l of links) {
+      const set = map.get(l.hashId) ?? new Set<number>()
+      set.add(l.sceneId)
+      map.set(l.hashId, set)
+    }
   }
+
   return map
 }
 

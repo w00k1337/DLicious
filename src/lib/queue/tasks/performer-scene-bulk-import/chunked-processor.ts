@@ -3,6 +3,7 @@ import type { Job } from 'bullmq'
 import type { HashType } from '@/generated/prisma'
 import logger from '@/lib/logger'
 
+import { chunk as chunkArray } from '../../shared/utils'
 import {
   connectPerformers,
   createSceneHashLinks,
@@ -12,6 +13,7 @@ import {
   findScenesByExt,
   resolvePerformerIds
 } from './database'
+import ProgressReporter from './progress-reporter'
 import type {
   DataSource,
   NormalizedScene,
@@ -23,12 +25,6 @@ import type {
 interface ProcessingOptions {
   chunkSize: number
   hashBatchSize: number
-}
-
-const chunkArray = <T>(items: T[], size: number): T[][] => {
-  const chunks: T[][] = []
-  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size))
-  return chunks
 }
 
 const toPairs = (hashes: Set<SimpleHash>): { type: HashType; value: string }[] => Array.from(hashes)
@@ -58,6 +54,7 @@ export const processSceneBulkInChunks = async (
   const sceneChunks = chunkArray(scenes, Math.max(1, chunkSize))
   const createdBySource: Record<DataSource, number> = { stash: 0, stashDb: 0, thePornDb: 0 }
   const updatedBySource: Record<DataSource, number> = { stash: 0, stashDb: 0, thePornDb: 0 }
+  const reporter = new ProgressReporter(job, 10, 100)
 
   for (let index = 0; index < sceneChunks.length; index++) {
     const chunk = sceneChunks[index]
@@ -308,7 +305,7 @@ export const processSceneBulkInChunks = async (
         'Chunk step completed'
       )
 
-      await job.updateProgress(Math.round(((index + 1) / sceneChunks.length) * 100))
+      await reporter.step(index + 1, sceneChunks.length)
     } catch (error) {
       logger.error(
         { err: error instanceof Error ? error.message : error, chunkIndex: index },

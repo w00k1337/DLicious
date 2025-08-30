@@ -7,6 +7,17 @@ import logger from '@/lib/logger'
 
 import type { StashPerformer } from './types'
 
+// Band size constants
+const EU_BAND_SIZE_MIN = 60
+const EU_BAND_SIZE_MAX = 105
+const EU_BAND_SIZE_STEP = 5
+const US_BAND_SIZE_MIN = 28
+const US_BAND_SIZE_MAX = 46
+const US_BAND_SIZE_STEP = 2
+const US_TO_EU_BAND_CONVERSION_BASE = 70
+const US_TO_EU_BAND_CONVERSION_MULTIPLIER = 2.5
+const US_BAND_SIZE_OFFSET = 32
+
 const isoCountryCodes = Object.keys(countryCodes.customList('countryCode', '{countryCode}')).sort() as readonly string[]
 
 const cupSizeSchema = z.enum(Object.values(CupSize) as [CupSize, ...CupSize[]])
@@ -20,9 +31,12 @@ const countryCodeSchema = z
 const europeanBandSizeSchema = z
   .number()
   .int()
-  .min(60, 'Band size must be at least 60')
-  .max(105, 'Band size must be at most 105')
-  .refine(size => size % 5 === 0, 'Band size must be divisible by 5 (European sizing)')
+  .min(EU_BAND_SIZE_MIN, `Band size must be at least ${String(EU_BAND_SIZE_MIN)}`)
+  .max(EU_BAND_SIZE_MAX, `Band size must be at most ${String(EU_BAND_SIZE_MAX)}`)
+  .refine(
+    size => size % EU_BAND_SIZE_STEP === 0,
+    `Band size must be divisible by ${String(EU_BAND_SIZE_STEP)} (European sizing)`
+  )
 
 export const performerUpsertDataSchema = z.object({
   stashId: z.number().int().positive(),
@@ -116,9 +130,14 @@ const usToEuCupSizeMap: Record<string, CupSize> = {
   Z: 'Z'
 } as const
 
-const convertUsBandToEu = (usBand: number): number => Math.round(70 + (usBand - 32) * 2.5)
-const isValidUsBandSize = (band: number): boolean => band >= 28 && band <= 46 && band % 2 === 0
-const isValidEuBandSize = (band: number): boolean => band >= 60 && band <= 105 && band % 5 === 0
+const convertUsBandToEu = (usBand: number): number =>
+  Math.round(US_TO_EU_BAND_CONVERSION_BASE + (usBand - US_BAND_SIZE_OFFSET) * US_TO_EU_BAND_CONVERSION_MULTIPLIER)
+
+const isValidUsBandSize = (band: number): boolean =>
+  band >= US_BAND_SIZE_MIN && band <= US_BAND_SIZE_MAX && band % US_BAND_SIZE_STEP === 0
+
+const isValidEuBandSize = (band: number): boolean =>
+  band >= EU_BAND_SIZE_MIN && band <= EU_BAND_SIZE_MAX && band % EU_BAND_SIZE_STEP === 0
 
 export const measurementsSchema = z.string().transform((measurements, ctx) => {
   const match = /^(\d+)([A-Z]+)(?:-|$)/.exec(measurements)
@@ -143,7 +162,7 @@ export const measurementsSchema = z.string().transform((measurements, ctx) => {
   } else {
     ctx.addIssue({
       code: 'custom',
-      message: `Invalid band size: ${String(inputBandSize)}. US sizes must be even (28-46), EU sizes must be divisible by 5 (60-105)`
+      message: `Invalid band size: ${String(inputBandSize)}. US sizes must be even (${String(US_BAND_SIZE_MIN)}-${String(US_BAND_SIZE_MAX)}), EU sizes must be divisible by ${String(EU_BAND_SIZE_STEP)} (${String(EU_BAND_SIZE_MIN)}-${String(EU_BAND_SIZE_MAX)})`
     })
     finalBandSize = null
   }

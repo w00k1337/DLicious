@@ -105,7 +105,6 @@ export const fetchScenesFromStash = async (
   return allScenes
 }
 
-// Fetch paginated scenes from StashDB for a performer
 export const fetchScenesFromStashDb = async (
   performerId: string,
   options: PaginatedFetchOptions = {}

@@ -12,15 +12,26 @@ export interface PerformerSceneBulkImportJobData {
 
 export interface DataSourceResult {
   fetchedCount: number
+  contributedCount: number
   importedCount: number
   failedCount: number
   duplicatesCount: number
+  crossSourceDuplicates: number
   errors?: string[]
+}
+
+export interface JobSummary {
+  fetchedCount: number
+  processedCount: number
+  importedCount: number
+  failedCount: number
+  duplicatesCount: number
+  crossSourceDuplicates: number
 }
 
 export interface PerformerSceneBulkImportJobResult {
   performerId: number
-  summary: Omit<DataSourceResult, 'errors'>
+  summary: JobSummary
   dataSources: {
     stash?: DataSourceResult
     stashDb?: DataSourceResult
