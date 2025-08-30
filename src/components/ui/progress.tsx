@@ -1,15 +1,11 @@
 'use client'
 
 import * as ProgressPrimitive from '@radix-ui/react-progress'
-import { ReactElement } from 'react'
+import { ComponentProps, ReactElement } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const Progress = ({
-  className,
-  value,
-  ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>): ReactElement => (
+const Progress = ({ className, value, ...props }: ComponentProps<typeof ProgressPrimitive.Root>): ReactElement => (
   <ProgressPrimitive.Root
     data-slot="progress"
     className={cn('relative h-2 w-full overflow-hidden rounded-full bg-primary/20', className)}

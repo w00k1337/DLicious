@@ -1,8 +1,8 @@
-import { ReactElement } from 'react'
+import { ComponentProps, ReactElement } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const Input = ({ className, type, ...props }: React.ComponentProps<'input'>): ReactElement => (
+const Input = ({ className, type, ...props }: ComponentProps<'input'>): ReactElement => (
   <input
     type={type}
     data-slot="input"

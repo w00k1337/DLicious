@@ -1,15 +1,15 @@
 'use client'
 
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import { ReactElement } from 'react'
+import { ComponentProps, ReactElement } from 'react'
 
 import { cn } from '@/lib/utils'
 
-const Tabs = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>): ReactElement => (
+const Tabs = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Root>): ReactElement => (
   <TabsPrimitive.Root data-slot="tabs" className={cn('flex flex-col gap-2', className)} {...props} />
 )
 
-const TabsList = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>): ReactElement => (
+const TabsList = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>): ReactElement => (
   <TabsPrimitive.List
     data-slot="tabs-list"
     className={cn(
@@ -20,7 +20,7 @@ const TabsList = ({ className, ...props }: React.ComponentProps<typeof TabsPrimi
   />
 )
 
-const TabsTrigger = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>): ReactElement => (
+const TabsTrigger = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Trigger>): ReactElement => (
   <TabsPrimitive.Trigger
     data-slot="tabs-trigger"
     className={cn(
@@ -31,7 +31,7 @@ const TabsTrigger = ({ className, ...props }: React.ComponentProps<typeof TabsPr
   />
 )
 
-const TabsContent = ({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>): ReactElement => (
+const TabsContent = ({ className, ...props }: ComponentProps<typeof TabsPrimitive.Content>): ReactElement => (
   <TabsPrimitive.Content data-slot="tabs-content" className={cn('flex-1 outline-none', className)} {...props} />
 )
 

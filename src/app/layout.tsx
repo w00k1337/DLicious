@@ -1,7 +1,7 @@
 import './globals.css'
 
 import { Metadata } from 'next'
-import { ReactElement, ReactNode } from 'react'
+import { PropsWithChildren, ReactElement } from 'react'
 
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -10,11 +10,7 @@ export const metadata: Metadata = {
   description: 'Automatically discover and download new scenes from your favorite performers.'
 }
 
-interface RootLayoutProps {
-  children: ReactNode
-}
-
-const RootLayout = ({ children }: RootLayoutProps): ReactElement => {
+const RootLayout = ({ children }: PropsWithChildren): ReactElement => {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>

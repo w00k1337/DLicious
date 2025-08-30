@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { DocumentTypeDecoration } from '@graphql-typed-document-node/core'
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core'
 export type Maybe<T> = T | null
 export type InputMaybe<T> = Maybe<T>
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
@@ -2128,62 +2128,6 @@ export enum VoteTypeEnum {
   Reject = 'REJECT'
 }
 
-export type ImageFieldsFragment = { __typename?: 'Image'; id: string; url: string; width: number; height: number } & {
-  ' $fragmentName'?: 'ImageFieldsFragment'
-}
-
-export type FingerprintFieldsFragment = {
-  __typename?: 'Fingerprint'
-  hash: string
-  algorithm: FingerprintAlgorithm
-  duration: number
-} & { ' $fragmentName'?: 'FingerprintFieldsFragment' }
-
-export type PerformerAppearanceFieldsFragment = {
-  __typename?: 'PerformerAppearance'
-  performer: { __typename?: 'Performer'; id: string; name: string; disambiguation?: string | null }
-} & { ' $fragmentName'?: 'PerformerAppearanceFieldsFragment' }
-
-export type SiteFieldsFragment = { __typename?: 'Site'; id: string; name: string; url?: string | null } & {
-  ' $fragmentName'?: 'SiteFieldsFragment'
-}
-
-export type UrlFieldsFragment = {
-  __typename?: 'URL'
-  url: string
-  site: { __typename?: 'Site' } & { ' $fragmentRefs'?: { SiteFieldsFragment: SiteFieldsFragment } }
-} & { ' $fragmentName'?: 'UrlFieldsFragment' }
-
-export type SceneFieldsFragment = {
-  __typename?: 'Scene'
-  id: string
-  title?: string | null
-  details?: string | null
-  director?: string | null
-  code?: string | null
-  duration?: number | null
-  releasedAt?: string | null
-  images: Array<{ __typename?: 'Image' } & { ' $fragmentRefs'?: { ImageFieldsFragment: ImageFieldsFragment } }>
-  fingerprints: Array<
-    { __typename?: 'Fingerprint' } & { ' $fragmentRefs'?: { FingerprintFieldsFragment: FingerprintFieldsFragment } }
-  >
-  performers: Array<
-    { __typename?: 'PerformerAppearance' } & {
-      ' $fragmentRefs'?: { PerformerAppearanceFieldsFragment: PerformerAppearanceFieldsFragment }
-    }
-  >
-  urls: Array<{ __typename?: 'URL' } & { ' $fragmentRefs'?: { UrlFieldsFragment: UrlFieldsFragment } }>
-} & { ' $fragmentName'?: 'SceneFieldsFragment' }
-
-export type FindSceneQueryVariables = Exact<{
-  id: Scalars['ID']['input']
-}>
-
-export type FindSceneQuery = {
-  __typename?: 'Query'
-  findScene?: ({ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }) | null
-}
-
 export type QueryScenesQueryVariables = Exact<{
   input: SceneQueryInput
 }>
@@ -2192,253 +2136,140 @@ export type QueryScenesQuery = {
   __typename?: 'Query'
   queryScenes: {
     __typename?: 'QueryScenesResultType'
-    count: number
-    scenes: Array<{ __typename?: 'Scene' } & { ' $fragmentRefs'?: { SceneFieldsFragment: SceneFieldsFragment } }>
+    scenes: Array<{
+      __typename?: 'Scene'
+      id: string
+      title?: string | null
+      releasedAt?: string | null
+      images: Array<{ __typename?: 'Image'; url: string; width: number; height: number }>
+      urls: Array<{ __typename?: 'URL'; url: string; site: { __typename?: 'Site'; id: string; name: string } }>
+      performers: Array<{ __typename?: 'PerformerAppearance'; performer: { __typename?: 'Performer'; id: string } }>
+      hashes: Array<{ __typename?: 'Fingerprint'; type: FingerprintAlgorithm; value: string }>
+    }>
   }
 }
 
-export class TypedDocumentString<TResult, TVariables>
-  extends String
-  implements DocumentTypeDecoration<TResult, TVariables>
-{
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>
-  private value: string
-  public __meta__?: Record<string, any> | undefined
-
-  constructor(value: string, __meta__?: Record<string, any> | undefined) {
-    super(value)
-    this.value = value
-    this.__meta__ = __meta__
-  }
-
-  override toString(): string & DocumentTypeDecoration<TResult, TVariables> {
-    return this.value
-  }
-}
-export const ImageFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment ImageFields on Image {
-  id
-  url
-  width
-  height
-}
-    `,
-  { fragmentName: 'ImageFields' }
-) as unknown as TypedDocumentString<ImageFieldsFragment, unknown>
-export const FingerprintFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment FingerprintFields on Fingerprint {
-  hash
-  algorithm
-  duration
-}
-    `,
-  { fragmentName: 'FingerprintFields' }
-) as unknown as TypedDocumentString<FingerprintFieldsFragment, unknown>
-export const PerformerAppearanceFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment PerformerAppearanceFields on PerformerAppearance {
-  performer {
-    id
-    name
-    disambiguation
-  }
-}
-    `,
-  { fragmentName: 'PerformerAppearanceFields' }
-) as unknown as TypedDocumentString<PerformerAppearanceFieldsFragment, unknown>
-export const SiteFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment SiteFields on Site {
-  id
-  name
-  url
-}
-    `,
-  { fragmentName: 'SiteFields' }
-) as unknown as TypedDocumentString<SiteFieldsFragment, unknown>
-export const UrlFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment UrlFields on URL {
-  url
-  site {
-    ...SiteFields
-  }
-}
-    fragment SiteFields on Site {
-  id
-  name
-  url
-}`,
-  { fragmentName: 'UrlFields' }
-) as unknown as TypedDocumentString<UrlFieldsFragment, unknown>
-export const SceneFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment SceneFields on Scene {
-  id
-  title
-  details
-  director
-  code
-  releasedAt: release_date
-  duration
-  images {
-    ...ImageFields
-  }
-  fingerprints {
-    ...FingerprintFields
-  }
-  performers {
-    ...PerformerAppearanceFields
-  }
-  urls {
-    ...UrlFields
-  }
-}
-    fragment ImageFields on Image {
-  id
-  url
-  width
-  height
-}
-fragment FingerprintFields on Fingerprint {
-  hash
-  algorithm
-  duration
-}
-fragment PerformerAppearanceFields on PerformerAppearance {
-  performer {
-    id
-    name
-    disambiguation
-  }
-}
-fragment SiteFields on Site {
-  id
-  name
-  url
-}
-fragment UrlFields on URL {
-  url
-  site {
-    ...SiteFields
-  }
-}`,
-  { fragmentName: 'SceneFields' }
-) as unknown as TypedDocumentString<SceneFieldsFragment, unknown>
-export const FindSceneDocument = new TypedDocumentString(`
-    query FindScene($id: ID!) {
-  findScene(id: $id) {
-    ...SceneFields
-  }
-}
-    fragment ImageFields on Image {
-  id
-  url
-  width
-  height
-}
-fragment FingerprintFields on Fingerprint {
-  hash
-  algorithm
-  duration
-}
-fragment PerformerAppearanceFields on PerformerAppearance {
-  performer {
-    id
-    name
-    disambiguation
-  }
-}
-fragment SiteFields on Site {
-  id
-  name
-  url
-}
-fragment UrlFields on URL {
-  url
-  site {
-    ...SiteFields
-  }
-}
-fragment SceneFields on Scene {
-  id
-  title
-  details
-  director
-  code
-  releasedAt: release_date
-  duration
-  images {
-    ...ImageFields
-  }
-  fingerprints {
-    ...FingerprintFields
-  }
-  performers {
-    ...PerformerAppearanceFields
-  }
-  urls {
-    ...UrlFields
-  }
-}`) as unknown as TypedDocumentString<FindSceneQuery, FindSceneQueryVariables>
-export const QueryScenesDocument = new TypedDocumentString(`
-    query QueryScenes($input: SceneQueryInput!) {
-  queryScenes(input: $input) {
-    count
-    scenes {
-      ...SceneFields
+export const QueryScenesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'QueryScenes' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SceneQueryInput' } } }
+        }
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'queryScenes' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } }
+              }
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'scenes' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'releasedAt' },
+                        name: { kind: 'Name', value: 'release_date' }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'images' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'width' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'height' } }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'urls' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'site' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'performers' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'performer' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'hashes' },
+                        name: { kind: 'Name', value: 'fingerprints' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'type' },
+                              name: { kind: 'Name', value: 'algorithm' }
+                            },
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'value' },
+                              name: { kind: 'Name', value: 'hash' }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
-  }
-}
-    fragment ImageFields on Image {
-  id
-  url
-  width
-  height
-}
-fragment FingerprintFields on Fingerprint {
-  hash
-  algorithm
-  duration
-}
-fragment PerformerAppearanceFields on PerformerAppearance {
-  performer {
-    id
-    name
-    disambiguation
-  }
-}
-fragment SiteFields on Site {
-  id
-  name
-  url
-}
-fragment UrlFields on URL {
-  url
-  site {
-    ...SiteFields
-  }
-}
-fragment SceneFields on Scene {
-  id
-  title
-  details
-  director
-  code
-  releasedAt: release_date
-  duration
-  images {
-    ...ImageFields
-  }
-  fingerprints {
-    ...FingerprintFields
-  }
-  performers {
-    ...PerformerAppearanceFields
-  }
-  urls {
-    ...UrlFields
-  }
-}`) as unknown as TypedDocumentString<QueryScenesQuery, QueryScenesQueryVariables>
+  ]
+} as unknown as DocumentNode<QueryScenesQuery, QueryScenesQueryVariables>

@@ -2,17 +2,21 @@ import logger from '@/lib/logger'
 
 export const register = async (): Promise<void> => {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { stashPerformerImportWorker } = await import('@/lib/queue/jobs/stash-performer-import')
-    const { stashPerformerBulkImportWorker } = await import('@/lib/queue/jobs/stash-performer-bulk-import')
-    const { sceneImportWorker } = await import('@/lib/queue/jobs/scene-import')
-    const { stashPerformerSceneBulkImportWorker } = await import('@/lib/queue/jobs/stash-performer-scene-bulk-import')
+    const { initializeQueueSystem } = await import('@/lib/queue')
 
-    stashPerformerImportWorker.start()
-    sceneImportWorker.start()
+    const { taskCount, workers } = initializeQueueSystem()
 
-    stashPerformerBulkImportWorker.start()
-    stashPerformerSceneBulkImportWorker.start()
+    logger.info({ taskCount, workerCount: workers.length }, 'Queue system initialized')
 
-    logger.info('Background workers initialized')
+    const shutdownHandler = (): void => {
+      logger.info('Shutdown signal received, closing workers...')
+      void Promise.all(workers.map(worker => worker.close())).then(() => {
+        logger.info('All workers closed')
+        process.exit(0)
+      })
+    }
+
+    process.on('SIGTERM', shutdownHandler)
+    process.on('SIGINT', shutdownHandler)
   }
 }

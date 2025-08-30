@@ -1,6 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  // @see https://www.prisma.io/docs/orm/prisma-client/special-fields-and-types/null-and-undefined#strict-undefined-checks-preview-feature
+  previewFeatures = ["strictUndefinedChecks"]
+  output          = "../src/generated/prisma"
 }
 
 datasource db {
@@ -46,9 +48,10 @@ enum HashType {
 }
 
 model Performer {
-  id                String    @id @default(cuid())
+  id                Int       @id @default(autoincrement())
   stashId           Int       @unique
   stashDbId         String?   @unique
+  thePornDbId       String?   @unique
   name              String
   aliases           String[]  @default([])
   imageUrl          String?
@@ -66,25 +69,39 @@ model Performer {
 }
 
 model Scene {
-  id         String      @id @default(cuid())
-  title      String
-  imageUrl   String?
-  releasedAt DateTime
-  stashId    Int?        @unique
-  stashDbId  String?     @unique
-  hashes     Hash[]
-  performers Performer[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          Int         @id @default(autoincrement())
+  stashId     Int?        @unique
+  stashDbId   String?     @unique
+  thePornDbId String?     @unique
+  title       String?     @default("Untitled")
+  imageUrl    String?
+  sceneHashes SceneHash[]
+  performers  Performer[]
+  releasedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Hash {
-  id        String   @id @default(cuid())
-  type      HashType
-  value     String
-  scenes    Scene[]
+  id          Int         @id @default(autoincrement())
+  type        HashType
+  value       String
+  sceneHashes SceneHash[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([type, value])
+}
+
+model SceneHash {
+  id        Int      @id @default(autoincrement())
+  hashId    Int
+  sceneId   Int
+  hash      Hash     @relation(fields: [hashId], references: [id], onDelete: Cascade)
+  scene     Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([type, value])
+  @@unique([sceneId, hashId])
+  @@index([hashId])
 }

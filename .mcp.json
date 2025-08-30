@@ -1,12 +1,12 @@
 {
   "mcpServers": {
+    "postgres": {
+      "command": "bash",
+      "args": ["-lc", "docker run --rm --name postgres-mcp-server -i --env-file .env mcp/postgres \"$DATABASE_URL\""]
+    },
     "redis": {
       "command": "docker",
       "args": ["run", "--rm", "--name", "redis-mcp-server", "-i", "--env-file", ".env", "mcp/redis"]
-    },
-    "prisma": {
-      "command": "npx",
-      "args": ["-y", "prisma", "mcp"]
     }
   }
 }

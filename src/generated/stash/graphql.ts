@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { DocumentTypeDecoration } from '@graphql-typed-document-node/core'
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core'
 export type Maybe<T> = T | null
 export type InputMaybe<T> = Maybe<T>
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] }
@@ -4973,51 +4973,6 @@ export type VideoFileFingerprintArgs = {
 
 export type VisualFile = ImageFile | VideoFile
 
-export type PerformerFieldsFragment = {
-  __typename?: 'Performer'
-  id: string
-  name: string
-  country?: string | null
-  birthdate?: string | null
-  measurements?: string | null
-  aliases: Array<string>
-  imageUrl?: string | null
-  breastType?: string | null
-  isFavorite: boolean
-  stashes: Array<{ __typename?: 'StashID' } & { ' $fragmentRefs'?: { StashFieldsFragment: StashFieldsFragment } }>
-} & { ' $fragmentName'?: 'PerformerFieldsFragment' }
-
-export type StashFieldsFragment = { __typename?: 'StashID'; endpoint: string; id: string } & {
-  ' $fragmentName'?: 'StashFieldsFragment'
-}
-
-export type AllPerformerIdsQueryVariables = Exact<{ [key: string]: never }>
-
-export type AllPerformerIdsQuery = {
-  __typename?: 'Query'
-  allPerformers: Array<{ __typename?: 'Performer'; id: string }>
-}
-
-export type AllPerformersQueryVariables = Exact<{ [key: string]: never }>
-
-export type AllPerformersQuery = {
-  __typename?: 'Query'
-  allPerformers: Array<
-    { __typename?: 'Performer' } & { ' $fragmentRefs'?: { PerformerFieldsFragment: PerformerFieldsFragment } }
-  >
-}
-
-export type FindPerformerQueryVariables = Exact<{
-  id: Scalars['ID']['input']
-}>
-
-export type FindPerformerQuery = {
-  __typename?: 'Query'
-  findPerformer?:
-    | ({ __typename?: 'Performer' } & { ' $fragmentRefs'?: { PerformerFieldsFragment: PerformerFieldsFragment } })
-    | null
-}
-
 export type FindScenesQueryVariables = Exact<{
   sceneFilter?: InputMaybe<SceneFilterType>
   sceneIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>
@@ -5029,175 +4984,278 @@ export type FindScenesQuery = {
   __typename?: 'Query'
   findScenes: {
     __typename?: 'FindScenesResultType'
+    count: number
     scenes: Array<{
       __typename?: 'Scene'
       id: string
       title?: string | null
       releasedAt?: string | null
       paths: { __typename?: 'ScenePathsType'; screenshot?: string | null }
-      stashes: Array<{ __typename?: 'StashID' } & { ' $fragmentRefs'?: { StashFieldsFragment: StashFieldsFragment } }>
+      performers: Array<{ __typename?: 'Performer'; id: string }>
+      stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
       files: Array<{
         __typename?: 'VideoFile'
-        basename: string
-        fingerprints: Array<{ __typename?: 'Fingerprint'; type: string; value: string }>
+        hashes: Array<{ __typename?: 'Fingerprint'; type: string; value: string }>
       }>
-      performers: Array<
-        { __typename?: 'Performer' } & { ' $fragmentRefs'?: { PerformerFieldsFragment: PerformerFieldsFragment } }
-      >
     }>
   }
 }
 
-export class TypedDocumentString<TResult, TVariables>
-  extends String
-  implements DocumentTypeDecoration<TResult, TVariables>
-{
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>
-  private value: string
-  public __meta__?: Record<string, any> | undefined
+export type FindPerformersQueryVariables = Exact<{
+  filter?: InputMaybe<FindFilterType>
+}>
 
-  constructor(value: string, __meta__?: Record<string, any> | undefined) {
-    super(value)
-    this.value = value
-    this.__meta__ = __meta__
+export type FindPerformersQuery = {
+  __typename?: 'Query'
+  findPerformers: {
+    __typename?: 'FindPerformersResultType'
+    count: number
+    performers: Array<{
+      __typename?: 'Performer'
+      id: string
+      name: string
+      country?: string | null
+      birthdate?: string | null
+      measurements?: string | null
+      aliases: Array<string>
+      imageUrl?: string | null
+      breastType?: string | null
+      isFavorite: boolean
+      stashes: Array<{ __typename?: 'StashID'; endpoint: string; id: string }>
+    }>
   }
+}
 
-  override toString(): string & DocumentTypeDecoration<TResult, TVariables> {
-    return this.value
-  }
-}
-export const StashFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}
-    `,
-  { fragmentName: 'StashFields' }
-) as unknown as TypedDocumentString<StashFieldsFragment, unknown>
-export const PerformerFieldsFragmentDoc = new TypedDocumentString(
-  `
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-    fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`,
-  { fragmentName: 'PerformerFields' }
-) as unknown as TypedDocumentString<PerformerFieldsFragment, unknown>
-export const AllPerformerIdsDocument = new TypedDocumentString(`
-    query AllPerformerIds {
-  allPerformers {
-    id
-  }
-}
-    `) as unknown as TypedDocumentString<AllPerformerIdsQuery, AllPerformerIdsQueryVariables>
-export const AllPerformersDocument = new TypedDocumentString(`
-    query AllPerformers {
-  allPerformers {
-    ...PerformerFields
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<AllPerformersQuery, AllPerformersQueryVariables>
-export const FindPerformerDocument = new TypedDocumentString(`
-    query FindPerformer($id: ID!) {
-  findPerformer(id: $id) {
-    ...PerformerFields
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<FindPerformerQuery, FindPerformerQueryVariables>
-export const FindScenesDocument = new TypedDocumentString(`
-    query FindScenes($sceneFilter: SceneFilterType, $sceneIds: [Int!], $ids: [ID!], $filter: FindFilterType) {
-  findScenes(
-    scene_filter: $sceneFilter
-    scene_ids: $sceneIds
-    ids: $ids
-    filter: $filter
-  ) {
-    scenes {
-      id
-      title
-      paths {
-        screenshot
-      }
-      stashes: stash_ids {
-        ...StashFields
-      }
-      files {
-        basename
-        fingerprints {
-          type
-          value
+export const FindScenesDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'FindScenes' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sceneFilter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'SceneFilterType' } }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'sceneIds' } },
+          type: {
+            kind: 'ListType',
+            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } }
+          }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } },
+          type: {
+            kind: 'ListType',
+            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } }
+          }
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'FindFilterType' } }
         }
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'findScenes' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scene_filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sceneFilter' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scene_ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'sceneIds' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'ids' } }
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } }
+              }
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'count' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'scenes' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'releasedAt' },
+                        name: { kind: 'Name', value: 'date' }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'paths' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'screenshot' } }]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'performers' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'stashes' },
+                        name: { kind: 'Name', value: 'stash_ids' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'id' },
+                              name: { kind: 'Name', value: 'stash_id' }
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                          ]
+                        }
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'hashes' },
+                              name: { kind: 'Name', value: 'fingerprints' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'type' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'value' } }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
       }
-      performers {
-        ...PerformerFields
-      }
-      releasedAt: date
     }
-  }
-}
-    fragment PerformerFields on Performer {
-  id
-  name
-  aliases: alias_list
-  imageUrl: image_path
-  country
-  birthdate
-  measurements
-  breastType: fake_tits
-  isFavorite: favorite
-  stashes: stash_ids {
-    ...StashFields
-  }
-}
-fragment StashFields on StashID {
-  id: stash_id
-  endpoint
-}`) as unknown as TypedDocumentString<FindScenesQuery, FindScenesQueryVariables>
+  ]
+} as unknown as DocumentNode<FindScenesQuery, FindScenesQueryVariables>
+export const FindPerformersDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'FindPerformers' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'FindFilterType' } }
+        }
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'findPerformers' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'filter' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'filter' } }
+              }
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'count' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'performers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'aliases' },
+                        name: { kind: 'Name', value: 'alias_list' }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'imageUrl' },
+                        name: { kind: 'Name', value: 'image_path' }
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'country' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'birthdate' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'measurements' } },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'breastType' },
+                        name: { kind: 'Name', value: 'fake_tits' }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'isFavorite' },
+                        name: { kind: 'Name', value: 'favorite' }
+                      },
+                      {
+                        kind: 'Field',
+                        alias: { kind: 'Name', value: 'stashes' },
+                        name: { kind: 'Name', value: 'stash_ids' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              alias: { kind: 'Name', value: 'id' },
+                              name: { kind: 'Name', value: 'stash_id' }
+                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'endpoint' } }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+} as unknown as DocumentNode<FindPerformersQuery, FindPerformersQueryVariables>
