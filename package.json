@@ -40,7 +40,7 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@t3-oss/env-nextjs": "0.13.8",
     "@tailwindcss/postcss": "4.1.13",
-    "@tailwindcss/vite": "4.1.12",
+    "@tailwindcss/vite": "4.1.13",
     "bullmq": "5.58.5",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
