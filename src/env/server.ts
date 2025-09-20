@@ -11,8 +11,8 @@ export const env = createEnv({
     REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
     REDIS_USERNAME: z.string().default('default'),
     REDIS_PASSWORD: z.string().optional(),
-    STASH_BASE_URL: z.url(),
     STASH_API_KEY: z.string(),
+    STASH_BASE_URL: z.url(),
     STASHDB_API_KEY: z.string(),
     THEPORNDB_API_KEY: z.string()
   },

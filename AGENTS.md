@@ -9,7 +9,7 @@
 - `src/lib`: Core libraries — API clients (`stash`, `stashdb`, `theporndb`), `queue` (BullMQ), `prisma`, `logger`.
 - `src/generated/**`: Auto-generated types/clients (GraphQL/OpenAPI/Prisma). Do not edit.
 - `src/env/server.ts`: Environment validation (Zod).
-- `prisma/`: Prisma schema and assets. `public/`: static assets. `scripts/`: smoke scripts.
+- `prisma/`: Prisma schema and assets. `public/`: static assets.
 
 ## Build, Test, and Development Commands
 
@@ -17,7 +17,7 @@
 - Dev (HTTPS, pretty logs): `pnpm dev`
 - Build/Start: `pnpm build` ; `pnpm start`
 - Typecheck: `pnpm typecheck`
-- Lint: `pnpm lint:js` (ESLint, zero warnings) and `pnpm lint` (Next.js)
+- Lint: `pnpm lint` (ESLint, zero warnings)
 - Format: `pnpm prettier:check` | `pnpm prettier:fix`
 - Tests (Vitest): `pnpm test` | single file: `vitest --run path/to/file.test.ts` | by name: `vitest --run -t "test name"`
 - Codegen: `pnpm codegen` (or `pnpm graphql-codegen`, `pnpm openapi-ts`)

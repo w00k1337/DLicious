@@ -1,9 +1,11 @@
 {
   "recommendations": [
+    "anthropic.claude-code",
     "bradlc.vscode-tailwindcss",
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "mikestead.dotenv",
+    "ms-azuretools.vscode-docker",
     "openai.chatgpt",
     "prisma.prisma",
     "stylelint.vscode-stylelint",

@@ -61,7 +61,7 @@ pnpm start
 pnpm typecheck
 
 # Linting
-pnpm lint:js
+pnpm lint
 
 # Formatting
 pnpm prettier:check

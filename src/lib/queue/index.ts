@@ -1,5 +1,2 @@
 export * from './core'
-export { taskRegistry } from './shared/registry'
-export type { TaskConfig, TaskModule, TaskRegistryEntry } from './shared/types'
-export { getTask, initializeQueueSystem, triggerTask } from './shared/utils'
 export * from './tasks'
