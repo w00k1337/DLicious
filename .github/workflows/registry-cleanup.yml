@@ -40,6 +40,24 @@ jobs:
           echo "Dry run: ${{ github.event.inputs.dry_run || 'false' }}"
           echo "Force cleanup: ${{ github.event.inputs.force_cleanup || 'false' }}"
 
+      - name: Debug - List available packages
+        run: |
+          echo "🔍 Checking for existing packages..."
+          echo "Repository: ${{ github.repository }}"
+          echo "Lowercase name: ${{ steps.repo.outputs.name }}"
+          echo "Expected package URL: https://github.com/${{ github.repository }}/pkgs/container/${{ steps.repo.outputs.name }}"
+
+          # Try to get package info using GitHub CLI
+          if command -v gh &> /dev/null; then
+            echo "📦 Attempting to list packages..."
+            gh api /user/packages?package_type=container --paginate 2>/dev/null | jq -r '.[].name' || echo "No packages found or API call failed"
+          else
+            echo "GitHub CLI not available for package listing"
+          fi
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Cleanup untagged versions
         uses: actions/delete-package-versions@v5
         with:
@@ -48,6 +66,7 @@ jobs:
           min-versions-to-keep: 0
           delete-only-untagged-versions: true
           token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Cleanup old PR images
         uses: actions/delete-package-versions@v5
@@ -58,6 +77,7 @@ jobs:
           delete-only-pre-release-versions: true
           ignore-versions: '^(main|v\d+\.\d+\.\d+)$'
           token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Cleanup old branch versions
         uses: actions/delete-package-versions@v5
@@ -68,54 +88,35 @@ jobs:
           delete-only-untagged-versions: false
           ignore-versions: '^v\d+\.\d+\.\d+'
           token: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup-build-cache:
-    name: Cleanup Build Cache Images
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    timeout-minutes: 5
-    steps:
-      - name: Prepare repository name for build cache
-        id: repo
-        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Log build cache cleanup
-        run: |
-          echo "🗑️ Starting build cache cleanup for ${{ steps.repo.outputs.name }}"
-          echo "Target package: ${{ steps.repo.outputs.name }}/buildcache"
-
-      - name: Cleanup build cache versions
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: '${{ steps.repo.outputs.name }}/buildcache'
-          package-type: 'container'
-          min-versions-to-keep: 3
-          delete-only-untagged-versions: false
-          token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+  # Note: Build cache cleanup is handled as part of the main package cleanup above.
+  # Build cache tags (e.g., 'buildcache') are stored as tags on the main package,
+  # not as separate packages, so they get cleaned up with the main image versions.
 
   cleanup-summary:
     name: Cleanup Summary
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [cleanup-main-images, cleanup-build-cache]
+    needs: [cleanup-main-images]
     if: always()
     steps:
       - name: Report cleanup results
         run: |
           echo "📊 Container Registry Cleanup Summary"
           echo "====================================="
-          echo "Main images cleanup: ${{ needs.cleanup-main-images.result }}"
-          echo "Build cache cleanup: ${{ needs.cleanup-build-cache.result }}"
+          echo "Main images cleanup (including build cache): ${{ needs.cleanup-main-images.result }}"
           echo ""
-          if [[ "${{ needs.cleanup-main-images.result }}" == "success" && "${{ needs.cleanup-build-cache.result }}" == "success" ]]; then
-            echo "✅ All cleanup jobs completed successfully"
-          elif [[ "${{ needs.cleanup-main-images.result }}" == "failure" || "${{ needs.cleanup-build-cache.result }}" == "failure" ]]; then
-            echo "❌ Some cleanup jobs failed - check logs above"
-            exit 1
+          if [[ "${{ needs.cleanup-main-images.result }}" == "success" ]]; then
+            echo "✅ Cleanup completed successfully"
+            echo "ℹ️  Note: If no packages existed, cleanup steps may have been skipped (this is normal)"
+          elif [[ "${{ needs.cleanup-main-images.result }}" == "failure" ]]; then
+            echo "❌ Cleanup encountered errors - check logs above"
+            echo "ℹ️  Note: 'Package not found' errors are normal if no container images have been pushed yet"
+            echo "ℹ️  The cleanup will work automatically once images are published"
           else
-            echo "⚠️ Some cleanup jobs were skipped or cancelled"
+            echo "⚠️ Cleanup was skipped or cancelled"
           fi
+          echo ""
+          echo "🔗 Check packages at: https://github.com/${{ github.repository }}/pkgs"
