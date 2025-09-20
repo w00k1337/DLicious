@@ -32,7 +32,11 @@ jobs:
     steps:
       - name: Prepare repository name
         id: repo
-        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: |
+          # Extract just the repository name (not owner/repo, just repo)
+          REPO_NAME=$(echo '${{ github.repository }}' | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+          echo "name=${REPO_NAME}" >> $GITHUB_OUTPUT
+          echo "full_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Log cleanup parameters
         run: |
@@ -44,16 +48,40 @@ jobs:
         run: |
           echo "🔍 Checking for existing packages..."
           echo "Repository: ${{ github.repository }}"
-          echo "Lowercase name: ${{ steps.repo.outputs.name }}"
+          echo "Package name: ${{ steps.repo.outputs.name }}"
+          echo "Full repository name: ${{ steps.repo.outputs.full_name }}"
           echo "Expected package URL: https://github.com/${{ github.repository }}/pkgs/container/${{ steps.repo.outputs.name }}"
 
           # Try to get package info using GitHub CLI
           if command -v gh &> /dev/null; then
-            echo "📦 Attempting to list packages..."
-            gh api /user/packages?package_type=container --paginate 2>/dev/null | jq -r '.[].name' || echo "No packages found or API call failed"
+            echo "📦 Attempting to list all container packages..."
+
+            # Try different API endpoints to understand the response format
+            echo "--- Trying user packages API ---"
+            USER_PACKAGES=$(gh api /user/packages?package_type=container 2>/dev/null || echo "[]")
+            echo "Raw response: $USER_PACKAGES"
+
+            echo "--- Trying repository packages API ---"
+            REPO_PACKAGES=$(gh api /repos/${{ github.repository }}/packages?package_type=container 2>/dev/null || echo "[]")
+            echo "Raw response: $REPO_PACKAGES"
+
+            # Parse if valid JSON
+            if echo "$USER_PACKAGES" | jq . >/dev/null 2>&1; then
+              echo "📦 User packages found:"
+              echo "$USER_PACKAGES" | jq -r '.[].name // empty' || echo "No packages or parsing failed"
+            fi
+
+            if echo "$REPO_PACKAGES" | jq . >/dev/null 2>&1; then
+              echo "📦 Repository packages found:"
+              echo "$REPO_PACKAGES" | jq -r '.[].name // empty' || echo "No packages or parsing failed"
+            fi
           else
             echo "GitHub CLI not available for package listing"
           fi
+
+          echo ""
+          echo "ℹ️  If no packages are listed above, container images haven't been published yet."
+          echo "ℹ️  Packages will be created automatically when your docker-build workflow succeeds."
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
