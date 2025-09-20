@@ -18,9 +18,7 @@ export const stashGraphQL = async <TResult, TVariables = Record<string, never>>(
   fetchGraphQL(
     {
       endpoint: `${env.STASH_BASE_URL}/graphql`,
-      headers: {
-        ApiKey: env.STASH_API_KEY
-      }
+      headers: { ApiKey: env.STASH_API_KEY }
     },
     document,
     variables

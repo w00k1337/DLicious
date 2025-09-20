@@ -4,7 +4,7 @@ import ms from 'ms'
 import type { Prisma } from '@/generated/prisma'
 import { PrismaClient } from '@/generated/prisma'
 import logger from '@/lib/logger'
-import { createImageProxyUrl } from '@/lib/utils/image-proxy'
+import { createImageProxyUrl } from '@/lib/utils'
 
 interface QueryMetrics {
   model?: string

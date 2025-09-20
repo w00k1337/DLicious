@@ -7,7 +7,6 @@ import { stashGraphQL } from '@/lib/api/stash'
 import { stashDbGraphQL } from '@/lib/api/stashdb'
 import logger from '@/lib/logger'
 
-import { DEFAULT_MAX_PAGES_PER_SOURCE, DEFAULT_SCENES_PER_PAGE } from './constants'
 import { FindScenes } from './queries.stash.graphql'
 import { QueryScenes } from './queries.stashdb.graphql'
 import type { NormalizedScene } from './types'
@@ -35,7 +34,7 @@ export const fetchScenesFromStash = async (
   performerId: number,
   options: PaginatedFetchOptions = {}
 ): Promise<NormalizedScene[]> => {
-  const { scenesPerPage = DEFAULT_SCENES_PER_PAGE, maxPages = DEFAULT_MAX_PAGES_PER_SOURCE } = options
+  const { scenesPerPage = 10, maxPages = 5 } = options
 
   const allScenes: NormalizedScene[] = []
 
@@ -109,7 +108,7 @@ export const fetchScenesFromStashDb = async (
   performerId: string,
   options: PaginatedFetchOptions = {}
 ): Promise<NormalizedScene[]> => {
-  const { scenesPerPage = DEFAULT_SCENES_PER_PAGE, maxPages = DEFAULT_MAX_PAGES_PER_SOURCE } = options
+  const { scenesPerPage = 100, maxPages = 5 } = options
 
   const allScenes: NormalizedScene[] = []
 
@@ -174,7 +173,7 @@ export const fetchScenesFromThePornDb = async (
   performerId: string,
   options: PaginatedFetchOptions = {}
 ): Promise<NormalizedScene[]> => {
-  const { scenesPerPage = DEFAULT_SCENES_PER_PAGE, maxPages = DEFAULT_MAX_PAGES_PER_SOURCE } = options
+  const { scenesPerPage = 10, maxPages = 5 } = options
 
   const allScenes: NormalizedScene[] = []
 

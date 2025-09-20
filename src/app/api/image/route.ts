@@ -10,7 +10,7 @@ interface ImageApiErrorResponse {
 
 export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiErrorResponse | ArrayBuffer>> => {
   const urlParam = request.nextUrl.searchParams.get('url')
-  if (!urlParam) return NextResponse.json<ImageApiErrorResponse>({ error: 'Missing url' }, { status: 400 })
+  if (!urlParam) return NextResponse.json({ error: 'Missing url' }, { status: 400 })
 
   try {
     const originalUrl = new URL(urlParam)
@@ -27,8 +27,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiEr
       /\/studio\/\d+\/image/.test(lowerPathname) ||
       /\/gallery\/\d+\/cover/.test(lowerPathname)
 
-    if (!isStashImageEndpoint)
-      return NextResponse.json<ImageApiErrorResponse>({ error: 'Forbidden path' }, { status: 403 })
+    if (!isStashImageEndpoint) return NextResponse.json({ error: 'Forbidden path' }, { status: 403 })
 
     originalUrl.searchParams.set('apikey', env.STASH_API_KEY)
 
@@ -36,12 +35,12 @@ export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiEr
       headers: { Accept: 'image/*' }
     })
 
-    if (!res.ok) return NextResponse.json<ImageApiErrorResponse>({ error: 'Upstream error' }, { status: 502 })
+    if (!res.ok) return NextResponse.json({ error: 'Upstream error' }, { status: 502 })
 
     const contentType = res.headers.get('content-type') ?? 'image/jpeg'
 
     if (!contentType.toLowerCase().startsWith('image/'))
-      return NextResponse.json<ImageApiErrorResponse>({ error: 'Upstream returned non-image content' }, { status: 502 })
+      return NextResponse.json({ error: 'Upstream returned non-image content' }, { status: 502 })
 
     const buffer = await res.arrayBuffer()
 
@@ -53,6 +52,6 @@ export const GET = async (request: NextRequest): Promise<NextResponse<ImageApiEr
       }
     })
   } catch {
-    return NextResponse.json<ImageApiErrorResponse>({ error: 'Invalid url' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid url' }, { status: 400 })
   }
 }

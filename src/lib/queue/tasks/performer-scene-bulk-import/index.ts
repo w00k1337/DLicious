@@ -1,7 +1,6 @@
-import type { JobsOptions, Queue, Worker } from 'bullmq'
+import type { Job, JobsOptions, Queue, Worker } from 'bullmq'
 
 import { createQueue, createWorker } from '../../core'
-import type { TaskModule } from '../../shared/types'
 import { processPerformerSceneBulkImport } from './processor'
 import type { PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult } from './types'
 
@@ -14,10 +13,7 @@ const getOrCreateQueue = (): Queue<PerformerSceneBulkImportJobData, PerformerSce
   return queueInstance
 }
 
-export const performerSceneBulkImportTask: TaskModule<
-  PerformerSceneBulkImportJobData,
-  PerformerSceneBulkImportJobResult
-> = {
+export const performerSceneBulkImportTask = {
   queueName,
   createQueue: getOrCreateQueue,
   createWorker: (): Worker<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult> =>
@@ -25,7 +21,10 @@ export const performerSceneBulkImportTask: TaskModule<
       queueName,
       processPerformerSceneBulkImport
     ),
-  trigger: async (data: PerformerSceneBulkImportJobData, options?: Partial<JobsOptions>) => {
+  trigger: async (
+    data: PerformerSceneBulkImportJobData,
+    options?: Partial<JobsOptions>
+  ): Promise<Job<PerformerSceneBulkImportJobData, PerformerSceneBulkImportJobResult>> => {
     const queue = getOrCreateQueue()
     const jobId = `performer-scene-bulk-import-${String(data.performerId)}`
     return queue.add(jobId, data, {
