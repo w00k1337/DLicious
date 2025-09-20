@@ -95,6 +95,8 @@ jobs:
   cleanup-summary:
     name: Cleanup Summary
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [cleanup-main-images, cleanup-build-cache]
     if: always()
     steps:
