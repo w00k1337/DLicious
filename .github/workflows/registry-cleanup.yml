@@ -30,16 +30,20 @@ jobs:
       packages: write
     timeout-minutes: 10
     steps:
+      - name: Prepare repository name
+        id: repo
+        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Log cleanup parameters
         run: |
-          echo "🧹 Starting main image cleanup for ${{ env.IMAGE_NAME }}"
+          echo "🧹 Starting main image cleanup for ${{ steps.repo.outputs.name }}"
           echo "Dry run: ${{ github.event.inputs.dry_run || 'false' }}"
           echo "Force cleanup: ${{ github.event.inputs.force_cleanup || 'false' }}"
 
       - name: Cleanup untagged versions
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ github.repository }}
+          package-name: ${{ steps.repo.outputs.name }}
           package-type: 'container'
           min-versions-to-keep: 0
           delete-only-untagged-versions: true
@@ -48,7 +52,7 @@ jobs:
       - name: Cleanup old PR images
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ github.repository }}
+          package-name: ${{ steps.repo.outputs.name }}
           package-type: 'container'
           min-versions-to-keep: 0
           delete-only-pre-release-versions: true
@@ -58,7 +62,7 @@ jobs:
       - name: Cleanup old branch versions
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ github.repository }}
+          package-name: ${{ steps.repo.outputs.name }}
           package-type: 'container'
           min-versions-to-keep: 10
           delete-only-untagged-versions: false
