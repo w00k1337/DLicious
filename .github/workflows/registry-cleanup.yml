@@ -18,7 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: w00k1337/dlicious
+  IMAGE_NAME: dlicious
 
 jobs:
   cleanup-images:
