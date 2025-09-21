@@ -2,149 +2,57 @@ name: Container Registry Cleanup
 
 on:
   schedule:
-    # Run every Sunday at 2:00 AM UTC to minimize impact during development
-    - cron: '0 2 * * 0'
+    - cron: '0 2 * * 0' # Every Sunday at 2 AM UTC
   workflow_dispatch:
     inputs:
       dry_run:
         description: 'Perform a dry run without actually deleting packages'
         required: false
-        default: false
+        default: true
         type: boolean
-      force_cleanup:
-        description: 'Force cleanup even if recent activity detected'
+      keep_versions:
+        description: 'Number of production versions to keep'
         required: false
-        default: false
-        type: boolean
+        default: '1'
+        type: string
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: w00k1337/dlicious
 
 jobs:
-  cleanup-main-images:
-    name: Cleanup Main Application Images
+  cleanup-images:
+    name: Cleanup Container Images
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Prepare repository name
-        id: repo
-        run: |
-          # Extract just the repository name (not owner/repo, just repo)
-          REPO_NAME=$(echo '${{ github.repository }}' | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
-          echo "name=${REPO_NAME}" >> $GITHUB_OUTPUT
-          echo "full_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+      - name: Cleanup old buildcache versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: 'container'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: false
+          ignore-versions: 'main,v*'
+          delete-only-pre-release-versions: false
 
-      - name: Log cleanup parameters
-        run: |
-          echo "🧹 Starting main image cleanup for ${{ steps.repo.outputs.name }}"
-          echo "Dry run: ${{ github.event.inputs.dry_run || 'false' }}"
-          echo "Force cleanup: ${{ github.event.inputs.force_cleanup || 'false' }}"
-
-      - name: Debug - List available packages
-        run: |
-          echo "🔍 Checking for existing packages..."
-          echo "Repository: ${{ github.repository }}"
-          echo "Package name: ${{ steps.repo.outputs.name }}"
-          echo "Full repository name: ${{ steps.repo.outputs.full_name }}"
-          echo "Expected package URL: https://github.com/${{ github.repository }}/pkgs/container/${{ steps.repo.outputs.name }}"
-
-          # Try to get package info using GitHub CLI
-          if command -v gh &> /dev/null; then
-            echo "📦 Attempting to list all container packages..."
-
-            # Try different API endpoints to understand the response format
-            echo "--- Trying user packages API ---"
-            USER_PACKAGES=$(gh api /user/packages?package_type=container 2>/dev/null || echo "[]")
-            echo "Raw response: $USER_PACKAGES"
-
-            echo "--- Trying repository packages API ---"
-            REPO_PACKAGES=$(gh api /repos/${{ github.repository }}/packages?package_type=container 2>/dev/null || echo "[]")
-            echo "Raw response: $REPO_PACKAGES"
-
-            # Parse if valid JSON
-            if echo "$USER_PACKAGES" | jq . >/dev/null 2>&1; then
-              echo "📦 User packages found:"
-              echo "$USER_PACKAGES" | jq -r '.[].name // empty' || echo "No packages or parsing failed"
-            fi
-
-            if echo "$REPO_PACKAGES" | jq . >/dev/null 2>&1; then
-              echo "📦 Repository packages found:"
-              echo "$REPO_PACKAGES" | jq -r '.[].name // empty' || echo "No packages or parsing failed"
-            fi
-          else
-            echo "GitHub CLI not available for package listing"
-          fi
-
-          echo ""
-          echo "ℹ️  If no packages are listed above, container images haven't been published yet."
-          echo "ℹ️  Packages will be created automatically when your docker-build workflow succeeds."
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cleanup old production versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: 'container'
+          min-versions-to-keep: ${{ inputs.keep_versions || '1' }}
+          delete-only-untagged-versions: false
+          ignore-versions: 'main,buildcache'
+          delete-only-pre-release-versions: false
 
       - name: Cleanup untagged versions
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ steps.repo.outputs.name }}
+          package-name: ${{ env.IMAGE_NAME }}
           package-type: 'container'
           min-versions-to-keep: 0
           delete-only-untagged-versions: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Cleanup old PR images
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: ${{ steps.repo.outputs.name }}
-          package-type: 'container'
-          min-versions-to-keep: 0
-          delete-only-pre-release-versions: true
-          ignore-versions: '^(main|v\d+\.\d+\.\d+)$'
-          token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Cleanup old branch versions
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: ${{ steps.repo.outputs.name }}
-          package-type: 'container'
-          min-versions-to-keep: 10
-          delete-only-untagged-versions: false
-          ignore-versions: '^v\d+\.\d+\.\d+'
-          token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-  # Note: Build cache cleanup is handled as part of the main package cleanup above.
-  # Build cache tags (e.g., 'buildcache') are stored as tags on the main package,
-  # not as separate packages, so they get cleaned up with the main image versions.
-
-  cleanup-summary:
-    name: Cleanup Summary
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs: [cleanup-main-images]
-    if: always()
-    steps:
-      - name: Report cleanup results
-        run: |
-          echo "📊 Container Registry Cleanup Summary"
-          echo "====================================="
-          echo "Main images cleanup (including build cache): ${{ needs.cleanup-main-images.result }}"
-          echo ""
-          if [[ "${{ needs.cleanup-main-images.result }}" == "success" ]]; then
-            echo "✅ Cleanup completed successfully"
-            echo "ℹ️  Note: If no packages existed, cleanup steps may have been skipped (this is normal)"
-          elif [[ "${{ needs.cleanup-main-images.result }}" == "failure" ]]; then
-            echo "❌ Cleanup encountered errors - check logs above"
-            echo "ℹ️  Note: 'Package not found' errors are normal if no container images have been pushed yet"
-            echo "ℹ️  The cleanup will work automatically once images are published"
-          else
-            echo "⚠️ Cleanup was skipped or cancelled"
-          fi
-          echo ""
-          echo "🔗 Check packages at: https://github.com/${{ github.repository }}/pkgs"
